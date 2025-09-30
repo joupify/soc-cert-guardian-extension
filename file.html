@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🧪 Test Security Page</title>
+</head>
+<body>
+    <h1>Test Page for SOC-CERT</h1>
+    
+    <!-- Trigger security threats -->
+    <form action="http://fake-login.test.com/login" method="post">
+        <input type="text" name="username" placeholder="Username">
+        <input type="password" name="password" placeholder="Password">
+        <button type="submit">Login (HTTP - should trigger threat)</button>
+    </form>
+    
+    <script>
+        console.log("Test page loaded for SOC-CERT analysis");
+        
+        // Simuler des scripts suspects
+        const suspiciousCode = "cryptominer detection test";
+        
+        // Attendre que SOC-CERT analyse
+        setTimeout(() => {
+            console.log("Page analysis should be complete");
+        }, 2000);
+    </script>
+</body>
+</html>

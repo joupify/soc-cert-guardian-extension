@@ -14,8 +14,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const pending = [...alertQueue];
-    alertQueue = []; // vider après lecture
+    const pending = Array.isArray(alertQueue)
+      ? [...alertQueue]
+      : alertQueue
+      ? [alertQueue]
+      : [];
+    alertQueue = [];
     return res.json(pending);
   }
 

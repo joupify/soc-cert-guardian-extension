@@ -1,0 +1,11 @@
+{
+  "name": "soc-cert-extension-api",
+  "version": "1.0.0",
+  "description": "API backend for SOC-CERT Chrome Extension",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build"
+  },
+  "dependencies": {}
+}

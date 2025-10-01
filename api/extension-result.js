@@ -4,13 +4,27 @@ const cveResults = new Map(); // 🆕 NOUVEAU: Pour les CVE
 
 export default async function handler(req, res) {
   try {
-    // Debug complet
-    console.log("=== API DEBUG ===");
+    // Debug complet avec timestamp
+    const timestamp = new Date().toISOString();
+    console.log(`=== API DEBUG ${timestamp} ===`);
     console.log("Method:", req.method);
     console.log("URL:", req.url);
     console.log("Query:", JSON.stringify(req.query, null, 2));
     console.log("Headers:", JSON.stringify(req.headers, null, 2));
     console.log("Body:", JSON.stringify(req.body, null, 2));
+
+    // 🆕 STATS de stockage
+    console.log("🗄️ STORAGE STATS:");
+    console.log("  - CVE Results:", cveResults.size, "extensions stored");
+    console.log(
+      "  - Legacy Results:",
+      extensionResults.size,
+      "extensions stored"
+    );
+
+    for (const [extId, results] of cveResults.entries()) {
+      console.log(`    ${extId}: ${results.length} CVE results`);
+    }
     console.log("================");
 
     // Enable CORS
@@ -168,9 +182,13 @@ export default async function handler(req, res) {
         );
 
         if (results.length > 0) {
-          // 🔧 DÉSACTIVÉ pour debug: cveResults.delete(extensionId);
+          // 🔧 NE PAS SUPPRIMER pour debug: cveResults.delete(extensionId);
           console.log(
             `✅ Delivered ${results.length} CVE results to ${extensionId} (KEPT FOR DEBUG)`
+          );
+          console.log(
+            "📋 Results delivered:",
+            JSON.stringify(results, null, 2)
           );
         }
 

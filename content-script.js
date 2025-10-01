@@ -143,14 +143,12 @@ function detectMixedContent() {
 
 // Vérification des en-têtes de sécurité (basique)
 async function checkSecurityHeaders() {
-  // Note: En content script, on a un accès limité aux headers
-  // Cette fonction est plutôt indicative
   return {
     https: window.location.protocol === "https:",
     has_csp: !!document.querySelector(
       'meta[http-equiv="Content-Security-Policy"]'
     ),
-    has_hsts: false, // Nécessiterait une autre approche
+    has_hsts: false,
   };
 }
 
@@ -325,13 +323,12 @@ async function handleContentExtraction(request, sendResponse) {
   }
 }
 
-// 🆕 =================================================================
-// NOUVELLES FONCTIONS POUR CVE POLLING
+// 🆕 FONCTIONS CVE POLLING - VERSION CORRIGÉE
 // =================================================================
 
-// Fonction pour envoyer une alerte et démarrer le polling CVE
+// ✅ CORRIGÉ : Utilise extensionId fixe "mapped" au lieu de dynamique
 async function sendThreatAlertAndPoll(threatData) {
-  const extensionId = `chrome-ext-${Date.now()}`;
+  const extensionId = "mapped"; // ← FIXÉ : même ID que n8n utilise
 
   try {
     console.log("📤 Envoi alerte de sécurité:", threatData);
@@ -358,183 +355,58 @@ async function sendThreatAlertAndPoll(threatData) {
 
     if (response.ok) {
       console.log("✅ Alerte envoyée vers n8n, démarrage polling CVE...");
-      startCVEPolling(extensionId);
+      // ✅ CORRIGÉ : Ne pas démarrer polling ici pour éviter conflit avec popup
+      console.log("ℹ️ Polling CVE géré par le popup pour éviter les conflits");
     } else {
-      console.error(
-        "❌ Erreur envoi alerte:",
-        response.status,
-        await response.text()
-      );
+      console.error("❌ Erreur envoi alerte:", response.status);
     }
   } catch (error) {
     console.error("❌ Erreur réseau:", error);
   }
 }
 
-// Fonction de polling pour récupérer les CVE
-async function startCVEPolling(extensionId) {
-  console.log(`🔄 Démarrage polling CVE pour ${extensionId}`);
-
-  let attempts = 0;
-  const maxAttempts = 15; // 45 secondes max
-
-  const poll = async () => {
-    try {
-      const response = await fetch(
-        `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=${extensionId}&format=cve`
-      );
-      const data = await response.json();
-
-      console.log(
-        `📊 Polling CVE (${attempts + 1}/${maxAttempts}):`,
-        data.count ? `${data.count} résultats` : "aucun résultat"
-      );
-
-      if (data.success && data.results && data.results.length > 0) {
-        console.log(`🎉 Reçu ${data.results.length} résultats CVE !`);
-
-        // Afficher chaque CVE
-        data.results.forEach((cve) => {
-          displayCVEAlert(cve);
-        });
-
-        return; // Stop polling
-      }
-
-      attempts++;
-      if (attempts >= maxAttempts) {
-        console.log("⏱️ Timeout polling CVE après 45 secondes");
-        return;
-      }
-
-      // Continuer polling dans 3 secondes
-      setTimeout(poll, 3000);
-    } catch (error) {
-      console.error("❌ Erreur polling CVE:", error);
-    }
-  };
-
-  // Démarrer le polling
-  poll();
-}
-
-// Afficher une alerte CVE
+// ✅ CORRIGÉ : Fonction simplifiée pour afficher notification seulement
 function displayCVEAlert(cve) {
   console.log(`🔒 CVE Alert:`, {
     id: cve.cve_id,
     severity: cve.severity,
     score: cve.score,
     title: cve.title.substring(0, 60) + "...",
-    link: cve.link,
   });
 
-  // Notification navigateur
+  // Notification navigateur seulement
   if (Notification.permission === "granted") {
     new Notification(`🔒 CVE Alert: ${cve.severity}`, {
       body: `${cve.cve_id}: ${cve.title}`,
-      icon: "/icon48.png",
-    });
-  } else if (Notification.permission === "default") {
-    // Demander permission
-    Notification.requestPermission().then((permission) => {
-      if (permission === "granted") {
-        new Notification(`🔒 CVE Alert: ${cve.severity}`, {
-          body: `${cve.cve_id}: ${cve.title}`,
-        });
-      }
+      icon: chrome.runtime.getURL("icons/icon48.png"),
     });
   }
 
-  // Badge extension rouge
-  chrome.runtime.sendMessage({
-    action: "setBadge",
-    text: "!",
-    color: "#ff0000",
-  });
-
-  // Afficher alerte dans la page
-  showPageAlert(cve);
+  // Badge extension
+  chrome.runtime
+    .sendMessage({
+      action: "setBadge",
+      text: "!",
+      color: "#ff0000",
+    })
+    .catch(() => {
+      // Ignore si background script pas prêt
+    });
 }
 
-// Afficher alerte dans la page
-function showPageAlert(cve) {
-  // Supprimer alerte précédente s'il y en a une
-  const existingAlert = document.getElementById("cve-security-alert");
-  if (existingAlert) {
-    existingAlert.remove();
-  }
-
-  const alertDiv = document.createElement("div");
-  alertDiv.id = "cve-security-alert";
-  alertDiv.innerHTML = `
-    <div style="
-      position: fixed; 
-      top: 10px; 
-      right: 10px; 
-      background: linear-gradient(135deg, #ff4757, #ff3838);
-      color: white; 
-      padding: 15px; 
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      z-index: 10000;
-      font-family: monospace;
-      max-width: 300px;
-      border: 2px solid #ff1e1e;
-      animation: slideIn 0.3s ease-out;
-    ">
-      <div style="font-weight: bold; margin-bottom: 8px;">
-        🔒 CVE Alert: ${cve.severity}
-      </div>
-      <div style="font-size: 12px; margin-bottom: 8px;">
-        ${cve.cve_id} - Score: ${cve.score}
-      </div>
-      <div style="font-size: 11px; margin-bottom: 10px;">
-        ${cve.title}
-      </div>
-      <div>
-        <a href="${cve.link}" target="_blank" style="color: white; text-decoration: underline;">
-          View Details
-        </a>
-        <span style="float: right; cursor: pointer;" onclick="this.parentElement.parentElement.parentElement.remove()">
-          ✕
-        </span>
-      </div>
-    </div>
-  `;
-
-  // Ajouter animation CSS
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-  `;
-  document.head.appendChild(style);
-
-  document.body.appendChild(alertDiv);
-
-  // Auto-remove après 15 secondes
-  setTimeout(() => {
-    if (document.getElementById("cve-security-alert")) {
-      document.getElementById("cve-security-alert").remove();
-    }
-  }, 15000);
-}
-
-// 🔒 Détection automatique des menaces avec envoi d'alertes
+// ✅ CORRIGÉ : Détection simplifiée sans auto-polling
 async function checkForThreatsAndAlert() {
   const threats = await detectSecurityThreats(extractPageContent());
 
   if (threats.length > 0) {
     console.log(`🚨 ${threats.length} menace(s) détectée(s):`, threats);
 
-    // Envoyer la menace la plus sévère
+    // Envoyer seulement, pas de polling
     const highestThreat = threats.reduce((prev, current) =>
       prev.severity === "high" || current.severity !== "high" ? prev : current
     );
 
-    sendThreatAlertAndPoll({
+    await sendThreatAlertAndPoll({
       type: highestThreat.type,
       description: highestThreat.description,
       severity: highestThreat.severity,
@@ -543,14 +415,20 @@ async function checkForThreatsAndAlert() {
   }
 }
 
-// Analyse automatique au chargement avec détection de menaces
+// ✅ CORRIGÉ : Analyse automatique simplifiée
 setTimeout(async () => {
   try {
     pageAnalysis = await performComprehensiveAnalysis();
-    console.log("🔍 SOC-CERT Auto-analysis complete:", pageAnalysis);
+    console.log("🔍 SOC-CERT Auto-analysis complete:", {
+      url: pageAnalysis.url,
+      security_score: pageAnalysis.security_score,
+      threats: pageAnalysis.threats.length,
+    });
 
-    // Vérifier les menaces et envoyer alertes si nécessaire
-    await checkForThreatsAndAlert();
+    // Vérifier menaces seulement si score < 70
+    if (pageAnalysis.security_score < 70) {
+      await checkForThreatsAndAlert();
+    }
   } catch (error) {
     console.error("❌ Erreur analyse automatique:", error);
   }

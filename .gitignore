@@ -2,3 +2,6 @@
 *.pem
 key.pem
 private-key.pem
+*.pem
+*:Zone.Identifier
+*.key

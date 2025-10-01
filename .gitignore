@@ -5,3 +5,21 @@ private-key.pem
 *.pem
 *:Zone.Identifier
 *.key
+
+# Security files
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*:Zone.Identifier
+
+# Environment files  
+.env
+.env.local
+.env.production
+
+# API Keys
+config/keys.js
+secrets/

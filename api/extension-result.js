@@ -51,8 +51,16 @@ export default async function handler(req, res) {
               ? result.title.match(/demo-[\w-]+/)?.[0] || "mapped"
               : "mapped");
 
+          // 🔄 REMPLACER au lieu d'ajouter
           if (!cveResults.has(extId)) {
             cveResults.set(extId, []);
+          } else {
+            console.log(
+              `🔄 REPLACING existing data for ${extId} (had ${
+                cveResults.get(extId).length
+              } results)`
+            );
+            cveResults.set(extId, []); // Vider l'ancien
           }
 
           const enrichedResult = {
@@ -171,7 +179,28 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "GET") {
-      const { format } = req.query; // ?format=cve ou pas de format
+      const { format, clear } = req.query; // Ajouter ?clear=true
+
+      // 🧹 NOUVEAU: Clear cache endpoint
+      if (clear === "true") {
+        const clearedCVE = cveResults.size;
+        const clearedLegacy = extensionResults.size;
+
+        cveResults.clear();
+        extensionResults.clear();
+
+        console.log(
+          `🧹 CACHE CLEARED: ${clearedCVE} CVE extensions, ${clearedLegacy} legacy extensions`
+        );
+
+        return res.json({
+          success: true,
+          action: "cache_cleared",
+          clearedCVE,
+          clearedLegacy,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       if (format === "cve") {
         // 🆕 NOUVEAU: Retourner les résultats CVE

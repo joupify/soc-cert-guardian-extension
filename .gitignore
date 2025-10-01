@@ -1,1 +1,4 @@
 .vercel
+*.pem
+key.pem
+private-key.pem

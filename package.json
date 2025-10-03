@@ -4,8 +4,7 @@
   "description": "API backend for SOC-CERT Chrome Extension",
   "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "mkdir public; cp -r api assets icons *.js *.html manifest.json public/"
+    "dev": "vercel dev"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0"

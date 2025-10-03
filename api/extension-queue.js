@@ -19,7 +19,8 @@ export default async function handler(req, res) {
         processed: false,
       };
 
-      await kv.lpush(QUEUE_KEY, JSON.stringify(queueItem));
+      // ✅ KV stocke l'objet directement, PAS de JSON.stringify
+      await kv.lpush(QUEUE_KEY, queueItem);
       const queueSize = await kv.llen(QUEUE_KEY);
 
       console.log(`📥 Extension queued: ${extensionData.extensionId}`);
@@ -40,8 +41,8 @@ export default async function handler(req, res) {
       for (let i = 0; i < Math.min(queueLength, 100); i++) {
         const item = await kv.lindex(QUEUE_KEY, i);
         if (item) {
-          const parsed = JSON.parse(item);
-          if (!parsed.processed) extensions.push(parsed);
+          // ✅ item est déjà un objet, PAS besoin de JSON.parse
+          if (!item.processed) extensions.push(item);
         }
       }
 

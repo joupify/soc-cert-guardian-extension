@@ -4,6 +4,18 @@ class AIHelper {
     this.hasNativeAI = false;
     this.nativeAI = null;
     this.needsDownload = false;
+
+    // ✅ Générer ou récupérer un ID persistant unique
+    this.extensionId = localStorage.getItem("soc-cert-extension-id");
+
+    if (!this.extensionId) {
+      this.extensionId = `ai-helper-${Date.now()}`;
+      localStorage.setItem("soc-cert-extension-id", this.extensionId);
+      console.log(`✅ Nouvel extension ID créé: ${this.extensionId}`);
+    } else {
+      console.log(`✅ Extension ID récupéré: ${this.extensionId}`);
+    }
+
     // N'appellons pas initialize() dans le constructeur
     // pour éviter les problèmes avec async
   }
@@ -666,27 +678,52 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       console.log("📊 URL à analyser:", url);
       console.log("📊 QuickAnalysis données:", quickAnalysis);
 
-      const deepAnalysisPayload = {
-        extensionId: "ai-helper-" + Date.now(),
-        url: url,
-        threatType: this.determineThreatType(quickAnalysis),
-        analysis: {
-          threatLevel: quickAnalysis.threatLevel,
-          indicators: quickAnalysis.indicators || [],
-          aiAnalysis: quickAnalysis.analysis,
-          summary: quickAnalysis.summary,
-          recommendations: quickAnalysis.recommendations,
-          language: quickAnalysis.language || "en",
-          confidence: quickAnalysis.confidence || 0.8,
-          context: context,
-          timestamp: new Date().toISOString(),
-          analysisType: "deep-security-scan",
-        },
+      console.log(`🔍 Using persistent extensionId: ${this.extensionId}`);
+
+      // 🎯 PAYLOAD 100% PLAT COMME LE MOCK QUI FONCTIONNE
+      console.log(
+        "🎯 ULTRA-SIMPLE MODE: No nested objects, only flat properties"
+      );
+      const webhookData = {
+        extensionId: this.extensionId, // ✅ Vrai ID de l'extension
+        url: url, // ✅ Vraie URL analysée
+        threatType: quickAnalysis.threatType || "suspicious",
+        summary: quickAnalysis.analysis || "Threat detected by AI",
+        riskScore: quickAnalysis.riskScore || 65,
+        confidence: quickAnalysis.confidence || 0.7,
+        timestamp: new Date().toISOString(),
+        // ✅ AUCUN objet imbriqué - tout en propriétés de premier niveau
       };
 
+      // 🚨 DÉCLENCHEMENT MANUEL ADDITIF
+      console.log("🚨 Tentative de déclenchement manuel du workflow...");
+
+      // Essayer aussi l'endpoint direct du workflow n8n
+      setTimeout(async () => {
+        try {
+          console.log("🎯 Tentative d'appel direct au workflow n8n...");
+          const directResponse = await fetch(
+            "https://soc-cert-extension.vercel.app/api/extension-queue",
+            {
+              method: "GET",
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+
+          if (directResponse.ok) {
+            const queueData = await directResponse.json();
+            console.log("📊 État de la queue n8n:", queueData);
+          } else {
+            console.log("❌ Erreur queue:", directResponse.status);
+          }
+        } catch (error) {
+          console.log("❌ Erreur appel queue:", error.message);
+        }
+      }, 1000);
+
       console.log(
-        "📦 Payload à envoyer:",
-        JSON.stringify(deepAnalysisPayload, null, 2)
+        "📦 Real Extension Payload:",
+        JSON.stringify(webhookData, null, 2)
       );
 
       // 🔧 CORRECTION: Utiliser extension-webhook
@@ -703,7 +740,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(deepAnalysisPayload),
+          body: JSON.stringify(webhookData),
         }
       );
 
@@ -715,9 +752,9 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
       if (response.ok) {
         const result = await response.json();
-        console.log("✅ Deep analysis envoyée vers n8n:", result);
-        console.log("🔄 Démarrage polling pour récupérer les résultats...");
-        // Démarrer le polling pour récupérer les résultats
+        console.log("✅ Real extension data sent to n8n:", result);
+        console.log("🔄 Démarrage polling avec l'ID réel...");
+        // Démarrer le polling avec l'ID réel
         this.pollForDeepResults(url, quickAnalysis);
       } else {
         const errorText = await response.text();
@@ -741,114 +778,231 @@ Répondez UNIQUEMENT avec ce format JSON exact:
     }
   }
 
-  // 🆕 POLLING POUR RÉSULTATS DEEP ANALYSIS
-  async pollForDeepResults(url, quickAnalysis, maxAttempts = 10) {
-    console.log("🔄 Polling pour résultats deep analysis...");
+  // 🧪 POLLING SPÉCIAL POUR TEST AVEC ID MOCK
+  async pollForTestResults(url, quickAnalysis, maxAttempts = 10) {
+    console.log("🧪 TEST POLLING avec ID mock...");
+    console.log(`✅ Test Extension ID: test-login-token`);
+
+    const API_URL =
+      "https://soc-cert-extension.vercel.app/api/extension-result";
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        await new Promise((resolve) => setTimeout(resolve, 3000)); // Attendre 3s
+        // Attendre 3s avant la tentative (sauf la première)
+        if (attempt > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
 
-        // 🔧 Essayer plusieurs formats de recherche
-        const searchUrls = [
-          `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=soc-cert-guardian&format=cve`,
-          `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=mapped&format=cve`,
-          `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=soc-cert-guardian`,
-          `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=mapped`,
-        ];
+        // ✅ UTILISER L'ID DE TEST
+        const apiUrl = `${API_URL}?extensionId=test-login-token&format=cve`;
 
-        for (const searchUrl of searchUrls) {
-          console.log(
-            `🔍 Tentative ${attempt}/${maxAttempts} - Recherche: ${searchUrl}`
-          );
+        console.log(`🔍 TEST Tentative ${attempt}/${maxAttempts} - ${apiUrl}`);
 
-          const response = await fetch(searchUrl);
+        const response = await fetch(apiUrl);
 
-          if (response.ok) {
-            const rawText = await response.text();
-            console.log(`📊 Réponse polling RAW:`, rawText);
+        if (response.ok) {
+          const rawText = await response.text();
+          console.log(`📊 TEST Réponse polling RAW:`, rawText);
 
-            let data;
-            try {
-              data = JSON.parse(rawText);
-              console.log(`📊 Réponse polling JSON:`, data);
-            } catch (e) {
-              console.log(`❌ Erreur parsing JSON:`, e);
-              console.log(`📄 Raw response:`, rawText);
-              continue; // Essayer la tentative suivante
-            }
-
-            // 🔍 DEBUG DÉTAILLÉ de la réponse n8n
-            console.log(`🔍 DEBUG n8n Response:`);
-            console.log(`  - success: ${data.success}`);
-            console.log(
-              `  - results: ${
-                data.results ? data.results.length : "null/undefined"
-              }`
-            );
-            console.log(
-              `  - result: ${data.result ? "existe" : "null/undefined"}`
-            );
-            console.log(`  - extensionId: ${data.extensionId}`);
-            console.log(`  - timestamp: ${data.timestamp}`);
-            console.log(`  - debug info:`, data.debug);
-            console.log(`  - FULL OBJECT KEYS:`, Object.keys(data));
-            console.log(`  - FULL OBJECT:`, JSON.stringify(data, null, 2));
-
-            if (data.results) {
-              console.log(`  - results[0]:`, data.results[0]);
-            }
-            if (data.result) {
-              console.log(`  - result content:`, data.result);
-            }
-
-            // ✅ Support des deux formats d'API
-            let resultData = null;
-            let hasResults = false;
-
-            // Format ANCIEN : {success: true, results: [...]}
-            if (data.success && data.results && data.results.length > 0) {
-              console.log(
-                "✅ Deep analysis résultats trouvés (format ancien)!"
-              );
-              resultData = data.results[0];
-              hasResults = true;
-            }
-            // Format NOUVEAU : {result: {...}}
-            else if (data.result && data.result !== null) {
-              console.log(
-                "✅ Deep analysis résultats trouvés (format nouveau)!"
-              );
-              resultData = data.result;
-              hasResults = true;
-            }
-
-            if (hasResults && resultData) {
-              console.log("🎉 Données trouvées:", resultData);
-
-              // Émettre un événement pour mettre à jour l'UI
-              window.dispatchEvent(
-                new CustomEvent("deepAnalysisUpdate", {
-                  detail: {
-                    url: url,
-                    deepResults: resultData,
-                    attempt: attempt,
-                  },
-                })
-              );
-
-              return resultData;
-            }
-          } else {
-            // 🔍 DEBUG pour erreurs HTTP
-            console.log(`❌ Erreur HTTP ${response.status} sur: ${searchUrl}`);
-            const errorText = await response.text();
-            console.log(`❌ Détail erreur:`, errorText);
+          let data;
+          try {
+            data = JSON.parse(rawText);
+            console.log(`📊 TEST Réponse polling JSON:`, data);
+          } catch (e) {
+            console.log(`❌ Erreur parsing JSON:`, e);
+            console.log(`📄 Raw response:`, rawText);
+            continue; // Essayer la tentative suivante
           }
+
+          // 🔍 DEBUG DÉTAILLÉ de la réponse n8n TEST
+          console.log(`🧪 TEST DEBUG n8n Response:`);
+          console.log(`  - success: ${data.success}`);
+          console.log(
+            `  - results: ${
+              data.results ? data.results.length : "null/undefined"
+            }`
+          );
+          console.log(
+            `  - result: ${data.result ? "existe" : "null/undefined"}`
+          );
+          console.log(`  - extensionId: ${data.extensionId}`);
+          console.log(`  - timestamp: ${data.timestamp}`);
+          console.log(`  - debug info:`, data.debug);
+          console.log(`  - FULL OBJECT KEYS:`, Object.keys(data));
+          console.log(`  - FULL OBJECT:`, JSON.stringify(data, null, 2));
+
+          if (data.results) {
+            console.log(`  - results[0]:`, data.results[0]);
+          }
+          if (data.result) {
+            console.log(`  - result content:`, data.result);
+          }
+
+          // ✅ Support des deux formats d'API
+          let resultData = null;
+          let hasResults = false;
+
+          // Format ANCIEN : {success: true, results: [...]}
+          if (data.success && data.results && data.results.length > 0) {
+            console.log(
+              "🧪 TEST: Deep analysis résultats trouvés (format ancien)!"
+            );
+            resultData = data.results[0];
+            hasResults = true;
+          }
+          // Format NOUVEAU : {result: {...}}
+          else if (data.result && data.result !== null) {
+            console.log(
+              "🧪 TEST: Deep analysis résultats trouvés (format nouveau)!"
+            );
+            resultData = data.result;
+            hasResults = true;
+          }
+
+          if (hasResults && resultData) {
+            console.log("🎉 TEST: Données trouvées:", resultData);
+            console.log("✅ TEST RÉUSSI: Le format mock fonctionne!");
+
+            // Émettre un événement pour mettre à jour l'UI
+            window.dispatchEvent(
+              new CustomEvent("deepAnalysisUpdate", {
+                detail: {
+                  url: url,
+                  deepResults: resultData,
+                  attempt: attempt,
+                  isTest: true,
+                },
+              })
+            );
+
+            return resultData;
+          }
+        } else {
+          // 🔍 DEBUG pour erreurs HTTP
+          console.log(`❌ TEST Erreur HTTP ${response.status} sur: ${apiUrl}`);
+          const errorText = await response.text();
+          console.log(`❌ TEST Détail erreur:`, errorText);
         }
 
         console.log(
-          `🔄 Tentative ${attempt}/${maxAttempts} - Aucun résultat trouvé`
+          `⏳ TEST Tentative ${attempt}/${maxAttempts} - Aucun résultat, attente...`
+        );
+      } catch (error) {
+        console.log(
+          `❌ TEST Erreur polling tentative ${attempt}:`,
+          error.message
+        );
+      }
+    }
+
+    console.log("⏱️ TEST Timeout - Format mock test terminé");
+    return null;
+  }
+
+  // 🆕 POLLING POUR RÉSULTATS DEEP ANALYSIS
+  async pollForDeepResults(url, quickAnalysis, maxAttempts = 10) {
+    console.log("🔄 Polling pour résultats deep analysis...");
+    console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
+
+    const API_URL =
+      "https://soc-cert-extension.vercel.app/api/extension-result";
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // Attendre 3s avant la tentative (sauf la première)
+        if (attempt > 1) {
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+
+        // ✅ UNE SEULE URL avec l'ID réel
+        const apiUrl = `${API_URL}?extensionId=${encodeURIComponent(
+          this.extensionId
+        )}&format=cve`;
+
+        console.log(`🔍 Tentative ${attempt}/${maxAttempts} - ${apiUrl}`);
+
+        const response = await fetch(apiUrl);
+
+        if (response.ok) {
+          const rawText = await response.text();
+          console.log(`📊 Réponse polling RAW:`, rawText);
+
+          let data;
+          try {
+            data = JSON.parse(rawText);
+            console.log(`📊 Réponse polling JSON:`, data);
+          } catch (e) {
+            console.log(`❌ Erreur parsing JSON:`, e);
+            console.log(`📄 Raw response:`, rawText);
+            continue; // Essayer la tentative suivante
+          }
+
+          // 🔍 DEBUG DÉTAILLÉ de la réponse n8n
+          console.log(`🔍 DEBUG n8n Response:`);
+          console.log(`  - success: ${data.success}`);
+          console.log(
+            `  - results: ${
+              data.results ? data.results.length : "null/undefined"
+            }`
+          );
+          console.log(
+            `  - result: ${data.result ? "existe" : "null/undefined"}`
+          );
+          console.log(`  - extensionId: ${data.extensionId}`);
+          console.log(`  - timestamp: ${data.timestamp}`);
+          console.log(`  - debug info:`, data.debug);
+          console.log(`  - FULL OBJECT KEYS:`, Object.keys(data));
+          console.log(`  - FULL OBJECT:`, JSON.stringify(data, null, 2));
+
+          if (data.results) {
+            console.log(`  - results[0]:`, data.results[0]);
+          }
+          if (data.result) {
+            console.log(`  - result content:`, data.result);
+          }
+
+          // ✅ Support des deux formats d'API
+          let resultData = null;
+          let hasResults = false;
+
+          // Format ANCIEN : {success: true, results: [...]}
+          if (data.success && data.results && data.results.length > 0) {
+            console.log("✅ Deep analysis résultats trouvés (format ancien)!");
+            resultData = data.results[0];
+            hasResults = true;
+          }
+          // Format NOUVEAU : {result: {...}}
+          else if (data.result && data.result !== null) {
+            console.log("✅ Deep analysis résultats trouvés (format nouveau)!");
+            resultData = data.result;
+            hasResults = true;
+          }
+
+          if (hasResults && resultData) {
+            console.log("🎉 Données trouvées:", resultData);
+
+            // Émettre un événement pour mettre à jour l'UI
+            window.dispatchEvent(
+              new CustomEvent("deepAnalysisUpdate", {
+                detail: {
+                  url: url,
+                  deepResults: resultData,
+                  attempt: attempt,
+                },
+              })
+            );
+
+            return resultData;
+          }
+        } else {
+          // 🔍 DEBUG pour erreurs HTTP
+          console.log(`❌ Erreur HTTP ${response.status} sur: ${apiUrl}`);
+          const errorText = await response.text();
+          console.log(`❌ Détail erreur:`, errorText);
+        }
+
+        console.log(
+          `⏳ Tentative ${attempt}/${maxAttempts} - Aucun résultat, attente...`
         );
       } catch (error) {
         console.log(`❌ Erreur polling tentative ${attempt}:`, error.message);

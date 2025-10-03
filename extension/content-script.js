@@ -3,6 +3,298 @@ console.log("🔍 SOC-CERT Content Script loaded on:", window.location.href);
 
 // État de l'analyse
 let pageAnalysis = null;
+let aiAnalysisTriggered = false;
+
+// 🆕 CONNEXION AU SYSTÈME AI
+async function initializeAIConnection() {
+  try {
+    // Attendre que ai-helper soit chargé
+    let attempts = 0;
+    while (!window.socAI && attempts < 20) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (window.socAI) {
+      console.log("✅ AI Helper connected to content script");
+      await window.socAI.initialize();
+
+      // 🎯 DÉCLENCHEMENT AUTOMATIQUE DE L'ANALYSE
+      if (!aiAnalysisTriggered && shouldAnalyzePage()) {
+        console.log("🚀 Auto-triggering page analysis...");
+        aiAnalysisTriggered = true;
+        await triggerAutoAnalysis();
+      }
+    } else {
+      console.log("⚠️ AI Helper not available in content script");
+    }
+  } catch (error) {
+    console.log("❌ Error initializing AI connection:", error);
+  }
+}
+
+// 🆕 VÉRIFIER SI LA PAGE DOIT ÊTRE ANALYSÉE
+function shouldAnalyzePage() {
+  const url = window.location.href;
+
+  // Ne pas analyser les pages d'extension ou système
+  if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
+    return false;
+  }
+
+  // Ne pas analyser les pages locales de développement
+  if (url.includes("localhost") || url.includes("127.0.0.1")) {
+    return false;
+  }
+
+  // Analyser toutes les autres pages HTTPS
+  return url.startsWith("https://");
+}
+
+// 🆕 DÉCLENCHEMENT AUTOMATIQUE DE L'ANALYSE RÉELLE
+async function triggerAutoAnalysis() {
+  try {
+    const url = window.location.href;
+
+    console.log("🚨 Starting REAL security alert detection for:", url);
+
+    // 🎯 DÉTECTER LES VRAIES ALERTES DE SÉCURITÉ
+    const realSecurityAlerts = detectRealSecurityAlerts();
+
+    if (realSecurityAlerts.length > 0) {
+      console.log("🚨 SECURITY ALERTS DETECTED:", realSecurityAlerts);
+
+      // 🎯 ENVOYER DIRECTEMENT LES ALERTES RÉELLES À N8N
+      await sendRealAlertsToN8N(url, realSecurityAlerts);
+    } else {
+      console.log("✅ No security alerts detected on this page");
+    }
+  } catch (error) {
+    console.log("❌ Real security detection error:", error);
+  }
+}
+
+// 🚨 DÉTECTER LES VRAIES ALERTES DE SÉCURITÉ SUR LA PAGE
+function detectRealSecurityAlerts() {
+  const alerts = [];
+
+  // 🔍 1. DÉTECTION DE FORMULAIRES NON SÉCURISÉS
+  const unsecureFormElements = document.querySelectorAll(
+    'form:not([action^="https://"])'
+  );
+  if (unsecureFormElements.length > 0) {
+    alerts.push({
+      type: "insecure_form",
+      severity: "HIGH",
+      description: `${unsecureFormElements.length} form(s) submitting to non-HTTPS endpoints`,
+      elements: Array.from(unsecureFormElements).map((form) => ({
+        action: form.action || "no action specified",
+        method: form.method || "GET",
+        hasPasswordFields:
+          form.querySelectorAll('input[type="password"]').length > 0,
+      })),
+    });
+  }
+
+  // 🔍 2. DÉTECTION DE SCRIPTS EXTERNES SUSPECTS
+  const externalScripts = document.querySelectorAll("script[src]");
+  const suspiciousScripts = Array.from(externalScripts).filter((script) => {
+    const src = script.src.toLowerCase();
+    return (
+      src.includes("eval") ||
+      src.includes("obfuscat") ||
+      src.match(/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/) || // IP addresses
+      src.includes("bit.ly") ||
+      src.includes("tinyurl") || // URL shorteners
+      !src.startsWith("https://")
+    );
+  });
+
+  if (suspiciousScripts.length > 0) {
+    alerts.push({
+      type: "suspicious_scripts",
+      severity: "MEDIUM",
+      description: `${suspiciousScripts.length} suspicious external script(s) detected`,
+      scripts: suspiciousScripts.map((script) => script.src),
+    });
+  }
+
+  // 🔍 3. DÉTECTION DE CONTENU MIXTE (HTTP sur HTTPS)
+  if (window.location.protocol === "https:") {
+    const mixedContent = document.querySelectorAll(
+      'img[src^="http:"], iframe[src^="http:"], script[src^="http:"]'
+    );
+    if (mixedContent.length > 0) {
+      alerts.push({
+        type: "mixed_content",
+        severity: "MEDIUM",
+        description: `${mixedContent.length} insecure resource(s) loaded over HTTP on HTTPS page`,
+        resources: Array.from(mixedContent).map((el) => ({
+          type: el.tagName.toLowerCase(),
+          src: el.src,
+        })),
+      });
+    }
+  }
+
+  // 🔍 4. DÉTECTION D'IFRAMES SUSPECTS
+  const iframes = document.querySelectorAll("iframe");
+  const suspiciousIframes = Array.from(iframes).filter((iframe) => {
+    const src = iframe.src.toLowerCase();
+    return (
+      !src.startsWith("https://") ||
+      src.includes("javascript:") ||
+      iframe.hasAttribute("srcdoc")
+    );
+  });
+
+  if (suspiciousIframes.length > 0) {
+    alerts.push({
+      type: "suspicious_iframes",
+      severity: "HIGH",
+      description: `${suspiciousIframes.length} potentially malicious iframe(s) detected`,
+      iframes: suspiciousIframes.map((iframe) => ({
+        src: iframe.src,
+        hasJavaScript: iframe.src.includes("javascript:"),
+        hasSrcDoc: iframe.hasAttribute("srcdoc"),
+      })),
+    });
+  }
+
+  // 🔍 5. DÉTECTION DE REDIRECTIONS AUTOMATIQUES SUSPECTES
+  const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
+  if (metaRefresh) {
+    const content = metaRefresh.getAttribute("content");
+    const redirectTime = parseInt(content.split(";")[0]);
+    if (redirectTime < 5) {
+      // Redirection rapide = suspect
+      alerts.push({
+        type: "automatic_redirect",
+        severity: "MEDIUM",
+        description: `Automatic redirect detected in ${redirectTime} seconds`,
+        redirectContent: content,
+      });
+    }
+  }
+
+  // 🔍 6. DÉTECTION DE TENTATIVES DE PHISHING
+  const phishingIndicators = [
+    "enter your password",
+    "verify your account",
+    "account suspended",
+    "click here immediately",
+    "urgent action required",
+  ];
+
+  const bodyText = document.body.textContent.toLowerCase();
+  const foundPhishingText = phishingIndicators.filter((indicator) =>
+    bodyText.includes(indicator)
+  );
+
+  if (foundPhishingText.length >= 2) {
+    alerts.push({
+      type: "phishing_indicators",
+      severity: "HIGH",
+      description: `Multiple phishing indicators found: ${foundPhishingText.join(
+        ", "
+      )}`,
+      indicators: foundPhishingText,
+    });
+  }
+
+  return alerts;
+}
+
+// 🚨 ENVOYER LES VRAIES ALERTES À N8N
+async function sendRealAlertsToN8N(url, securityAlerts) {
+  try {
+    console.log("📡 Sending REAL security alerts to n8n...");
+
+    const payload = {
+      extensionId: window.socAI.extensionId,
+      url: url,
+      timestamp: new Date().toISOString(),
+      alertType: "real_security_detection",
+      alerts: securityAlerts,
+      pageContext: {
+        title: document.title,
+        domain: window.location.hostname,
+        protocol: window.location.protocol,
+        userAgent: navigator.userAgent,
+        referrer: document.referrer || "direct",
+      },
+      riskAssessment: calculateOverallRisk(securityAlerts),
+    };
+
+    console.log("📦 Real alerts payload:", JSON.stringify(payload, null, 2));
+
+    const response = await fetch(
+      "https://soc-cert-extension.vercel.app/api/extension-webhook",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (response.ok) {
+      const result = await response.json();
+      console.log("✅ Real alerts sent to n8n:", result);
+
+      // Notifier le background script
+      chrome.runtime.sendMessage({
+        action: "real_security_alerts_sent",
+        url: url,
+        alertCount: securityAlerts.length,
+        payload: payload,
+      });
+    } else {
+      console.log("❌ Error sending real alerts:", response.status);
+    }
+  } catch (error) {
+    console.error("❌ Error sending real alerts to n8n:", error);
+  }
+}
+
+// 📊 CALCULER LE RISQUE GLOBAL BASÉ SUR LES VRAIES ALERTES
+function calculateOverallRisk(alerts) {
+  let riskScore = 0;
+  let maxSeverity = "LOW";
+
+  alerts.forEach((alert) => {
+    switch (alert.severity) {
+      case "HIGH":
+        riskScore += 40;
+        maxSeverity = "HIGH";
+        break;
+      case "MEDIUM":
+        riskScore += 20;
+        if (maxSeverity !== "HIGH") maxSeverity = "MEDIUM";
+        break;
+      case "LOW":
+        riskScore += 10;
+        break;
+    }
+  });
+
+  return {
+    score: Math.min(riskScore, 100),
+    severity: maxSeverity,
+    alertCount: alerts.length,
+    summary: `${alerts.length} real security issues detected with ${maxSeverity} severity`,
+  };
+}
+
+// 🆕 INITIALISATION AUTOMATIQUE
+// Attendre le chargement de la page puis initialiser
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializeAIConnection);
+} else {
+  // Page déjà chargée
+  setTimeout(initializeAIConnection, 500);
+}
 
 // Écoute les messages du popup et background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

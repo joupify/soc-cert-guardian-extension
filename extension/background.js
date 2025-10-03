@@ -24,10 +24,95 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       handleSecurityEvent(request.event);
       break;
 
+    case "auto_analysis_complete":
+      handleAutoAnalysisComplete(request, sender);
+      break;
+
+    case "real_security_alerts_sent":
+      handleRealSecurityAlerts(request, sender);
+      break;
+
     default:
       console.log("Unknown action:", request.action);
   }
 });
+
+// 🆕 Gérer les analyses automatiques complétées
+function handleAutoAnalysisComplete(request, sender) {
+  console.log("✅ Auto-analysis completed for:", request.url);
+  console.log("🔍 Analysis result:", request.result);
+
+  // Incrémenter le compteur d'analyses
+  chrome.storage.local.get(["analysis_count"], (result) => {
+    const newCount = (result.analysis_count || 0) + 1;
+    chrome.storage.local.set({ analysis_count: newCount });
+    console.log(`📊 Total analyses performed: ${newCount}`);
+  });
+
+  // Optionnel: Mettre à jour l'icône si menace détectée
+  if (request.result?.riskScore > 70) {
+    chrome.action.setBadgeText({
+      text: "!",
+      tabId: sender.tab?.id,
+    });
+    chrome.action.setBadgeBackgroundColor({
+      color: "#ff4444",
+      tabId: sender.tab?.id,
+    });
+  } else if (request.result?.riskScore > 40) {
+    chrome.action.setBadgeText({
+      text: "?",
+      tabId: sender.tab?.id,
+    });
+    chrome.action.setBadgeBackgroundColor({
+      color: "#ffaa00",
+      tabId: sender.tab?.id,
+    });
+  }
+}
+
+// 🚨 Gérer les vraies alertes de sécurité
+function handleRealSecurityAlerts(request, sender) {
+  console.log("🚨 REAL SECURITY ALERTS received for:", request.url);
+  console.log("🔍 Alert count:", request.alertCount);
+  console.log("📊 Payload sent to n8n:", request.payload);
+
+  // Incrémenter le compteur d'alertes réelles
+  chrome.storage.local.get(["real_alerts_count"], (result) => {
+    const newCount = (result.real_alerts_count || 0) + request.alertCount;
+    chrome.storage.local.set({
+      real_alerts_count: newCount,
+      last_real_alert: {
+        url: request.url,
+        timestamp: new Date().toISOString(),
+        alertCount: request.alertCount,
+      },
+    });
+    console.log(`📊 Total real alerts sent: ${newCount}`);
+  });
+
+  // Badge rouge pour alertes réelles
+  if (request.alertCount > 0) {
+    chrome.action.setBadgeText({
+      text: request.alertCount.toString(),
+      tabId: sender.tab?.id,
+    });
+    chrome.action.setBadgeBackgroundColor({
+      color: "#cc0000", // Rouge foncé pour alertes réelles
+      tabId: sender.tab?.id,
+    });
+
+    // Notification système pour alertes critiques
+    const highSeverityAlerts = request.payload.alerts.filter(
+      (alert) => alert.severity === "HIGH"
+    );
+    if (highSeverityAlerts.length > 0) {
+      console.log(
+        `🚨 ${highSeverityAlerts.length} HIGH SEVERITY alerts detected!`
+      );
+    }
+  }
+}
 
 // Écoute les changements d'onglets pour analyse automatique
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {

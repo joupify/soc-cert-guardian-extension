@@ -7,5 +7,7 @@
     "dev": "vercel dev",
     "build": "mkdir public; cp -r api assets icons *.js *.html manifest.json public/"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
+  }
 }

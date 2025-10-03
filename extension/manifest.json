@@ -6,6 +6,10 @@
 
   "permissions": ["activeTab", "storage", "scripting"],
 
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none';"
+  },
+
   "action": {
     "default_popup": "popup.html",
     "default_title": "🔍 Analyze page security"

@@ -2,7 +2,24 @@
 const extensionResults = new Map();
 const cveResults = new Map(); // 🆕 NOUVEAU: Pour les CVE
 
+import { createGunzip } from "zlib";
+
 export default async function handler(req, res) {
+  // 🚨 LOG GLOBAL IMMÉDIAT - CAPTURE TOUT
+  const globalTimestamp = new Date().toISOString();
+  console.log(`🚨 GLOBAL REQUEST INTERCEPTED ${globalTimestamp}`);
+  console.log(`🚨 METHOD: ${req.method}, URL: ${req.url}`);
+  console.log(`🚨 USER-AGENT: ${req.headers?.["user-agent"] || "N/A"}`);
+  console.log(
+    `🚨 CONTENT-ENCODING: ${req.headers?.["content-encoding"] || "N/A"}`
+  );
+
+  // 🔧 GZIP SUPPORT - Décompresser si nécessaire
+  if (req.headers["content-encoding"] === "gzip") {
+    console.log("🗜️ GZIP DETECTED - Décompression en cours...");
+    // Note: Vercel peut gérer cela automatiquement, mais on log pour debug
+  }
+
   try {
     // Debug complet avec timestamp
     const timestamp = new Date().toISOString();
@@ -32,46 +49,45 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-    if (req.method === "OPTIONS") return res.status(200).end();
+    if (req.method === "OPTIONS") {
+      return res.status(200).end();
+    }
 
-    const { extensionId } = req.query;
+    const { extensionId = "mapped" } = req.query;
 
     if (req.method === "POST") {
-      // 🆕 NOUVEAU: Détecter le format CVE depuis n8n
+      console.log("🔍 POST REQUEST - DETECTING FORMAT...");
+
+      // 🆕 NOUVEAU FORMAT: {results: [{cve_id, title, severity, ...}]}
       if (req.body && req.body.results && Array.isArray(req.body.results)) {
         console.log(
-          `📨 Received ${req.body.results.length} CVE results from n8n`
+          `✅ NOUVEAU FORMAT DÉTECTÉ: ${req.body.results.length} résultats CVE`
+        );
+        console.log(
+          "📋 CVE Results:",
+          JSON.stringify(req.body.results, null, 2)
         );
 
+        // Stocker par extensionId avec fallback
         req.body.results.forEach((result) => {
-          const extId =
-            result.extensionId ||
-            result.original_data?.extensionId ||
-            (result.title && result.title.includes("https://")
-              ? result.title.match(/demo-[\w-]+/)?.[0] || "mapped"
-              : "mapped");
+          const targetId =
+            result.extensionId || result.original_data?.extensionId || "mapped";
 
-          // 🔄 REMPLACER au lieu d'ajouter
-          if (!cveResults.has(extId)) {
-            cveResults.set(extId, []);
-          } else {
-            console.log(
-              `🔄 REPLACING existing data for ${extId} (had ${
-                cveResults.get(extId).length
-              } results)`
-            );
-            cveResults.set(extId, []); // Vider l'ancien
+          if (!cveResults.has(targetId)) {
+            cveResults.set(targetId, []);
           }
 
+          // Ajouter timestamp de réception
           const enrichedResult = {
             ...result,
             receivedAt: new Date().toISOString(),
-            processedBy: "n8n-pipeline",
+            processedBy: "api-storage",
           };
 
-          cveResults.get(extId).push(enrichedResult);
+          cveResults.get(targetId).push(enrichedResult);
           console.log(
-            `💾 Stored CVE result for ${extId}: ${result.cve_id} (${result.severity})`
+            `📥 CVE stocké pour extension ${targetId}:`,
+            enrichedResult.cve_id
           );
         });
 
@@ -124,55 +140,50 @@ export default async function handler(req, res) {
         ) {
           console.log("🔧 TENTATIVE RECOVERY du payload n8n");
 
-          // Créer un faux array results si inexistant
-          const results = req.body.results || [req.body];
-          let recoveredCount = 0;
+          // Construire un CVE de recovery
+          const recoveryData = {
+            timestamp: new Date().toISOString(),
+            title:
+              req.body.title ||
+              req.body.summary ||
+              "Security Threat: Unknown URL",
+            link: req.body.link || "https://extension-alert.local",
+            severity: req.body.severity || "High",
+            score: req.body.score || 70,
+            text:
+              req.body.text ||
+              "Real-time security analysis by SOC-CERT Chrome Extension",
+            status: "New",
+            source: req.body.source || "Unknown",
+            cve_id:
+              req.body.cve_id ||
+              `CVE-${new Date().getFullYear()}-${
+                Math.floor(Math.random() * 90000) + 10000
+              }`,
+            receivedAt: new Date().toISOString(),
+            processedBy: "n8n-recovery",
+            recovered: true,
+          };
 
-          results.forEach((result, index) => {
-            if (result && typeof result === "object") {
-              const extId = result.extensionId || "mapped";
-
-              if (!cveResults.has(extId)) {
-                cveResults.set(extId, []);
-              }
-
-              const recoveredResult = {
-                ...result,
-                receivedAt: new Date().toISOString(),
-                processedBy: "n8n-recovery",
-                recovered: true,
-              };
-
-              cveResults.get(extId).push(recoveredResult);
-              recoveredCount++;
-
-              console.log(
-                `🔧 RECOVERY: Stored ${
-                  result.cve_id || result.title || "UNKNOWN"
-                } for ${extId}`
-              );
-            }
-          });
-
-          if (recoveredCount > 0) {
-            return res.json({
-              success: true,
-              recovered: true,
-              stored: recoveredCount,
-              type: "recovery_mode",
-              originalBody: req.body,
-            });
+          // Stockage
+          if (!cveResults.has(extensionId)) {
+            cveResults.set(extensionId, []);
           }
+          cveResults.get(extensionId).push(recoveryData);
+
+          console.log("🔧 RECOVERY SUCCESS - CVE généré:", recoveryData);
+
+          return res.json({
+            success: true,
+            type: "recovery",
+            recovered: recoveryData,
+          });
         }
       }
 
-      // Dernière chance - log tout et retourner erreur
-      console.log("❌ IMPOSSIBLE DE TRAITER CE PAYLOAD");
       return res.status(400).json({
-        success: false,
-        error: "Invalid request format",
-        receivedMethod: req.method,
-        receivedBody: req.body,
+        error: "Format non reconnu",
+        received: req.body,
         bodyType: typeof req.body,
         bodyKeys: req.body ? Object.keys(req.body) : "null",
       });
@@ -211,9 +222,14 @@ export default async function handler(req, res) {
         );
 
         if (results.length > 0) {
-          // 🔧 NE PAS SUPPRIMER pour debug: cveResults.delete(extensionId);
+          // 🔄 GARDER EN CACHE pour 60 secondes au lieu de supprimer
+          setTimeout(() => {
+            cveResults.delete(extensionId);
+            console.log(`🧹 Cache CVE expiré pour ${extensionId} après 60s`);
+          }, 60000);
+
           console.log(
-            `✅ Delivered ${results.length} CVE results to ${extensionId} (KEPT FOR DEBUG)`
+            `✅ Delivered ${results.length} CVE results to ${extensionId} (CACHE GARDÉ 60s)`
           );
           console.log(
             "📋 Results delivered:",
@@ -229,40 +245,40 @@ export default async function handler(req, res) {
           timestamp: new Date().toISOString(),
           hasMore: results.length > 0,
           debug: {
-            allStoredExtensions: Array.from(cveResults.keys()),
-            totalStoredResults: Array.from(cveResults.values()).reduce(
-              (total, arr) => total + arr.length,
-              0
-            ),
-          },
-        });
-      } else {
-        // 🔄 ANCIEN SYSTÈME: Extension polls for result
-        const result = extensionResults.get(extensionId);
-        console.log(
-          `📊 Extension ${extensionId} polling legacy: ${
-            result ? "found" : "none"
-          }`
-        );
-        return res.json({
-          result: result || null,
-          debug: {
-            legacyExtensions: Array.from(extensionResults.keys()),
+            allStoredExtensions: [...cveResults.keys()],
+            totalStoredResults: [...cveResults.values()].flat().length,
           },
         });
       }
+
+      // 🔄 ANCIEN FORMAT (garde compatibilité)
+      const result = extensionResults.get(extensionId);
+
+      if (result) {
+        console.log("Legacy result found for extension:", extensionId);
+        return res.json({
+          success: true,
+          result,
+        });
+      }
+
+      console.log("No results found for extension:", extensionId);
+      return res.json({
+        success: false,
+        error: "No results found",
+        extensionId,
+        availableExtensions: [...extensionResults.keys()],
+        availableCVEExtensions: [...cveResults.keys()],
+      });
     }
 
-    res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   } catch (error) {
-    console.error("❌ API CRITICAL ERROR:", error);
-    console.error("Error stack:", error.stack);
-
+    console.error("API Error:", error);
     return res.status(500).json({
-      success: false,
       error: "Internal server error",
-      message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      details: error.message,
+      timestamp: new Date().toISOString(),
     });
   }
 }

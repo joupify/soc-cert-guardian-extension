@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 SOC-CERT Extension Live Demo - Real URL Analysis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #2d2d5a 100%);
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.05);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 3em;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+        .demo-section {
+            background: rgba(255,255,255,0.08);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .demo-section h3 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        .feature-highlight {
+            background: linear-gradient(45deg, rgba(255,107,107,0.2), rgba(78,205,196,0.2));
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #4ecdc4;
+        }
+        .url-demo {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .threat-level-high { border-left: 4px solid #ff6b6b; }
+        .threat-level-medium { border-left: 4px solid #ffa726; }
+        .threat-level-low { border-left: 4px solid #66bb6a; }
+        .ai-apis {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .ai-api {
+            background: rgba(69,183,209,0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            border: 1px solid rgba(69,183,209,0.5);
+        }
+        .workflow-step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .step-number {
+            background: #4ecdc4;
+            color: #0f0f23;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .cve-example {
+            background: rgba(255,107,107,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 1px solid rgba(255,107,107,0.3);
+        }
+        .btn-demo {
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            color: #0f0f23;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        .btn-demo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78,205,196,0.4);
+        }
+        .chrome-indicator {
+            background: rgba(255,193,7,0.2);
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 SOC-CERT Extension Live Demo</h1>
+        
+        <div class="feature-highlight">
+            <h2>🎯 Real-World AI-Powered Security Analysis</h2>
+            <p>Experience the complete Chrome Built-in AI integration with live threat detection, CVE correlation, and progressive analysis using all 5 Chrome AI APIs.</p>
+        </div>
+
+        <div class="demo-grid">
+            <div class="demo-section">
+                <h3>🧠 Chrome AI APIs Integration</h3>
+                <div class="ai-apis">
+                    <div class="ai-api">🚀 Gemini Nano</div>
+                    <div class="ai-api">📝 Summarizer</div>
+                    <div class="ai-api">✍️ Writer</div>
+                    <div class="ai-api">🌐 Translator</div>
+                    <div class="ai-api">🔍 Proofreader</div>
+                </div>
+                <p>All 5 Chrome Built-in AI APIs working together for comprehensive security analysis with intelligent fallbacks and progressive enhancement.</p>
+            </div>
+
+            <div class="demo-section">
+                <h3>📊 Live CVE Correlation</h3>
+                <div class="cve-example">
+                    <strong>Real CVE Database:</strong> 1400+ vulnerabilities from KEV Catalog<br>
+                    <strong>Example:</strong> CVE-2014-6278 (Shellshock)<br>
+                    <strong>n8n Workflow:</strong> Real-time threat intelligence
+                </div>
+                <p>Connect AI analysis with real-world vulnerability data for actionable security insights.</p>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🔄 Progressive Analysis Workflow</h3>
+            
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div>
+                    <strong>Instant AI Analysis</strong><br>
+                    Gemini Nano provides immediate threat assessment with local processing
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div>
+                    <strong>AI Enhancement</strong><br>
+                    Summarizer, Writer, Translator, and Proofreader refine the analysis
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div>
+                    <strong>Deep CVE Correlation</strong><br>
+                    n8n workflow matches findings with real vulnerability database
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div>
+                    <strong>Comprehensive Report</strong><br>
+                    Complete security analysis with actionable recommendations
+                </div>
+            </div>
+        </div>
+
+        <div class="demo-grid">
+            <div class="demo-section">
+                <h3>🌐 Test URLs</h3>
+                <div class="url-demo threat-level-high">
+                    <strong>Malicious Test:</strong><br>
+                    http://malware.testing.google.test/testing/malware/
+                </div>
+                <div class="url-demo threat-level-medium">
+                    <strong>Suspicious Domain:</strong><br>
+                    http://suspicious-domain-test.com
+                </div>
+                <div class="url-demo threat-level-low">
+                    <strong>Safe Reference:</strong><br>
+                    https://www.google.com
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <h3>📋 How to Test</h3>
+                <div class="chrome-indicator">
+                    <strong>⚡ Chrome Canary Required</strong><br>
+                    Enable chrome://flags/#optimization-guide-on-device-model
+                </div>
+                <ol>
+                    <li>Install SOC-CERT Extension</li>
+                    <li>Navigate to any test URL</li>
+                    <li>Click extension icon</li>
+                    <li>Hit "Analyze Current Page"</li>
+                    <li>Watch progressive analysis in action</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h3>🎯 Expected Results</h3>
+            <div class="feature-highlight">
+                <h4>🚀 Immediate Response (Gemini Nano)</h4>
+                <ul>
+                    <li>Real-time threat level assessment</li>
+                    <li>Security indicators detection</li>
+                    <li>Malware pattern recognition</li>
+                    <li>Phishing attempt identification</li>
+                </ul>
+            </div>
+
+            <div class="feature-highlight">
+                <h4>🔍 Enhanced Analysis (All APIs)</h4>
+                <ul>
+                    <li>Summarized threat overview</li>
+                    <li>Professional security recommendations</li>
+                    <li>Multi-language support</li>
+                    <li>Refined technical analysis</li>
+                </ul>
+            </div>
+
+            <div class="feature-highlight">
+                <h4>📊 Deep Intelligence (CVE Correlation)</h4>
+                <ul>
+                    <li>Matched CVE vulnerabilities</li>
+                    <li>CVSS severity scores</li>
+                    <li>Known exploit information</li>
+                    <li>Mitigation strategies</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 40px 0;">
+            <button class="btn-demo" onclick="window.open('chrome-extension://[your-extension-id]/popup.html', '_blank')">
+                🚀 Launch SOC-CERT Extension
+            </button>
+            <button class="btn-demo" onclick="demonstrateWorkflow()">
+                🔄 Simulate Analysis
+            </button>
+        </div>
+
+        <div id="simulation-results" style="display: none; margin-top: 30px;"></div>
+    </div>
+
+    <script>
+        console.log('🔒 SOC-CERT Demo Page Loaded');
+        console.log('🎯 Ready for Chrome Built-in AI Analysis');
+
+        function demonstrateWorkflow() {
+            const resultsDiv = document.getElementById('simulation-results');
+            resultsDiv.style.display = 'block';
+            resultsDiv.innerHTML = `
+                <div class="demo-section">
+                    <h3>🔄 Simulated Analysis Results</h3>
+                    <div style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px;">
+                        <div style="color: #4ecdc4;">🧠 GEMINI NANO ANALYSIS:</div>
+                        <div style="margin: 10px 0;">
+                            Threat Level: <span style="color: #ff6b6b;">HIGH</span><br>
+                            Indicators: Suspicious JavaScript patterns, potential XSS vulnerabilities<br>
+                            Confidence: 95%
+                        </div>
+                        
+                        <div style="color: #4ecdc4; margin-top: 20px;">📝 AI ENHANCEMENT:</div>
+                        <div style="margin: 10px 0;">
+                            Summarizer: "High-risk malicious website with active exploits"<br>
+                            Writer: "Block immediately, scan system for compromise"<br>
+                            Translator: Multi-language support enabled<br>
+                            Proofreader: Analysis refined and verified
+                        </div>
+                        
+                        <div style="color: #4ecdc4; margin-top: 20px;">🔍 CVE CORRELATION:</div>
+                        <div style="margin: 10px 0;">
+                            Matched CVEs: CVE-2021-44228 (Log4Shell), CVE-2014-6278 (Shellshock)<br>
+                            Severity: Critical (CVSS 10.0)<br>
+                            Source: NIST KEV Catalog
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Simulate real-time updates
+        setTimeout(() => {
+            console.log('📊 Page analysis data available for SOC-CERT extension');
+        }, 1000);
+
+        // Add some dynamic behavior for demo
+        document.addEventListener('DOMContentLoaded', () => {
+            const demoSections = document.querySelectorAll('.demo-section');
+            demoSections.forEach((section, index) => {
+                setTimeout(() => {
+                    section.style.opacity = '0';
+                    section.style.transform = 'translateY(20px)';
+                    section.style.transition = 'all 0.6s ease';
+                    setTimeout(() => {
+                        section.style.opacity = '1';
+                        section.style.transform = 'translateY(0)';
+                    }, 100);
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 
 const RESULTS_PREFIX = "extension-results:";
-const RESULTS_TTL = 3600; // 1 heure
+const RESULTS_TTL = 300; // 5 minutes TTL
 
 export default async function handler(req, res) {
   const timestamp = new Date().toISOString();

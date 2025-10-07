@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 
 const RESULTS_PREFIX = "extension-results:";
-const RESULTS_TTL = 300; // 5 minutes TTL
+const RESULTS_TTL = 3600; // 1 heure
 
 export default async function handler(req, res) {
   const timestamp = new Date().toISOString();
@@ -63,11 +63,25 @@ export default async function handler(req, res) {
         // Ajoute le nouveau
         existing.push(enrichedResult);
 
+        // ✅ TRI PAR TIMESTAMP (PLUS RÉCENT EN PREMIER) + LIMITE À 10
+        const sorted = existing
+          .sort((a, b) => {
+            const timeA = new Date(a.timestamp || a.receivedAt || 0).getTime();
+            const timeB = new Date(b.timestamp || b.receivedAt || 0).getTime();
+            return timeB - timeA; // Plus récent d'abord
+          })
+          .slice(0, 10); // Garde les 10 plus récents
+
         // Sauvegarde avec TTL
-        await kv.set(key, existing, { ex: RESULTS_TTL });
+        await kv.set(key, sorted, { ex: RESULTS_TTL });
 
         storedExtensions.add(targetId);
         console.log(`📥 CVE stocké pour ${targetId}: ${enrichedResult.cve_id}`);
+        console.log(
+          `   Total résultats: ${sorted.length}, Plus récent: ${
+            sorted[0].link || sorted[0].url
+          }`
+        );
       }
 
       return res.json({
@@ -83,14 +97,26 @@ export default async function handler(req, res) {
 
       if (format === "cve") {
         const key = `${RESULTS_PREFIX}${extensionId}`;
-        const results = (await kv.get(key)) || [];
+        let results = (await kv.get(key)) || [];
 
         console.log(
           `📊 Extension ${extensionId} polling CVE: ${results.length} results`
         );
 
-        if (results.length > 0) {
-          console.log("✅ Results found:", JSON.stringify(results, null, 2));
+        // ✅ TRI PAR TIMESTAMP (PLUS RÉCENT EN PREMIER)
+        const sortedResults = results.sort((a, b) => {
+          const timeA = new Date(a.timestamp || a.receivedAt || 0).getTime();
+          const timeB = new Date(b.timestamp || b.receivedAt || 0).getTime();
+          return timeB - timeA;
+        });
+
+        if (sortedResults.length > 0) {
+          console.log("✅ Results found (sorted by most recent first):");
+          sortedResults.forEach((r, i) => {
+            console.log(
+              `  ${i}: ${r.link || r.url} - ${r.timestamp || r.receivedAt}`
+            );
+          });
         }
 
         // 🔧 Debug: Liste toutes les clés
@@ -100,15 +126,16 @@ export default async function handler(req, res) {
         return res.json({
           success: true,
           extensionId,
-          results,
-          count: results.length,
+          results: sortedResults, // ✅ Triés par timestamp
+          latestResult: sortedResults[0] || null, // ✅ Le plus récent
+          count: sortedResults.length,
           timestamp,
-          hasMore: results.length > 0,
+          hasMore: sortedResults.length > 1,
           debug: {
             allStoredExtensions: allKeys.map((k) =>
               k.replace(RESULTS_PREFIX, "")
             ),
-            totalStoredResults: results.length,
+            totalStoredResults: sortedResults.length,
           },
         });
       }

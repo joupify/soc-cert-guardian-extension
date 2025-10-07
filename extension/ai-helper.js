@@ -779,7 +779,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
   }
 
   // 🧪 POLLING SPÉCIAL POUR TEST AVEC ID MOCK
-  async pollForTestResults(url, quickAnalysis, maxAttempts = 10) {
+  async pollForTestResults(url, quickAnalysis, maxAttempts = 20) {
     console.log("🧪 TEST POLLING avec ID mock...");
     console.log(`✅ Test Extension ID: test-login-token`);
 
@@ -790,7 +790,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       try {
         // Attendre 3s avant la tentative (sauf la première)
         if (attempt > 1) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
         }
 
         // ✅ UTILISER L'ID DE TEST
@@ -900,7 +900,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
   }
 
   // 🆕 POLLING POUR RÉSULTATS DEEP ANALYSIS
-  async pollForDeepResults(url, quickAnalysis, maxAttempts = 10) {
+  async pollForDeepResults(url, quickAnalysis, maxAttempts = 30) {
     console.log("🔄 Polling pour résultats deep analysis...");
     console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
 
@@ -911,7 +911,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       try {
         // Attendre 3s avant la tentative (sauf la première)
         if (attempt > 1) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 7000));
         }
 
         // ✅ UNE SEULE URL avec l'ID réel

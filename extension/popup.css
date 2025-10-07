@@ -327,3 +327,52 @@ body {
     max-height: 200px;
   }
 }
+
+
+
+.cve-item {
+  padding: 10px;
+  margin: 5px 0;
+  background: #f5f5f5;
+  border-left: 4px solid #4CAF50;
+  border-radius: 4px;
+}
+
+.badge {
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-weight: bold;
+  color: white;
+}
+
+.badge-critical {
+  background: #d32f2f;
+}
+
+.badge-high {
+  background: #f57c00;
+}
+
+.badge-medium {
+  background: #fbc02d;
+  color: #333;
+}
+
+.badge-low {
+  background: #388e3c;
+}
+
+.cve-score {
+  font-weight: 600;
+  color: #666;
+}
+
+.cve-item a {
+  color: #1976d2;
+  text-decoration: none;
+}
+
+.cve-item a:hover {
+  text-decoration: underline;
+}

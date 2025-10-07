@@ -400,21 +400,100 @@ function updateWithDeepResults(deepData) {
         }
       </div>
     </div>
+
+
     
     <div style="margin-bottom: 10px;">
-      <strong>🚨 CVE Correlation:</strong>
-      <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 12px;">
-        ${
-          deepData.deepResults?.cveResults?.length > 0
-            ? deepData.deepResults.cveResults
-                .map(
-                  (cve) => `${cve.id} (${cve.severity}) - ${cve.description}`
-                )
-                .join("<br>")
-            : "No direct CVE matches found"
-        }
-      </div>
-    </div>
+  <strong>🚨 CVE Correlation:</strong>
+  <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 12px;">
+    ${(() => {
+      console.log("🔍 DEBUG CVE Display:", deepData.deepResults);
+
+      // ✅ CAS 1 : CVE direct dans deepResults
+      if (deepData.deepResults?.cve_id) {
+        console.log("✅ CVE found:", deepData.deepResults.cve_id);
+        return `
+          <div class="cve-item">
+            <strong>${deepData.deepResults.cve_id}</strong> 
+            <span class="badge badge-${
+              deepData.deepResults.severity?.toLowerCase() || "critical"
+            }" style="
+              background: ${
+                deepData.deepResults.severity === "Critical"
+                  ? "#ff0000"
+                  : "#ff9900"
+              };
+              color: white;
+              padding: 3px 8px;
+              border-radius: 3px;
+              font-size: 10px;
+              font-weight: bold;
+              margin-left: 8px;
+            ">
+              ${deepData.deepResults.severity || "Critical"}
+            </span>
+            <br>
+            <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
+              deepData.deepResults.score || "N/A"
+            }</span>
+            ${
+              deepData.deepResults.link
+                ? `<br><a href="${deepData.deepResults.link}" target="_blank" style="color: #00aaff; font-size: 11px;">View Details →</a>`
+                : ""
+            }
+          </div>
+        `;
+      }
+
+      // ✅ CAS 2 : Array de results
+      if (deepData.deepResults?.results?.length > 0) {
+        console.log(
+          "✅ CVE results array found:",
+          deepData.deepResults.results.length
+        );
+        return deepData.deepResults.results
+          .map(
+            (cve) => `
+            <div class="cve-item">
+              <strong>${cve.cve_id}</strong> 
+              <span class="badge badge-${
+                cve.severity?.toLowerCase() || "unknown"
+              }">
+                ${cve.severity || "Unknown"}
+              </span>
+              <br>
+              <span class="cve-score">Score: ${cve.score || "N/A"}</span>
+              ${
+                cve.link
+                  ? `<br><a href="${cve.link}" target="_blank">View Details →</a>`
+                  : ""
+              }
+            </div>
+          `
+          )
+          .join("<br>");
+      }
+
+      // ✅ CAS 3 : Array de cveResults
+      if (deepData.deepResults?.cveResults?.length > 0) {
+        console.log(
+          "✅ CVE cveResults array found:",
+          deepData.deepResults.cveResults.length
+        );
+        return deepData.deepResults.cveResults
+          .map((cve) => `${cve.id} (${cve.severity}) - ${cve.description}`)
+          .join("<br>");
+      }
+
+      console.log("❌ No CVE data found in deepResults");
+      return "⏳ Waiting for CVE data...";
+    })()}
+  </div>
+</div>
+
+
+
+
 
     ${
       deepData.deepResults?.aiSummary ||

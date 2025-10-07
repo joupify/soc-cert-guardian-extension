@@ -618,9 +618,17 @@ async function handleContentExtraction(request, sendResponse) {
 // 🆕 FONCTIONS CVE POLLING - VERSION CORRIGÉE
 // =================================================================
 
-// ✅ CORRIGÉ : Utilise extensionId fixe "mapped" au lieu de dynamique
+// ✅ CORRIGÉ : Utilise extensionId dynamique et persistant
 async function sendThreatAlertAndPoll(threatData) {
-  const extensionId = "mapped"; // ← FIXÉ : même ID que n8n utilise
+  // Générer ou récupérer un ID persistant pour cette extension
+  let extensionId = localStorage.getItem("soc-cert-extension-id");
+  if (!extensionId) {
+    extensionId = `ai-helper-${Date.now()}`;
+    localStorage.setItem("soc-cert-extension-id", extensionId);
+    console.log(`🔑 Nouvel ID extension généré: ${extensionId}`);
+  } else {
+    console.log(`🔑 ID extension existant: ${extensionId}`);
+  }
 
   try {
     console.log("📤 Envoi alerte de sécurité:", threatData);

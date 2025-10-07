@@ -4,7 +4,7 @@
   "version": "1.0",
   "description": "AI-powered security analysis using Chrome's built-in AI",
 
-  "permissions": ["activeTab", "storage", "scripting"],
+  "permissions": ["activeTab", "storage", "scripting", "tabs"],
 
   "content_security_policy": {
     "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none';"
@@ -22,7 +22,12 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["ai-mock.js", "ai-helper.js", "content-script.js"]
+      "js": [
+        "ai-mock.js",
+        "ai-helper.js",
+        "content-script.js",
+        "content-alert.js"
+      ]
     }
   ],
 

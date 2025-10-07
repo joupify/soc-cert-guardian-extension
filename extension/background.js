@@ -32,6 +32,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       handleRealSecurityAlerts(request, sender);
       break;
 
+    // 🆕 NOUVEAU CASE POUR OUVRIR POPUP
+    case "openExtensionPopup":
+      console.log("📋 Opening popup (user clicked View Details)");
+      chrome.tabs.create({ url: "popup.html" });
+      sendResponse({ success: true });
+      break;
+
     default:
       console.log("Unknown action:", request.action);
   }
@@ -114,29 +121,48 @@ function handleRealSecurityAlerts(request, sender) {
   }
 }
 
-// Écoute les changements d'onglets pour analyse automatique
+// 🆕 Écoute les changements d'onglets pour analyse automatique + overlay
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  console.log("📍 Tab updated:", tab.url, "status:", changeInfo.status); // ← AJOUTE CE LOG
+
   if (changeInfo.status === "complete" && tab.url) {
     // Analyse automatique en arrière-plan
     performBackgroundAnalysis(tab);
+
+    // 🆕 Vérifie les menaces et affiche overlay
+    if (tab.url.startsWith("http")) {
+      console.log("🎯 Starting threat check for:", tab.url); // ← AJOUTE CE LOG
+
+      setTimeout(() => {
+        checkPageForThreats(tabId, tab.url);
+      }, 1500); // Attends 1.5s que le content script soit prêt
+    }
   }
 });
 
-// Initialisation de l'extension
 async function initializeExtension() {
   console.log("Initializing SOC-CERT extension...");
 
-  // Stocke les données d'initialisation
+  // Lis l'extensionId existant ou crée-le UNE SEULE FOIS
+  const data = await chrome.storage.local.get(["extensionId"]);
+  let extensionId = data.extensionId;
+
+  if (!extensionId) {
+    extensionId = "ai-helper-1759695907502"; // ou "ai-helper-" + Date.now() pour un ID unique
+    await chrome.storage.local.set({ extensionId });
+  }
+
+  // Mets à jour les autres données sans écraser extensionId
   await chrome.storage.local.set({
     installed_at: new Date().toISOString(),
     version: "1.0",
-    analysis_count: 0,
+    analysis_count: data.analysis_count || 0,
     epp_status: "pending",
+    // NE PAS écraser extensionId ici
   });
 
-  console.log("SOC-CERT initialization complete");
+  console.log("SOC-CERT initialization complete, extensionId:", extensionId);
 }
-
 // Gestion des requêtes de données de sécurité
 async function handleSecurityDataRequest(request, sendResponse) {
   try {
@@ -260,4 +286,124 @@ function handleSecurityEvent(event) {
   // Pour l'instant, juste log
 }
 
+// ========== 🆕 AUTO-ALERT SYSTEM ==========
+
+// Fonction pour vérifier les menaces et afficher l'overlay
+async function checkPageForThreats(tabId, url) {
+  try {
+    console.log("🚨 Checking for threats:", url);
+
+    // Récupère l'analyse depuis Vercel API
+    const analysis = await getAnalysisFromAPI(url);
+
+    if (analysis && analysis.riskScore > 60) {
+      console.log("🚨 THREAT DETECTED! Showing alert...");
+
+      // 1. Envoie au content script pour afficher overlay
+      chrome.tabs.sendMessage(
+        tabId,
+        {
+          action: "showThreatAlert",
+          data: {
+            threatType: analysis.threatType || "suspicious",
+            riskScore: analysis.riskScore || 75,
+            cve_id: analysis.cve_id || null,
+            url: url,
+          },
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "❌ Error sending message:",
+              chrome.runtime.lastError.message
+            );
+          } else {
+            console.log("✅ Alert sent successfully:", response);
+          }
+        }
+      );
+
+      // 2. Notification système
+      try {
+        chrome.notifications.create({
+          type: "basic",
+          iconUrl: "icons/icon.png",
+          title: "🚨 SOC-CERT Threat Alert",
+          message: `Risk Score: ${analysis.riskScore}/100 - ${analysis.threatType}`,
+          priority: 2,
+        });
+      } catch (notifError) {
+        console.log("⚠️ Notification skipped:", notifError.message);
+      }
+
+      // 3. Badge rouge sur l'icône
+      chrome.action.setBadgeText({ text: "!", tabId: tabId });
+      chrome.action.setBadgeBackgroundColor({ color: "#FF0000", tabId: tabId });
+    } else {
+      console.log("✅ No threat detected for:", url);
+      // Efface le badge si pas de menace
+      chrome.action.setBadgeText({ text: "", tabId: tabId });
+    }
+  } catch (error) {
+    console.error("❌ Error checking threats:", error);
+  }
+}
+
+// Fonction pour récupérer l'analyse depuis l'API Vercel
+async function getAnalysisFromAPI(url) {
+  try {
+    // Récupère l'extensionId
+    const data = await chrome.storage.local.get(["extensionId"]);
+    const extensionId = data.extensionId;
+
+    console.log("🔑 extensionId:", extensionId); // ← AJOUTE CE LOG
+
+    if (!extensionId) {
+      console.log("⚠️ No extensionId found");
+      return null;
+    }
+
+    // Appelle l'API Vercel avec format=cve
+    const API_URL = "https://soc-cert-extension.vercel.app";
+    const response = await fetch(
+      `${API_URL}/api/extension-result?extensionId=${extensionId}&format=cve`
+    );
+
+    if (!response.ok) {
+      console.log("⚠️ API error:", response.status);
+      return null;
+    }
+
+    const apiData = await response.json();
+
+    if (apiData.success && apiData.results && apiData.results.length > 0) {
+      // Trouve le CVE pour cette URL
+      const match = apiData.results.find(
+        (r) => r.link && r.link.startsWith(url)
+      );
+
+      if (match) {
+        console.log("✅ Analysis found for URL:", match);
+        return {
+          threatType: match.title?.includes("PHISHING")
+            ? "phishing"
+            : match.title?.includes("MALWARE")
+            ? "malware"
+            : "suspicious",
+          riskScore: match.score || 75,
+          cve_id: match.cve_id,
+          url: url,
+        };
+      }
+    }
+
+    console.log("ℹ️ No analysis found for this URL yet");
+    return null;
+  } catch (error) {
+    console.error("❌ Error fetching analysis:", error);
+    return null;
+  }
+}
+
 console.log("🔒 SOC-CERT Background Service Worker ready");
+console.log("✅ Auto-alert system loaded");

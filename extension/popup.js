@@ -817,8 +817,8 @@ async function startCVEPolling() {
   }
 
   try {
-    const url =
-      "https://soc-cert-extension.vercel.app/api/extension-result?extensionId=mapped&format=cve";
+    const extensionId = chrome.runtime.id;
+    const url = `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=${extensionId}&format=cve`;
     console.log("🌐 Fetching CVE data from:", url);
 
     const response = await fetch(url);

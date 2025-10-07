@@ -5,16 +5,15 @@ class AIHelper {
     this.nativeAI = null;
     this.needsDownload = false;
 
-    // ✅ Générer ou récupérer un ID persistant unique
-    this.extensionId = localStorage.getItem("soc-cert-extension-id");
-
-    if (!this.extensionId) {
-      this.extensionId = `ai-helper-${Date.now()}`;
-      localStorage.setItem("soc-cert-extension-id", this.extensionId);
-      console.log(`✅ Nouvel extension ID créé: ${this.extensionId}`);
-    } else {
-      console.log(`✅ Extension ID récupéré: ${this.extensionId}`);
-    }
+    // ✅ Récupérer l'ID persistant unique depuis chrome.storage.local
+    chrome.storage.local.get(["extensionId"], (result) => {
+      this.extensionId = result.extensionId;
+      if (!this.extensionId) {
+        console.warn("extensionId absent, vérifie l'initialisation !");
+      } else {
+        console.log(`✅ Extension ID récupéré: ${this.extensionId}`);
+      }
+    });
 
     // N'appellons pas initialize() dans le constructeur
     // pour éviter les problèmes avec async

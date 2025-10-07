@@ -1,25 +1,25 @@
-// popup.js - Version corrigée et simplifiée
+// popup.js - Corrected and simplified version
 document.addEventListener("DOMContentLoaded", function () {
   console.log("🔒 SOC-CERT Extension loaded - DOM ready");
 
-  // Attendre que tous les scripts soient chargés
+  // Wait for all scripts to load
   setTimeout(initializePopup, 100);
 });
 
 async function initializePopup() {
   try {
-    // Vérifier que aiHelper est disponible
+    // Check if aiHelper is available
     if (typeof aiHelper === "undefined") {
       console.log("⏳ Waiting for AI Helper to load...");
       setTimeout(initializePopup, 100);
       return;
     }
 
-    // Initialiser AI Helper manuellement
+    // Initialize AI Helper manually
     await aiHelper.initialize();
     console.log("✅ AI Helper ready:", aiHelper.hasNativeAI);
 
-    // Affiche le statut EPP
+    // Display EPP status
     const statusElement = document.getElementById("status");
     if (aiHelper.hasNativeAI) {
       statusElement.innerHTML = "✅ Chrome AI APIs Enabled";
@@ -31,7 +31,7 @@ async function initializePopup() {
         </button>
       `;
 
-      // Ajouter l'event listener pour le téléchargement
+      // Add event listener for download
       setTimeout(() => {
         const downloadBtn = document.getElementById("download-ai-btn");
         if (downloadBtn) {
@@ -52,13 +52,13 @@ async function initializePopup() {
       statusElement.innerHTML = "🔄 Using Mock AI (EPP Pending)";
     }
 
-    // Analyse la page actuelle
+    // Analyze current page
     await analyzeCurrentPage();
 
-    // ❌ SECTION TEST APIS DÉSACTIVÉE - Redondante maintenant que tout fonctionne automatiquement
+    // ❌ DISABLED API TEST SECTION - Redundant now that everything works automatically
     // await addAITestButtons();
 
-    // ❌ POLLING CVE DÉSACTIVÉ - ai-helper s'en charge
+    // ❌ DISABLED CVE POLLING - ai-helper handles it
     // await startCVEPolling();
   } catch (error) {
     console.error("Initialization error:", error);
@@ -66,7 +66,7 @@ async function initializePopup() {
   }
 }
 
-// 🆕 BOUTONS DE TEST POUR LES APIs PRIORITAIRES
+// 🆕 TEST BUTTONS FOR PRIORITY APIs
 async function addAITestButtons() {
   const container = document.getElementById("analysis-content");
 
@@ -83,17 +83,17 @@ async function addAITestButtons() {
   testSection.innerHTML = `
     <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">🤖 Chrome AI APIs</h4>
     
-    <!-- Bouton téléchargement automatique -->
+    <!-- Automatic download button -->
     <button id="download-all-ai" style="width: 100%; padding: 8px; border: none; border-radius: 4px; background: #4285f4; color: white; font-size: 12px; cursor: pointer; margin-bottom: 10px;">
-      📥 Télécharger toutes les APIs
+      📥 Download all APIs
     </button>
     
-    <!-- Status des APIs -->
+    <!-- API status -->
     <div id="ai-status" style="margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 10px; color: #ccc;">
-      Vérification du statut...
+      Checking status...
     </div>
     
-    <!-- Boutons de test -->
+    <!-- Test buttons -->
     <div style="display: flex; flex-wrap: wrap; gap: 5px;">
       <button id="test-summarizer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #0066cc; color: white; font-size: 10px; cursor: pointer;">
         📝 Summarizer
@@ -111,27 +111,27 @@ async function addAITestButtons() {
 
   container.appendChild(testSection);
 
-  // 🆕 Event listener pour téléchargement automatique
+  // 🆕 Event listener for automatic download
   document
     .getElementById("download-all-ai")
     .addEventListener("click", async () => {
       const statusDiv = document.getElementById("ai-status");
-      statusDiv.innerHTML = "⬇️ Téléchargement en cours...";
+      statusDiv.innerHTML = "⬇️ Downloading...";
 
       try {
         const result = await aiHelper.downloadGeminiNano();
         if (result) {
-          statusDiv.innerHTML = "✅ Toutes les APIs téléchargées !";
-          await updateAIStatus(); // Mettre à jour le statut
+          statusDiv.innerHTML = "✅ All APIs downloaded!";
+          await updateAIStatus(); // Update status
         } else {
-          statusDiv.innerHTML = "❌ Échec du téléchargement";
+          statusDiv.innerHTML = "❌ Download failed";
         }
       } catch (error) {
-        statusDiv.innerHTML = `❌ Erreur: ${error.message}`;
+        statusDiv.innerHTML = `❌ Error: ${error.message}`;
       }
     });
 
-  // Event listeners pour les tests
+  // Event listeners for tests
   document
     .getElementById("test-summarizer")
     .addEventListener("click", testSummarizer);
@@ -140,17 +140,17 @@ async function addAITestButtons() {
     .getElementById("test-translator")
     .addEventListener("click", testTranslator);
 
-  // Mettre à jour le statut initial
+  // Update initial status
   await updateAIStatus();
 }
 
-// 🆕 Fonction pour mettre à jour le statut des APIs
+// 🆕 Function to update API status
 async function updateAIStatus() {
   const statusDiv = document.getElementById("ai-status");
   if (!statusDiv) return;
 
   try {
-    // Tester la disponibilité de chaque API
+    // Test availability of each API
     const status = await aiHelper.testSpecializedAPIs();
 
     let statusHTML = [];
@@ -222,11 +222,11 @@ async function updateAIStatus() {
 
     statusDiv.innerHTML = statusHTML.join(" | ");
   } catch (error) {
-    statusDiv.innerHTML = `❌ Erreur: ${error.message}`;
+    statusDiv.innerHTML = `❌ Error: ${error.message}`;
   }
 }
 
-// Tests des APIs prioritaires
+// Tests of priority APIs
 async function testSummarizer() {
   const resultsDiv = document.getElementById("ai-test-results");
   resultsDiv.style.display = "block";
@@ -287,7 +287,7 @@ async function testTranslator() {
   }
 }
 
-// Version debug de analyzeCurrentPage
+// Debug version of analyzeCurrentPage
 async function analyzeCurrentPage() {
   try {
     console.log("=== 🧪 DEBUG ANALYSIS PROGRESSIVE ===");
@@ -314,10 +314,10 @@ async function analyzeCurrentPage() {
 
       console.log("📊 Progressive analysis started:", progressiveAnalysis);
 
-      // Afficher immédiatement l'analyse rapide
+      // Display quick analysis immediately
       displayThreatAnalysis(progressiveAnalysis);
 
-      // 🆕 ÉCOUTER LES MISES À JOUR DEEP ANALYSIS
+      // 🆕 LISTEN FOR DEEP ANALYSIS UPDATES
       window.addEventListener("deepAnalysisUpdate", (event) => {
         console.log("🔄 Deep analysis update received:", event.detail);
         updateWithDeepResults(event.detail);
@@ -342,11 +342,11 @@ async function analyzeCurrentPage() {
   }
 }
 
-// 🆕 MISE À JOUR AVEC RÉSULTATS DEEP ANALYSIS
+// 🆕 UPDATE WITH DEEP ANALYSIS RESULTS
 function updateWithDeepResults(deepData) {
   console.log("🔄 Updating display with deep analysis...");
 
-  // 🎯 MISE À JOUR du statut "running" dans la section métadonnées
+  // 🎯 UPDATE the "running" status in the metadata section
   const progressiveIndicator = document.getElementById("deep-analysis-status");
   if (progressiveIndicator) {
     progressiveIndicator.style.color = "#00ff00";
@@ -356,7 +356,7 @@ function updateWithDeepResults(deepData) {
     console.log("❌ Could not find deep-analysis-status element");
   }
 
-  // 🎯 MISE À JOUR du statut dans la section AI Status
+  // 🎯 UPDATE the status in the AI Status section
   const aiStatusSection = document.getElementById("ai-status-progress");
   if (aiStatusSection) {
     aiStatusSection.style.color = "#00ff00";
@@ -367,10 +367,10 @@ function updateWithDeepResults(deepData) {
     console.log("❌ Could not find ai-status-progress element");
   }
 
-  // Ajouter une section deep analysis
+  // Add a deep analysis section
   const analysisContent = document.getElementById("analysis-content");
 
-  // Trouver ou créer la section deep analysis
+  // Find or create the deep analysis section
   let deepSection = document.getElementById("deep-analysis-section");
   if (!deepSection) {
     deepSection = document.createElement("div");
@@ -641,12 +641,12 @@ function displayThreatAnalysis(analysis) {
     }; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid ${
     config.color
   }">
-      <!-- URL analysée -->
+  <!-- Analyzed URL -->
       <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
         <strong>🌐 URL analysée:</strong><br>${analysis.analyzedUrl}
       </div>
 
-      <!-- En-tête risque -->
+  <!-- Risk header -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
         <div style="display: flex; align-items: center;">
           <span style="font-size: 24px; margin-right: 10px;">${
@@ -669,7 +669,7 @@ function displayThreatAnalysis(analysis) {
         </div>
       </div>
 
-      <!-- Indicateurs -->
+  <!-- Indicators -->
       ${
         analysis.indicators && analysis.indicators.length > 0
           ? `
@@ -687,7 +687,7 @@ function displayThreatAnalysis(analysis) {
           : '<div style="margin-bottom: 15px;">✅ Aucun indicateur suspect détecté</div>'
       }
 
-      <!-- Recommandations -->
+  <!-- Recommendations -->
       <div>
         <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
           <span style="margin-right: 5px;">💡</span> Recommandations SOC-CERT
@@ -705,7 +705,7 @@ function displayThreatAnalysis(analysis) {
         </div>
       </div>
 
-      <!-- APIs Spécialisées Results -->
+  <!-- Specialized APIs Results -->
       ${
         analysis.aiSummary ||
         analysis.enhancedRecommendations ||
@@ -773,7 +773,7 @@ function displayThreatAnalysis(analysis) {
           : ""
       }
 
-      <!-- Métadonnées avec indicateur progressif -->
+  <!-- Metadata with progressive indicator -->
       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; opacity: 0.6;">
         <div>⏱️ ${analysis.processingTime || "2.3s"} • ${
     analysis.timestamp
@@ -802,11 +802,11 @@ function displayThreatAnalysis(analysis) {
   `;
 }
 
-// 🆕 POLLING CVE SIMPLIFIÉ
+// 🆕 SIMPLIFIED CVE POLLING
 async function startCVEPolling() {
   console.log("🔄 Démarrage polling CVE...");
 
-  // Créer container si pas exist
+  // Create container if it doesn't exist
   let container = document.getElementById("alerts-container");
   if (!container) {
     container = document.createElement("div");
@@ -827,11 +827,11 @@ async function startCVEPolling() {
     const data = await response.json();
     console.log("📊 CVE Response:", JSON.stringify(data, null, 2));
 
-    // ✅ Support des deux formats d'API
+    // ✅ Handle both old and new formats
     let cveData = null;
     let hasData = false;
 
-    // Format ANCIEN : {success: true, results: [...]}
+    // Old format : {success: true, results: [...]}
     if (data.success && data.results && data.results.length > 0) {
       console.log(
         "✅ CVE Alerts trouvées (format ancien):",
@@ -840,15 +840,15 @@ async function startCVEPolling() {
       cveData = data.results;
       hasData = true;
     }
-    // Format NOUVEAU : {result: {...}} ou {result: [...]}
+    // New format : {result: {...}} ou {result: [...]}
     else if (data.result && data.result !== null) {
       console.log("✅ CVE Alerts trouvées (format nouveau):", data.result);
-      // Si c'est un tableau
+      // new array of results
       if (Array.isArray(data.result)) {
         cveData = data.result;
         hasData = data.result.length > 0;
       }
-      // Si c'est un objet unique, le mettre dans un tableau
+      // If it's a single object, wrap it into an array
       else {
         cveData = [data.result];
         hasData = true;
@@ -871,26 +871,26 @@ async function startCVEPolling() {
 
       container.innerHTML = `
         <div style="text-align: center; padding: 20px; color: #888;">
-          <h3>🔍 Surveillance CVE Active</h3>
-          <p>Aucune nouvelle alerte de sécurité</p>
+          <h3>🔍 Active CVE Monitoring</h3>
+          <p>No new security alerts</p>
           <div style="font-size: 12px; margin-top: 10px;">
-            Dernière vérification: ${new Date().toLocaleTimeString()}
+            Last check: ${new Date().toLocaleTimeString()}
           </div>
         </div>
       `;
     }
   } catch (error) {
-    console.error("❌ Erreur polling CVE:", error);
+    console.error("❌ CVE polling error:", error);
     container.innerHTML = `
       <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 8px; text-align: center;">
-        <h3>⚠️ Erreur Surveillance CVE</h3>
-        <p>Impossible de récupérer les alertes</p>
+        <h3>⚠️ CVE Monitoring Error</h3>
+        <p>Unable to retrieve alerts</p>
       </div>
     `;
   }
 }
 
-// 📱 AFFICHAGE CVE ALERTS - CORRIGÉ
+// 📱 CVE ALERTS DISPLAY - FIXED
 function displayCVEAlerts(alerts) {
   const container = document.getElementById("alerts-container");
 
@@ -899,7 +899,7 @@ function displayCVEAlerts(alerts) {
   console.log("  Container ID:", container?.id);
   console.log("  Alerts count:", alerts.length);
 
-  // 🔍 DEBUG: Log chaque alerte reçue
+  // 🔍 DEBUG: Log each received alert
   console.log("🔍 ALERTS RECEIVED:", alerts);
   alerts.forEach((alert, index) => {
     console.log(`Alert ${index}:`, {
@@ -976,7 +976,7 @@ function displayCVEAlerts(alerts) {
   console.log("🎨 Container style:", container.style.cssText);
   console.log("🎨 Container parent:", container.parentElement?.tagName);
 
-  // Ajouter l'event listener pour le bouton après l'avoir créé
+  // Add the event listener for the button after creating it
   setTimeout(() => {
     const refreshBtn = document.getElementById("refresh-cve-btn");
     if (refreshBtn) {

@@ -108,7 +108,6 @@ function startAPIAnalysisAnimation() {
       const element = document.getElementById(api.id);
       element.classList.add("active");
 
-      // ✨ SIMPLIFIÉ : Utilise le même spinner CSS
       const statusElement = element.querySelector(".api-status");
       statusElement.innerHTML =
         'Analyzing... <span class="popup-spinner">⏳</span>';
@@ -390,6 +389,13 @@ async function analyzeCurrentPage() {
       // 3. Cacher l'analyse en temps réel et montrer les résultats
       document.getElementById("analysis-status").style.display = "none";
       document.getElementById("analysis-content").style.display = "block";
+
+      document.getElementById("analysis-content").innerHTML = `
+        <div style="text-align:center; margin-top:40px;">
+          Analyzing... <span class="popup-spinner">⏳</span>
+          <div style="margin-top:10px; color:#4fc3f7; font-weight:bold;"></div>
+        </div>
+      `;
 
       // 4. CONTINUER AVEC L'ANALYSE NORMALE EXISTANTE
       const progressiveAnalysis = await aiHelper.analyzeCompleteFlow(

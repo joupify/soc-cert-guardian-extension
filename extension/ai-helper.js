@@ -971,22 +971,39 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
           // Filtrer les résultats par URL actuelle
           // Filtrer les résultats par URL actuelle
+          // Filtrer les résultats par URL actuelle
           let urlFilteredResults = data.results
             ? data.results.filter((r) => r.link === url)
             : [];
 
+          console.log(
+            "🔍 Filtered by URL:",
+            urlFilteredResults.length,
+            "results"
+          );
+
           // Trier pour privilégier les CVEs réels (pas virtuels)
           urlFilteredResults.sort((a, b) => {
-            const aIsReal = !a.cve_id.startsWith("CVE-2026");
-            const bIsReal = !b.cve_id.startsWith("CVE-2026");
+            const aIsReal = !a.cve_id?.startsWith("CVE-2026"); // ✅ CORRIGÉ
+            const bIsReal = !b.cve_id?.startsWith("CVE-2026"); // ✅ CORRIGÉ
+
+            console.log(
+              `🔍 Compare: ${a.cve_id} (${aIsReal ? "REAL" : "VIRTUAL"}) vs ${
+                b.cve_id
+              } (${bIsReal ? "REAL" : "VIRTUAL"})`
+            );
+
             if (aIsReal && !bIsReal) return -1;
             if (!aIsReal && bIsReal) return 1;
-            // Si les deux sont du même type, garder l'ordre chronologique (plus récent d'abord)
+
+            // Si les deux sont du même type, garder l'ordre chronologique
             return (
               new Date(b.timestamp || b.receivedAt) -
               new Date(a.timestamp || a.receivedAt)
             );
           });
+
+          console.log("✅ After sort:", urlFilteredResults[0]?.cve_id);
 
           // Format ANCIEN : {success: true, results: [...]}
           if (

@@ -393,7 +393,7 @@ Download Gemini Nano model:
 Download extension package:
 
 ```bash
-git clone https://github.com/yourusername/soc-cert-extension
+git clone https://github.com/joupify/soc-cert-extension
 cd soc-cert-extension
 ```
 
@@ -704,7 +704,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy...
 ### 🔗 Project Links
 
 - 📹 Demo Video: [YouTube - Coming Soon]
-- 💻 GitHub Repository: [github.com/yourusername/soc-cert-extension]
+- 💻 GitHub Repository: [github.com/joupify/soc-cert-extension]
 
 ### 💬 Get Help
 

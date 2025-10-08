@@ -902,6 +902,11 @@ Répondez UNIQUEMENT avec ce format JSON exact:
   async pollForDeepResults(url, quickAnalysis, maxAttempts = 30) {
     console.log("🔄 Polling pour résultats deep analysis...");
     console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
+    // console.log("🎯 Target URL:", url);
+
+    // // ✅ Waiting 3 secondes avant le premier polling
+    // console.log("⏳ Waiting 3 seconds for n8n processing...");
+    // await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const API_URL =
       "https://soc-cert-extension.vercel.app/api/extension-result";
@@ -913,7 +918,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           await new Promise((resolve) => setTimeout(resolve, 7000));
         }
 
-        // ✅ UNE SEULE URL avec l'ID réel
+        // ✅ One Url  with real extensionId
         const apiUrl = `${API_URL}?extensionId=${encodeURIComponent(
           this.extensionId
         )}&format=cve`;
@@ -964,10 +969,33 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           let resultData = null;
           let hasResults = false;
 
+          // Filtrer les résultats par URL actuelle
+          // Filtrer les résultats par URL actuelle
+          let urlFilteredResults = data.results
+            ? data.results.filter((r) => r.link === url)
+            : [];
+
+          // Trier pour privilégier les CVEs réels (pas virtuels)
+          urlFilteredResults.sort((a, b) => {
+            const aIsReal = !a.cve_id.startsWith("CVE-2026");
+            const bIsReal = !b.cve_id.startsWith("CVE-2026");
+            if (aIsReal && !bIsReal) return -1;
+            if (!aIsReal && bIsReal) return 1;
+            // Si les deux sont du même type, garder l'ordre chronologique (plus récent d'abord)
+            return (
+              new Date(b.timestamp || b.receivedAt) -
+              new Date(a.timestamp || a.receivedAt)
+            );
+          });
+
           // Format ANCIEN : {success: true, results: [...]}
-          if (data.success && data.results && data.results.length > 0) {
+          if (
+            data.success &&
+            urlFilteredResults &&
+            urlFilteredResults.length > 0
+          ) {
             console.log("✅ Deep analysis résultats trouvés (format ancien)!");
-            resultData = data.results[0];
+            resultData = urlFilteredResults[0];
             hasResults = true;
           }
           // Format NOUVEAU : {result: {...}}

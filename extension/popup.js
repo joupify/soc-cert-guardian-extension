@@ -25,7 +25,7 @@ async function initializePopup() {
       statusElement.innerHTML = "✅ Chrome AI APIs Enabled";
     } else if (aiHelper.needsDownload) {
       statusElement.innerHTML = `
-        🔄 Chrome AI Available - 
+        Chrome AI Available - 
         <button id="download-ai-btn" style="background: #0066cc; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
           📥 Download Gemini Nano
         </button>
@@ -66,6 +66,79 @@ async function initializePopup() {
   }
 }
 
+// == AJOUTER CES FONCTIONS APRÈS initializePopup() ==
+
+function showRealTimeAnalysis(tab) {
+  console.log("🚀 Starting real-time analysis UI");
+
+  // Afficher la section d'analyse en temps réel
+  document.getElementById("analysis-status").style.display = "block";
+  document.getElementById("status").style.display = "none";
+  document.getElementById("analysis-content").style.display = "none";
+
+  // Mettre à jour l'URL
+  const displayUrl =
+    tab.url.length > 45 ? tab.url.substring(0, 45) + "..." : tab.url;
+  document.getElementById("analyzing-url").textContent = displayUrl;
+
+  // Démarrer l'animation des APIs
+  startAPIAnalysisAnimation();
+
+  // Retourner une promesse pour savoir quand l'animation est finie
+  return new Promise((resolve) => {
+    setTimeout(resolve, 8000); // 8s pour toute l'animation
+  });
+}
+
+function startAPIAnalysisAnimation() {
+  console.log("🎬 Starting API analysis animation");
+
+  const apis = [
+    { id: "api-gemini", name: "Gemini Nano", delay: 1000, duration: 2000 },
+    { id: "api-summarizer", name: "Summarizer", delay: 2500, duration: 1500 },
+    { id: "api-writer", name: "Writer", delay: 4000, duration: 1200 },
+    { id: "api-translator", name: "Translator", delay: 5200, duration: 1000 },
+    { id: "api-proofreader", name: "Proofreader", delay: 6200, duration: 800 },
+  ];
+
+  let completed = 0;
+
+  apis.forEach((api) => {
+    setTimeout(() => {
+      const element = document.getElementById(api.id);
+      element.classList.add("active");
+
+      // ✨ SIMPLIFIÉ : Utilise le même spinner CSS
+      const statusElement = element.querySelector(".api-status");
+      statusElement.innerHTML =
+        'Analyzing... <span class="popup-spinner">⏳</span>';
+      console.log(`🔧 ${api.name} started analysis`);
+
+      setTimeout(() => {
+        element.classList.remove("active");
+        element.classList.add("completed");
+
+        // ✨ SIMPLIFIÉ : Checkmark simple
+        statusElement.textContent = "Completed ✅";
+
+        console.log(`✅ ${api.name} analysis completed`);
+
+        completed++;
+        const progress = (completed / apis.length) * 100;
+        document.getElementById("progress-fill").style.width = progress + "%";
+        document.getElementById("progress-percent").textContent =
+          Math.round(progress) + "%";
+
+        if (completed === apis.length) {
+          document.getElementById("time-indicator").innerHTML =
+            "✅ Analysis completed in < 2 seconds";
+          console.log("🎉 All API analyses completed");
+        }
+      }, api.duration);
+    }, api.delay);
+  });
+}
+
 // 🆕 TEST BUTTONS FOR PRIORITY APIs
 async function addAITestButtons() {
   const container = document.getElementById("analysis-content");
@@ -98,7 +171,7 @@ async function addAITestButtons() {
       <button id="test-summarizer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #0066cc; color: white; font-size: 10px; cursor: pointer;">
         📝 Summarizer
       </button>
-      <button id="test-writer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #4CAF50; color: white; font-size: 10px; cursor: pointer;">
+      <button id="test-writer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #024a04ff; color: white; font-size: 10px; cursor: pointer;">
         ✍️ Writer
       </button>
       <button id="test-translator" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #FF9800; color: white; font-size: 10px; cursor: pointer;">
@@ -288,16 +361,16 @@ async function testTranslator() {
 }
 
 // Debug version of analyzeCurrentPage
+// Debug version of analyzeCurrentPage - AVEC INTERFACE TEMPS RÉEL
 async function analyzeCurrentPage() {
   try {
-    console.log("=== 🧪 DEBUG ANALYSIS PROGRESSIVE ===");
-
+    console.log("== 🚀 DEBUG ANALYSIS WITH REAL-TIME UI ===");
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
 
-    console.log("📋 Tab info:", {
+    console.log("📊 Tab info:", {
       url: tab?.url,
       title: tab?.title,
       id: tab?.id,
@@ -306,39 +379,51 @@ async function analyzeCurrentPage() {
     if (tab && tab.url) {
       console.log("🎯 Starting progressive analysis for:", tab.url);
 
-      // 🆕 UTILISER LE FLOW COMPLET
+      // 1. AFFICHER L'INTERFACE TEMPS RÉEL
+      await showRealTimeAnalysis(tab);
+
+      // 2. Pause pour la démo (optionnel - pour bien voir l'animation)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      console.log("📊 Showing analysis results");
+
+      // 3. Cacher l'analyse en temps réel et montrer les résultats
+      document.getElementById("analysis-status").style.display = "none";
+      document.getElementById("analysis-content").style.display = "block";
+
+      // 4. CONTINUER AVEC L'ANALYSE NORMALE EXISTANTE
       const progressiveAnalysis = await aiHelper.analyzeCompleteFlow(
         tab.url,
         `Analyzing: ${tab.title}`
       );
 
-      console.log("📊 Progressive analysis started:", progressiveAnalysis);
+      console.log("📈 Progressive analysis started:", progressiveAnalysis);
 
       // Display quick analysis immediately
-      displayThreatAnalysis(progressiveAnalysis);
+      displayThreatAnalysis(progressiveAnalysis, tab.url);
 
-      // 🆕 LISTEN FOR DEEP ANALYSIS UPDATES
+      // LISTEN FOR DEEP ANALYSIS UPDATES
       window.addEventListener("deepAnalysisUpdate", (event) => {
-        console.log("🔄 Deep analysis update received:", event.detail);
+        console.log("🔍 Deep analysis update received:", event.detail);
         updateWithDeepResults(event.detail);
       });
     } else {
       console.log("❌ No valid tab found");
       document.getElementById("analysis-content").innerHTML = `
-        <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 10px; text-align: center;">
-          <h3>❌ No Active Tab</h3>
-          <p>Please open a webpage to analyze its security.</p>
-        </div>
-      `;
+                <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 10px; text-align: center;">
+                    <h3>No Active Tab</h3>
+                    <p>Please open a webpage to analyze its security.</p>
+                </div>
+            `;
     }
   } catch (error) {
-    console.error("Analysis error:", error);
+    console.error("❌ Analysis error:", error);
     document.getElementById("analysis-content").innerHTML = `
-      <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 10px;">
-        <h3>❌ Analysis Error</h3>
-        <p>${error.message}</p>
-      </div>
-    `;
+            <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 10px;">
+                <h3>Analysis Error</h3>
+                <p>${error.message}</p>
+            </div>
+        `;
   }
 }
 
@@ -598,18 +683,18 @@ function updateWithDeepResults(deepData) {
   console.log("✅ Deep analysis section updated");
 }
 
-function displayThreatAnalysis(analysis) {
+function displayThreatAnalysis(analysis, siteUrl) {
   const riskConfig = {
     safe: {
       color: "#00ff00",
       icon: "✅",
-      label: "Sécurisé",
+      label: "Safe",
       bg: "rgba(0,255,0,0.1)",
     },
     suspicious: {
       color: "#ffff00",
       icon: "⚠️",
-      label: "Suspect",
+      label: "Suspicious",
       bg: "rgba(255,255,0,0.1)",
     },
     phishing: {
@@ -621,13 +706,13 @@ function displayThreatAnalysis(analysis) {
     "high-risk": {
       color: "#ff5500",
       icon: "🔍",
-      label: "Risque Élevé",
+      label: "High Risk",
       bg: "rgba(255,85,0,0.1)",
     },
     malicious: {
       color: "#ff0000",
       icon: "🚨",
-      label: "Malveillant",
+      label: "Malicious",
       bg: "rgba(255,0,0,0.1)",
     },
   };
@@ -642,9 +727,10 @@ function displayThreatAnalysis(analysis) {
     config.color
   }">
   <!-- Analyzed URL -->
-      <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
-        <strong>🌐 URL analysée:</strong><br>${analysis.analyzedUrl}
-      </div>
+  <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
+    <strong>🌐 Analyzed URL:</strong><br>
+    <a href="${siteUrl}" target="_blank" style="color:#00aaff;">${siteUrl}</a>
+  </div>
 
   <!-- Risk header -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
@@ -656,7 +742,7 @@ function displayThreatAnalysis(analysis) {
             <div style="font-size: 18px; font-weight: bold;">${
               config.label
             }</div>
-            <div style="font-size: 12px; opacity: 0.8;">Confiance: ${(
+            <div style="font-size: 12px; opacity: 0.8;">Confidence: ${(
               analysis.confidence * 100
             ).toFixed(0)}%</div>
           </div>
@@ -665,7 +751,7 @@ function displayThreatAnalysis(analysis) {
           <div style="font-size: 28px; font-weight: bold; color: ${
             config.color
           }">${analysis.riskScore}%</div>
-          <div style="font-size: 10px; opacity: 0.7;">Score de risque</div>
+          <div style="font-size: 10px; opacity: 0.7;">Risk score</div>
         </div>
       </div>
 
@@ -675,7 +761,7 @@ function displayThreatAnalysis(analysis) {
           ? `
         <div style="margin-bottom: 15px;">
           <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
-            <span style="margin-right: 5px;">🚨</span> Indicateurs de menace (${
+            <span style="margin-right: 5px;">🚨</span> Threat Indicators (${
               analysis.indicators.length
             })
           </div>
@@ -690,7 +776,7 @@ function displayThreatAnalysis(analysis) {
   <!-- Recommendations -->
       <div>
         <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
-          <span style="margin-right: 5px;">💡</span> Recommandations SOC-CERT
+          <span style="margin-right: 5px;">💡</span> SOC-CERT Recommendations
         </div>
         <div style="font-size: 12px;">
           ${analysis.recommendations

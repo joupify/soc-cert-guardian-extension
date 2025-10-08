@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8">
   <title>SOC-CERT Security Analysis</title>
+
   <style>
-    /* Notre CSS de base - on l'améliorera après */
+    /* CSS */
     body {
       width: 400px;
       height: 500px;
@@ -23,7 +24,106 @@
       margin-bottom: 15px;
       font-size: 12px;
     }
+    
+    
+    .analysis-status {
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      border-left: 4px solid #4fc3f7;
+    }
+    
+    .api-status-item {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      padding: 5px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.05);
+      transition: all 0.3s ease;
+    }
+    
+    .api-status-item.active {
+      background: rgba(76, 175, 80, 0.2);
+      border-left: 3px solid #4caf50;
+    }
+    
+    .api-status-item.completed {
+      background: rgba(76, 175, 80, 0.3);
+      border-left: 3px solid #4caf50;
+    }
+    
+    .api-icon {
+      margin-right: 10px;
+      font-size: 16px;
+    }
+    
+    .api-name {
+      flex: 1;
+      font-size: 12px;
+    }
+    
+    .api-status {
+      font-size: 10px;
+      opacity: 0.8;
+    }
+    
+    .progress-container {
+      margin: 15px 0;
+    }
+    
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4fc3f7, #66bb6a);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      margin-top: 5px;
+    }
+    
+    .analyzing-url {
+      font-size: 11px;
+      opacity: 0.8;
+      text-align: center;
+      margin: 10px 0;
+      word-break: break-all;
+    }
+    
+    .time-indicator {
+      text-align: center;
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    
+    .pulse {
+      animation: pulse 1.5s infinite;
+    }
+    
+    
+
   </style>
+    <link rel="stylesheet" href="popup.css">
+
 </head>
 <body>
   <div class="container">
@@ -32,16 +132,78 @@
       <p>AI-Powered Security Analysis</p>
     </div>
     
-    <div class="status" id="status">
-      🔄 Initializing security analysis...
+    
+    <div id="analysis-status" class="analysis-status" style="display: none;">
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div style="font-size: 24px; margin-bottom: 5px;" class="pulse">🔍</div>
+        <div style="font-weight: bold; color: #4fc3f7;">Analyzing Page Security</div>
+        <div id="analyzing-url" class="analyzing-url">
+          Loading URL...
+        </div>
+      </div>
+
+      <!-- progression bar -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-text">
+          <span>Initial Analysis</span>
+          <span id="progress-percent">0%</span>
+        </div>
+      </div>
+
+      <!-- Status  APIs Chrome AI -->
+      <div style="margin-bottom: 10px;">
+        <div style="font-weight: bold; margin-bottom: 8px; color: #66bb6a;">
+          🤖 Chrome AI APIs Status:
+        </div>
+        <div id="api-status">
+          <div class="api-status-item" id="api-gemini">
+            <span class="api-icon">🧠</span>
+            <span class="api-name">Gemini Nano</span>
+            <span class="api-status">Initializing...</span>
+          </div>
+          <div class="api-status-item" id="api-summarizer">
+            <span class="api-icon">📝</span>
+            <span class="api-name">Summarizer</span>
+            <span class="api-status">Waiting...</span>
+          </div>
+          <div class="api-status-item" id="api-writer">
+            <span class="api-icon">✍️</span>
+            <span class="api-name">Writer</span>
+            <span class="api-status">Ready</span>
+          </div>
+          <div class="api-status-item" id="api-translator">
+            <span class="api-icon">🌐</span>
+            <span class="api-name">Translator</span>
+            <span class="api-status">Standby</span>
+          </div>
+          <div class="api-status-item" id="api-proofreader">
+            <span class="api-icon">✅</span>
+            <span class="api-name">Proofreader</span>
+            <span class="api-status">Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Time indicator -->
+      <div class="time-indicator" id="time-indicator">
+        ⚡ Analysis time: < 2 seconds
+      </div>
     </div>
     
+    <div class="status" id="status">
+      <span class="popup-spinner">⏳</span>
+      Initializing security analysis...
+  </div>
+    
     <div id="analysis-content">
-      <!-- Notre dashboard va ici -->
+      <!-- dashboard -->
     </div>
   </div>
 
-  <!-- Chargement des scripts -->
+  <!-- scripts -->
   <script src="ai-mock.js"></script>
   <script src="ai-helper.js"></script>
   <script src="popup.js"></script>

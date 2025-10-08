@@ -1,0 +1,12 @@
+| Screenshot                                                                                                                          | Description                         |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| ![Gemini Nano Analysis](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/01-gemini-analysis.png?raw=true)        | Initial threat detection results    |
+| ![API Dashboard](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/02-api-dashboard.png?raw=true)                 | All 5 Chrome AI APIs status         |
+| ![n8n Webhook Reception](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/03-n8n-webhook-reception.png?raw=true) | CVE enrichment pipeline             |
+| ![n8n CVE Correlation](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/04-n8n-cve-correlation.png?raw=true)     | CVE enrichment pipeline             |
+| ![n8n API Response](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/05-n8n-api-response.png?raw=true)           | CVE enrichment pipeline             |
+| ![CVE Enrichment](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/06-cve-enrichment.png?raw=true)               | Real vulnerability data integration |
+| ![Code Flow](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/07-code-flow.png?raw=true)                         | Technical implementation diagram    |
+| ![Threat Alert](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/08-threat-alert.png?raw=true)                   | Automatic security overlay          |
+| ![Popup Interface](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/09-popup-interface.png?raw=true)             | Detailed analysis view              |
+| ![Architecture Diagram](https://github.com/joupify/soc-cert-extension/blob/main/screenshots/10-architecture-diagram.png?raw=true)   | Complete system design              |

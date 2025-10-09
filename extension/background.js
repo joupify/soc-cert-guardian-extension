@@ -39,6 +39,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
+    case "showExtensionOnCurrentPage":
+      console.log(
+        "📋 showExtensionOnCurrentPage received - opening popup on current page"
+      );
+      try {
+        // Open the extension popup on the active tab
+        chrome.action.openPopup();
+        sendResponse({ success: true });
+      } catch (e) {
+        console.error("Failed to open popup on current page:", e);
+        sendResponse({ success: false, error: e.message });
+      }
+      break;
+
     default:
       console.log("Unknown action:", request.action);
   }
@@ -349,7 +363,7 @@ async function checkPageForThreats(tabId, url) {
   }
 }
 
-// Fonction pour récupérer l'analyse depuis l'API Vercel
+// Fonction pour récupérer l'analysis depuis l'API Vercel
 async function getAnalysisFromAPI(url) {
   try {
     // Récupère l'extensionId

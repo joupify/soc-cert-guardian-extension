@@ -6,9 +6,14 @@
 }
 
 body {
-  width: 400px;
+
+  width: 408px;
+  height: fit-content;  /* ← S'ADAPTE AU CONTENU */
+  min-height: 600px;    /* ← MINIMUM POUR L'ANALYSE */
+  /* max-height: 90vh;     ← MAX = 90% de l'écran */
+  /* width: 400px;
   min-height: 500px;
-  max-height: 600px;
+  max-height: 1200px; */
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
 
@@ -475,3 +480,26 @@ h1.title {
 }
 
 
+/* Local AI inline summary (styled via CSS, no inline styles) */ 
+.local-ai-line { display: flex; align-items: center;
+  
+  gap: 8px; font-size: 12px; margin-bottom: 8px; flex-wrap: wrap; } .local-ai-line strong { margin-right: 6px; } .local-ai-line .local-indicator { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; } .local-ai-line .local-indicator.online { background: #39e600; } .local-ai-line .local-name { margin-right: 8px; } .local-ai-line .local-feature { margin-left: 12px; margin-right: 6px; } .local-ai-line .local-check { color: #aaf; font-weight: 600; margin-left: 6px; }
+
+.api-status-item { background: transparent !important; }
+
+/* Recommendation icon helper */
+.rec-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  margin-right: 8px;
+  font-size: 14px;
+  vertical-align: middle;
+  color: #ffeb3b; /* visible yellow on dark background */
+}
+
+.recommendations ul li {
+  color: #072b4a; /* keep recommendation text dark as designed */
+}

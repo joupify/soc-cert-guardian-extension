@@ -66,6 +66,209 @@ async function initializePopup() {
   }
 }
 
+// Helper to show/hide a deep analysis spinner inside #analysis-content
+function showDeepSpinner() {
+  const container = document.getElementById("analysis-content");
+  if (!container) return;
+  // If spinner already present, don't duplicate
+  if (document.getElementById("deep-analysis-spinner")) return;
+
+  const spinner = document.createElement("div");
+  spinner.id = "deep-analysis-spinner";
+  spinner.style.cssText = `
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    margin-top:20px; padding:10px; background: rgba(0,0,0,0.05); border-radius:8px;
+  `;
+  spinner.innerHTML = `
+    <div style="font-size:18px; color:#4fc3f7; margin-bottom:6px;">Deep analysis in progress...</div>
+    <div class="popup-spinner" style="width:32px; height:32px; border:4px solid rgba(255,255,255,0.1); border-top-color:#4fc3f7; border-radius:50%; animation:spin 1s linear infinite;"></div>
+  `;
+
+  container.appendChild(spinner);
+}
+
+function hideDeepSpinner() {
+  const spinner = document.getElementById("deep-analysis-spinner");
+  if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
+}
+
+// Ensure the deep-analysis-status element reflects a running state (spinner + text)
+function setDeepAnalysisStatusRunning() {
+  try {
+    const el = document.getElementById("deep-analysis-status");
+    if (el) {
+      el.style.color = "#00ffff";
+      el.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;\"></span><span>Deep analysis n8n running...</span></div>`;
+    }
+  } catch (e) {
+    console.log("⚠️ setDeepAnalysisStatusRunning failed:", e.message || e);
+  }
+}
+
+// Ensure the AI status progress indicator shows running for new progressive analyses
+function setAIStatusRunning() {
+  try {
+    const aiStatusSection = document.getElementById("ai-status-progress");
+    if (aiStatusSection) {
+      aiStatusSection.style.color = "#00ffff";
+      aiStatusSection.innerHTML =
+        "⚡ Quick analysis • 🔬 Deep analysis running...";
+    }
+  } catch (e) {
+    console.log("⚠️ setAIStatusRunning failed:", e.message || e);
+  }
+}
+
+// Small helper to escape HTML when inserting dynamic content
+function escapeHTML(str) {
+  if (typeof str !== "string") return str;
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Render an array of recommendations as a UL. Supports strings or objects {title, description}
+function renderRecommendationsList(items) {
+  if (!items || !Array.isArray(items) || items.length === 0)
+    return "<div>No recommendations available</div>";
+  return `
+    <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">${items
+      .map((rec) => {
+        if (!rec) return "";
+        // helper to choose icon by content
+        const chooseIcon = (text) => {
+          if (!text) return "";
+          const t = String(text).toLowerCase();
+          if (
+            t.includes("sanitize") ||
+            t.includes("validation") ||
+            t.includes("parameter")
+          )
+            return "🔧";
+          if (
+            t.includes("update") ||
+            t.includes("patch") ||
+            t.includes("upgrade")
+          )
+            return "🆙";
+          if (
+            t.includes("security header") ||
+            t.includes("headers") ||
+            t.includes("enable") ||
+            t.includes("configure")
+          )
+            return "🛡️";
+          if (
+            t.includes("waf") ||
+            t.includes("firewall") ||
+            t.includes("web application firewall")
+          )
+            return "🔥";
+          if (
+            t.includes("encode") ||
+            t.includes("encoding") ||
+            t.includes("output encoding") ||
+            t.includes("output-encoding")
+          )
+            return "🔒";
+          return "";
+        };
+
+        if (typeof rec === "string") {
+          const icon = chooseIcon(rec);
+          return `<li>${
+            icon ? `<span style="margin-right:6px;">${icon}</span>` : ""
+          }${escapeHTML(rec)}</li>`;
+        }
+        // object case
+        const title = rec.title
+          ? `<strong>${escapeHTML(rec.title)}</strong>`
+          : "";
+        const desc = rec.description
+          ? `<div style="font-size:11px; color:#ddd; margin-top:4px;">${escapeHTML(
+              rec.description
+            )}</div>`
+          : "";
+        const icon = chooseIcon(rec.title || rec.description || "");
+        return `<li style="margin-bottom:8px;">${
+          icon ? `<span style="margin-right:6px;">${icon}</span>` : ""
+        }${title}${desc}</li>`;
+      })
+      .join("")} </ul>
+  `;
+}
+
+// Inline renderer for small blocks (used in specialized AI Analysis simple display)
+function renderRecommendationsInline(items) {
+  if (!items) return "";
+  if (Array.isArray(items)) {
+    // If objects, render title and description
+    if (typeof items[0] === "object") {
+      const chooseIcon = (text) => {
+        if (!text) return "";
+        const t = String(text).toLowerCase();
+        if (
+          t.includes("sanitize") ||
+          t.includes("validation") ||
+          t.includes("parameter")
+        )
+          return "🔧";
+        if (
+          t.includes("update") ||
+          t.includes("patch") ||
+          t.includes("upgrade")
+        )
+          return "🆙";
+        if (
+          t.includes("security header") ||
+          t.includes("headers") ||
+          t.includes("enable") ||
+          t.includes("configure")
+        )
+          return "🛡️";
+        if (
+          t.includes("waf") ||
+          t.includes("firewall") ||
+          t.includes("web application firewall")
+        )
+          return "🔥";
+        if (
+          t.includes("encode") ||
+          t.includes("encoding") ||
+          t.includes("output encoding") ||
+          t.includes("output-encoding")
+        )
+          return "🔒";
+        return "";
+      };
+      return items
+        .map((rec) => {
+          if (!rec) return "";
+          const title = rec.title
+            ? `<strong>${escapeHTML(rec.title)}</strong>`
+            : "";
+          const desc = rec.description
+            ? `<div style="font-size:11px;color:#ddd;">${escapeHTML(
+                rec.description
+              )}</div>`
+            : "";
+          const icon = chooseIcon(rec.title || rec.description || "");
+          return `<div style="margin-bottom:8px;">${
+            icon ? `<span style="margin-right:6px;">${icon}</span>` : ""
+          }${title}${desc}</div>`;
+        })
+        .join("");
+    }
+
+    return items.map((s) => escapeHTML(String(s))).join("<br>");
+  }
+
+  return escapeHTML(String(items));
+}
+
 // == AJOUTER CES FONCTIONS APRÈS initializePopup() ==
 
 function showRealTimeAnalysis(tab) {
@@ -298,6 +501,124 @@ async function updateAIStatus() {
   }
 }
 
+// Build categorized API badges HTML (initial render)
+function buildAPIBadgesHtml() {
+  try {
+    const local = [];
+    const specialized = [];
+    const backend = [];
+
+    if (aiHelper?.hasNativeAI) {
+      local.push({ key: "languageModel", label: "🧠 Gemini / LanguageModel" });
+    } else {
+      // still show Gemini as possible
+      local.push({ key: "languageModel", label: "🧠 Gemini / LanguageModel" });
+    }
+
+    // Summarizer and Writer are considered local AI specialized helpers
+    local.push({ key: "summarizer", label: "📝 Summarizer" });
+    local.push({ key: "writer", label: "✍️ Writer" });
+
+    // Specialized category
+    specialized.push({ key: "translator", label: "🌐 Translator" });
+    specialized.push({ key: "proofreader", label: "📋 Proofreader" });
+
+    // Backend
+    backend.push({ key: "n8n", label: "🔬 n8n (deep analysis)" });
+
+    const mk = (item, cls) => {
+      return `<div class="api-badge ${cls}" data-api-key="${item.key}" style="display:inline-block; margin-right:6px; margin-bottom:6px;">
+          <span style="font-weight:600; margin-right:4px;">${item.label}</span>
+          <span class="api-badge-status" style="margin-left:4px; color:#aaf; font-size:12px;">⏳</span>
+        </div>`;
+    };
+
+    return `
+      <div id="apis-categories" style="margin-top:10px; font-size:12px; color:#ccc;">
+        <div style="margin-bottom:6px;;"><strong>Local AI:</strong> <span style="color:#7CFC00;">🟢</span> ${local
+          .map((i) => mk(i, "local"))
+          .join("")}</div>
+        <div style="margin-bottom:6px;"><strong>Specialized:</strong> <span style="color:#1E90FF;">🔵</span> <span style="display:inline-flex; gap:6px; align-items:center;">${specialized
+          .map((i) => mk(i, "specialized"))
+          .join("")}</span></div>
+        <div style="margin-bottom:6px;"><strong>Backend:</strong> <span style="color:#8A2BE2;">🟣</span> ${backend
+          .map((i) => mk(i, "backend"))
+          .join("")}</div>
+      </div>
+
+      <!-- comparison table removed per user request -->
+    `;
+  } catch (e) {
+    console.log("⚠️ buildAPIBadgesHtml failed", e);
+    return "";
+  }
+}
+
+// Update API badge statuses by querying aiHelper.testSpecializedAPIs()
+async function updateAPIBadgesStatus(
+  deepCompleted = false,
+  deepResults = null
+) {
+  try {
+    const status = await (aiHelper.testSpecializedAPIs
+      ? aiHelper.testSpecializedAPIs()
+      : Promise.resolve({}));
+
+    const setStatus = (key, text) => {
+      const el = document.querySelector(
+        `[data-api-key="${key}"] .api-badge-status`
+      );
+      if (el) el.textContent = text;
+    };
+
+    // languageModel - prefer usedAPIs if available
+    if (aiHelper.usedAPIs?.languageModel) setStatus("languageModel", "✅");
+    else if (aiHelper.hasNativeAI || status.languageModel === "available")
+      setStatus("languageModel", "✅");
+    else setStatus("languageModel", "⏳");
+
+    // summarizer
+    if (aiHelper.usedAPIs?.summarizer) setStatus("summarizer", "✅");
+    else if (status.summarizer === "available") setStatus("summarizer", "✅");
+    else setStatus("summarizer", "⏳");
+
+    // writer
+    if (aiHelper.usedAPIs?.writer) setStatus("writer", "✅");
+    else if (status.writer === "available") setStatus("writer", "✅");
+    else setStatus("writer", "⏳");
+
+    // translator
+    if (aiHelper.usedAPIs?.translator) setStatus("translator", "✅");
+    else if (status.translator === "available") setStatus("translator", "✅");
+    else setStatus("translator", "⏳");
+
+    // proofreader
+    if (aiHelper.usedAPIs?.proofreader) setStatus("proofreader", "✅");
+    else if (status.proofreader === "available") setStatus("proofreader", "✅");
+    else setStatus("proofreader", "⏳");
+
+    // Mark which APIs contributed based on deepResults (if provided)
+    try {
+      if (deepResults) {
+        if (deepResults.aiSummary) setStatus("summarizer", "✅");
+        if (deepResults.enhancedRecommendations) setStatus("writer", "✅");
+        if (deepResults.translatedAnalysis) setStatus("translator", "✅");
+        if (deepResults.proofreadAnalysis) setStatus("proofreader", "✅");
+      }
+    } catch (e) {
+      /* ignore */
+    }
+
+    // n8n
+    const n8nEl = document.querySelector(
+      `[data-api-key="n8n"] .api-badge-status`
+    );
+    if (n8nEl) n8nEl.textContent = deepCompleted ? "✅" : "⏳";
+  } catch (e) {
+    console.log("⚠️ updateAPIBadgesStatus failed", e);
+  }
+}
+
 // Tests of priority APIs
 async function testSummarizer() {
   const resultsDiv = document.getElementById("ai-test-results");
@@ -363,7 +684,10 @@ async function testTranslator() {
 // Debug version of analyzeCurrentPage - AVEC INTERFACE TEMPS RÉEL
 async function analyzeCurrentPage() {
   try {
-    console.log("== 🚀 DEBUG ANALYSIS WITH REAL-TIME UI ===");
+    console.log(
+      "== 🚀 DEBUG ANALYSIS WITH REAL-TIME UI ===",
+      new Date().toISOString()
+    );
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
@@ -376,10 +700,15 @@ async function analyzeCurrentPage() {
     });
 
     if (tab && tab.url) {
-      console.log("🎯 Starting progressive analysis for:", tab.url);
+      console.log(
+        "🎯 Starting progressive analysis for:",
+        tab.url,
+        new Date().toISOString()
+      );
 
       // 1. AFFICHER L'INTERFACE TEMPS RÉEL
       await showRealTimeAnalysis(tab);
+      console.log("📌 After showRealTimeAnalysis", new Date().toISOString());
 
       // 2. Pause pour la démo (optionnel - pour bien voir l'animation)
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -406,13 +735,44 @@ async function analyzeCurrentPage() {
       console.log("📈 Progressive analysis started:", progressiveAnalysis);
 
       // Display quick analysis immediately
+      console.log(
+        "📌 About to call displayThreatAnalysis (isProgressive=)",
+        progressiveAnalysis.isProgressive,
+        new Date().toISOString()
+      );
       displayThreatAnalysis(progressiveAnalysis, tab.url);
+      console.log("📌 After displayThreatAnalysis", new Date().toISOString());
+      // Ensure deep analysis status shows running state for new analysis
+      setDeepAnalysisStatusRunning();
+      console.log(
+        "📌 After setDeepAnalysisStatusRunning",
+        new Date().toISOString()
+      );
+      // Ensure AI status shows running state too
+      setAIStatusRunning();
+      console.log("📌 After setAIStatusRunning", new Date().toISOString());
 
       // LISTEN FOR DEEP ANALYSIS UPDATES
+      // Show spinner while deep analysis / polling is running
+      console.log(
+        "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
+        new Date().toISOString()
+      );
+      showDeepSpinner();
+
       window.addEventListener("deepAnalysisUpdate", (event) => {
-        console.log("🔍 Deep analysis update received:", event.detail);
+        console.log(
+          "🔍 Deep analysis update received:",
+          event.detail,
+          new Date().toISOString()
+        );
+        // Keep spinner visible while enhanced analysis (Gemini) runs
         updateWithDeepResults(event.detail);
       });
+      console.log(
+        "📌 deepAnalysisUpdate listener attached",
+        new Date().toISOString()
+      );
     } else {
       console.log("❌ No valid tab found");
       document.getElementById("analysis-content").innerHTML = `
@@ -434,28 +794,38 @@ async function analyzeCurrentPage() {
 }
 
 // 🆕 UPDATE WITH DEEP ANALYSIS RESULTS
-function updateWithDeepResults(deepData) {
+async function updateWithDeepResults(deepData) {
   console.log("🔄 Updating display with deep analysis...");
 
-  // 🎯 UPDATE the "running" status in the metadata section
+  // 🎯 UPDATE the "running" status in the metadata section -> show processing while enhanced analysis runs
   const progressiveIndicator = document.getElementById("deep-analysis-status");
   if (progressiveIndicator) {
-    progressiveIndicator.style.color = "#00ff00";
-    progressiveIndicator.innerHTML = "✅ Deep analysis completed";
-    console.log("✅ Updated deep analysis status to completed");
+    progressiveIndicator.style.color = "#00ffff";
+    progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;\"></span><span>Deep results received — generating enhanced analysis...</span></div>`;
+    console.log(
+      "🔄 Updated deep-analysis-status to processing (enhanced analysis)"
+    );
   } else {
     console.log("❌ Could not find deep-analysis-status element");
   }
 
-  // 🎯 UPDATE the status in the AI Status section
+  // 🎯 UPDATE the status in the AI Status section to indicate enhanced processing
   const aiStatusSection = document.getElementById("ai-status-progress");
   if (aiStatusSection) {
-    aiStatusSection.style.color = "#00ff00";
+    aiStatusSection.style.color = "#00ffff";
     aiStatusSection.innerHTML =
-      "⚡ Quick analysis • ✅ Deep analysis completed";
-    console.log("✅ Updated AI status progress to completed");
+      "⚡ Quick analysis • 🔄 Generating enhanced results...";
+    console.log("🔄 Updated AI status progress to generating enhanced results");
   } else {
     console.log("❌ Could not find ai-status-progress element");
+  }
+
+  // Mark n8n as used (deep analysis source)
+  try {
+    if (aiHelper) aiHelper.usedAPIs = aiHelper.usedAPIs || {};
+    if (aiHelper) aiHelper.usedAPIs.n8n = true;
+  } catch (e) {
+    console.log("⚠️ Failed to mark n8n used on aiHelper", e);
   }
 
   // Add a deep analysis section
@@ -476,6 +846,82 @@ function updateWithDeepResults(deepData) {
     analysisContent.appendChild(deepSection);
   }
 
+  // === 🎯 TENTATIVE GEMINI ENHANCED ANALYSIS ===
+  console.log("🎯 Attempting to call generateEnhancedAnalysis...");
+
+  let enhancedRecommendations = [
+    "Enable real-time monitoring",
+    "Update security policies",
+    "Review access controls",
+  ];
+
+  try {
+    // Vérifie si la fonction existe ET si currentAnalysis est défini
+    if (
+      aiHelper &&
+      typeof aiHelper.generateEnhancedAnalysis === "function" &&
+      window.currentAnalysis
+    ) {
+      console.log("✅ generateEnhancedAnalysis function found");
+      console.log("📊 Current analysis data:", window.currentAnalysis);
+
+      // Appelle la fonction de génération enrichie (Gemini)
+      enhancedRecommendations = await aiHelper.generateEnhancedAnalysis(
+        window.currentAnalysis,
+        deepData.deepResults
+      );
+      console.log("✅ Enhanced recommendations:", enhancedRecommendations);
+
+      // Now that enhanced analysis finished, mark deep analysis as completed and hide spinner
+      try {
+        if (progressiveIndicator) {
+          progressiveIndicator.style.color = "#00ff00";
+          progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"font-size:14px;\">✅</span><span>Deep analysis completed</span></div>`;
+          console.log(
+            "✅ Updated deep analysis status to completed (post-enhanced)"
+          );
+        }
+        if (aiStatusSection) {
+          aiStatusSection.style.color = "#00ff00";
+          aiStatusSection.innerHTML =
+            "⚡ Quick analysis • ✅ Deep analysis completed";
+          console.log(
+            "✅ Updated AI status progress to completed (post-enhanced)"
+          );
+        }
+      } catch (e) {
+        console.log("⚠️ Error updating status to completed:", e.message || e);
+      }
+
+      // Hide spinner now that everything is done
+      hideDeepSpinner();
+      // Update API badges statuses now that deep analysis finished
+      try {
+        updateAPIBadgesStatus(true);
+      } catch (e) {
+        console.log(
+          "⚠️ updateAPIBadgesStatus failed in updateWithDeepResults",
+          e
+        );
+      }
+    } else {
+      console.log(
+        "❌ generateEnhancedAnalysis not available or missing currentAnalysis"
+      );
+      if (!window.currentAnalysis) {
+        console.log("⚠️ window.currentAnalysis is undefined!");
+      }
+    }
+  } catch (error) {
+    console.log("⚠️ Enhanced analysis skipped:", error.message);
+  }
+  // Compute relevance score if provided by aiHelper
+  const relevanceScore = aiHelper?.lastEnhancedValidation?.score ?? null;
+  const relevanceHtml =
+    relevanceScore !== null
+      ? `<span style="font-size:11px; color:#aaf; margin-left:8px;">Relevance: ${relevanceScore}%</span>`
+      : "";
+
   deepSection.innerHTML = `
     <div style="display: flex; align-items: center; margin-bottom: 10px;">
       <span style="font-size: 20px; margin-right: 10px;">🔬</span>
@@ -492,8 +938,8 @@ function updateWithDeepResults(deepData) {
       </div>
     </div>
 
+    <div style="margin: 12px 0; text-align:center; color:#888;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
 
-    
     <div style="margin-bottom: 10px;">
   <strong>🚨 CVE Correlation:</strong>
   <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 12px;">
@@ -582,10 +1028,6 @@ function updateWithDeepResults(deepData) {
   </div>
 </div>
 
-
-
-
-
     ${
       deepData.deepResults?.aiSummary ||
       deepData.deepResults?.enhancedRecommendations ||
@@ -655,28 +1097,24 @@ function updateWithDeepResults(deepData) {
         : ""
     }
     
-    <div style="margin-bottom: 10px;">
-      <strong>💡 Enhanced Recommendations:</strong>
-      ${
-        deepData.deepResults?.recommendationsSource
-          ? `<div style="font-size: 10px; color: #888; margin: 2px 0;">${deepData.deepResults.recommendationsSource}</div>`
-          : ""
-      }
-      <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">
-        ${(
-          deepData.deepResults?.recommendations || [
-            "Enable real-time monitoring",
-            "Update security policies",
-            "Review access controls",
-          ]
-        )
-          .map((rec) => `<li>${rec}</li>`)
-          .join("")}
-      </ul>
+      <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
+      <div>
+        <strong>💡 AI-Enhanced Recommendations:</strong>
+        <div style="font-size: 10px; color: #888; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
+      </div>
+      <div style="text-align:right;">${relevanceHtml}</div>
+      </div>
+      ${renderRecommendationsList(enhancedRecommendations)}
     </div>
     
-    <div style="font-size: 11px; color: #aaa; text-align: right;">
-      🔬 Deep analysis completed in ${deepData.attempt * 3}s
+      <div style="margin: 14px 0; text-align:center; color:#888; font-weight:600;">
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        <div style="margin-top:6px; font-size:13px;">🔬 Deep Analysis Completed</div>
+        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      </div>
+
+      <div style="font-size: 11px; color: #aaa; text-align: right;">
+        🔬 Deep analysis completed in ${deepData.attempt * 3}s
       ${
         deepData.deepResults?.correlationWithQuickAnalysis
           ? "<br>✅ " +
@@ -686,10 +1124,12 @@ function updateWithDeepResults(deepData) {
     </div>
   `;
 
+  // (no dynamic source label used)
   console.log("✅ Deep analysis section updated");
 }
-
 function displayThreatAnalysis(analysis, siteUrl) {
+  window.currentAnalysis = analysis;
+
   const riskConfig = {
     safe: {
       color: "#00ff00",
@@ -779,23 +1219,7 @@ function displayThreatAnalysis(analysis, siteUrl) {
           : '<div style="margin-bottom: 15px;">✅ Aucun indicateur suspect détecté</div>'
       }
 
-  <!-- Recommendations -->
-      <div>
-        <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
-          <span style="margin-right: 5px;">💡</span> SOC-CERT Recommendations
-        </div>
-        <div style="font-size: 12px;">
-          ${analysis.recommendations
-            .map(
-              (rec) => `
-            <div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
-              ${rec}
-            </div>
-          `
-            )
-            .join("")}
-        </div>
-      </div>
+  <!-- (SOC-CERT Recommendations removed - redundant with enhanced recommendations) -->
 
   <!-- Specialized APIs Results -->
       ${
@@ -828,12 +1252,15 @@ function displayThreatAnalysis(analysis, siteUrl) {
             <div style="margin-bottom: 10px;">
               <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">✍️ Writer:</div>
               <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${analysis.enhancedRecommendations.join("<br>")}
+                ${renderRecommendationsInline(analysis.enhancedRecommendations)}
               </div>
             </div>
           `
               : ""
           }
+
+          <!-- APIs used summary -->
+          ${buildAPIBadgesHtml()}
           
           ${
             analysis.translatedAnalysis
@@ -874,7 +1301,10 @@ function displayThreatAnalysis(analysis, siteUrl) {
   }</div>
         ${
           analysis.isProgressive
-            ? '<div id="deep-analysis-status" style="color: #00ffff;">🔄 Deep analysis running via n8n...</div>'
+            ? `<div id="deep-analysis-status" style="color: #00ffff; display:flex; align-items:center; gap:8px;">
+                 <span style="width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span>
+                 <span>Deep analysis n8n running...</span>
+               </div>`
             : `<div>${analysis.mockNote || ""}</div>`
         }
       </div>
@@ -892,6 +1322,22 @@ function displayThreatAnalysis(analysis, siteUrl) {
       }
     </div>
   `;
+  // Refresh API badge statuses right after rendering
+  try {
+    updateAPIBadgesStatus(false, analysis);
+  } catch (e) {
+    console.log(
+      "⚠️ updateAPIBadgesStatus failed after displayThreatAnalysis",
+      e
+    );
+  }
+
+  // Initialize API badges statuses after DOM insertion
+  try {
+    updateAPIBadgesStatus(false);
+  } catch (e) {
+    console.log("⚠️ updateAPIBadgesStatus init failed", e);
+  }
 }
 
 // 🆕 SIMPLIFIED CVE POLLING

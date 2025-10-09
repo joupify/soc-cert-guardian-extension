@@ -180,7 +180,10 @@ function showThreatOverlay(data) {
   if (viewBtn) {
     viewBtn.addEventListener("click", () => {
       console.log("📋 View Details clicked");
-      chrome.runtime.sendMessage({ action: "openExtensionPopup" });
+      // Ouvre l'extension directement sur cette page
+      chrome.runtime.sendMessage({
+        action: "showExtensionOnCurrentPage",
+      });
       dismissOverlay();
     });
 

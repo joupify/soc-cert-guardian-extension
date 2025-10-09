@@ -1536,6 +1536,105 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
   }
 
+  // 🛡️ Validate that generated recommendations match the threat/context
+  validateRecommendations(recommendations, quickAnalysis, cveData) {
+    try {
+      const result = {
+        total: Array.isArray(recommendations) ? recommendations.length : 0,
+        items: [],
+        summary: {
+          relevant: 0,
+          possibly_unrelated: 0,
+        },
+      };
+
+      // Build keyword list from indicators + cve
+      const indicators = (quickAnalysis && quickAnalysis.indicators) || [];
+      const keywords = new Set();
+      indicators.forEach((ind) => {
+        String(ind)
+          .toLowerCase()
+          .split(/[^a-z0-9]+/)
+          .filter(Boolean)
+          .forEach((w) => keywords.add(w));
+      });
+      if (cveData && cveData.cve_id)
+        keywords.add(String(cveData.cve_id).toLowerCase());
+      // common security keywords
+      [
+        "sql",
+        "injection",
+        "waf",
+        "patch",
+        "parameter",
+        "sanitize",
+        "validate",
+        "parameterized",
+        "prepared",
+        "password",
+        "least",
+        "privilege",
+        "monitor",
+      ].forEach((k) => keywords.add(k));
+
+      // detect hostname/platform hints
+      const url =
+        (quickAnalysis && quickAnalysis.analyzedUrl) ||
+        (cveData && cveData.link) ||
+        "";
+      let hostname = "";
+      try {
+        hostname = new URL(url).hostname || "";
+      } catch (e) {
+        hostname = String(url || "");
+      }
+
+      const recs = Array.isArray(recommendations) ? recommendations : [];
+      recs.forEach((rec, idx) => {
+        const content = (
+          typeof rec === "string"
+            ? rec
+            : (rec.title || "") + " " + (rec.description || "")
+        ).toLowerCase();
+        const matched = [];
+        keywords.forEach((k) => {
+          if (k && content.includes(k)) matched.push(k);
+        });
+
+        const issues = [];
+        if (matched.length === 0) {
+          issues.push("no_matching_indicators");
+        }
+
+        // platform-specific recommendation check (e.g., mentions WordPress)
+        if (content.includes("wordpress") || content.includes("wp-")) {
+          if (!hostname.includes("wordpress") && !hostname.includes("wp")) {
+            issues.push("platform_mismatch(wordpress)");
+          }
+        }
+
+        const isRelevant = issues.length === 0;
+        if (isRelevant) result.summary.relevant += 1;
+        else result.summary.possibly_unrelated += 1;
+
+        result.items.push({
+          index: idx,
+          matchedKeywords: matched,
+          issues,
+          relevant: isRelevant,
+        });
+      });
+
+      this.lastEnhancedValidation = result;
+      console.log("🔎 Recommendation validation summary:", result);
+      return result;
+    } catch (e) {
+      console.log("⚠️ validateRecommendations failed:", e.message || e);
+      this.lastEnhancedValidation = null;
+      return null;
+    }
+  }
+
   // Helper pour parser les réponses AI
   parseAIResponse(response) {
     try {
@@ -1737,6 +1836,341 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
 
     return "unknown";
+  }
+
+  async generateEnhancedAnalysis(quickAnalysis, cveData) {
+    console.log("🎯 Generating enhanced analysis with CVE context");
+    // Safe access to available language model API
+    const languageModel =
+      this.nativeAI?.languageModel ||
+      window.LanguageModel ||
+      window.ai?.languageModel;
+
+    // Determine and log the source of the language model (for debugging)
+    let lmSource = null;
+    if (this.nativeAI?.languageModel) lmSource = "this.nativeAI.languageModel";
+    else if (window.LanguageModel) lmSource = "window.LanguageModel";
+    else if (window.ai?.languageModel) lmSource = "window.ai.languageModel";
+    console.log("🔎 languageModel detected from:", lmSource);
+
+    if (!languageModel) {
+      console.log(
+        "⚠️ languageModel not available - attempting specialized API fallbacks (writer/summarizer)"
+      );
+
+      // Try to use specialized writer or summarizer as a fallback to generate recommendations
+      try {
+        // Prefer writer if available
+        let fallbackText = null;
+        let fallbackSource = "fallback-unknown";
+        if (this.hasNativeAI && this.nativeAI?.writer) {
+          console.log("✍️ Using native writer fallback");
+          fallbackSource = "native-writer";
+          fallbackText = await this.generateSOCRecommendations({
+            threatType: quickAnalysis.threatType,
+            riskScore: quickAnalysis.riskScore,
+            indicators: quickAnalysis.indicators,
+          });
+        } else if (window.ai?.writer) {
+          console.log("✍️ Using window.ai.writer fallback");
+          fallbackSource = "window.ai.writer";
+          const writer = await window.ai.writer.create({
+            tone: "formal",
+            length: "short",
+          });
+          fallbackText = await writer.write({
+            input: `Generate 3 specific security recommendations for ${quickAnalysis.threatType} threat. CVE: ${cveData.cve_id}`,
+            context: "SOC-CERT fallback",
+          });
+          writer.destroy?.();
+        } else {
+          // Last resort: use existing helper that falls back to mock
+          console.log("🔧 Using writeContent fallback (mock)");
+          fallbackSource = "mock-writeContent";
+          fallbackText = await this.writeContent(
+            `Generate 3 short security recommendations for ${quickAnalysis.threatType} threat and CVE ${cveData.cve_id}`
+          );
+        }
+
+        if (fallbackText) {
+          // Try to extract lines or sentences
+          const lines = String(fallbackText)
+            .split(/\r?\n|\.|;|\u2022|\u2023|\-|•/) // split on common separators
+            .map((l) => l.trim())
+            .filter((l) => l.length > 3);
+
+          if (lines.length > 0) {
+            console.log(
+              "✅ Fallback recommendations generated (source: fallback writer/summarizer):",
+              lines.slice(0, 3)
+            );
+            this.lastEnhancedSource = fallbackSource;
+            try {
+              this.validateRecommendations(
+                lines.slice(0, 3),
+                quickAnalysis,
+                cveData
+              );
+            } catch (e) {
+              console.log("⚠️ validateRecommendations threw:", e.message || e);
+            }
+            return lines.slice(0, 3);
+          }
+        }
+      } catch (e) {
+        console.log("⚠️ Specialized API fallback failed:", e?.message || e);
+      }
+
+      // Final default fallback
+      this.lastEnhancedSource = fallbackSource || "fallback-default";
+      try {
+        this.validateRecommendations(
+          [
+            "Review security controls",
+            "Update affected systems",
+            "Monitor for exploitation",
+          ],
+          quickAnalysis,
+          cveData
+        );
+      } catch (e) {
+        console.log("⚠️ validateRecommendations threw:", e.message || e);
+      }
+      return [
+        "Review security controls",
+        "Update affected systems",
+        "Monitor for exploitation",
+      ];
+    }
+
+    // Create a session using the detected languageModel implementation
+    let session = null;
+    let usedSource = null;
+    const startTime = Date.now();
+    console.log(
+      "⏱️ generateEnhancedAnalysis start at:",
+      new Date(startTime).toISOString()
+    );
+    try {
+      console.log(
+        "🔄 Attempting to create languageModel session (source):",
+        lmSource
+      );
+      if (languageModel === window.LanguageModel) {
+        console.log("🔧 Creating session via window.LanguageModel.create()...");
+        session = await window.LanguageModel.create({
+          temperature: 0.3,
+          topK: 3,
+          outputLanguage: "en",
+        });
+        usedSource = "window.LanguageModel";
+        console.log("✅ Session created via window.LanguageModel");
+      } else if (languageModel === window.ai?.languageModel) {
+        console.log(
+          "🔧 Creating session via window.ai.languageModel.create()..."
+        );
+        session = await window.ai.languageModel.create({
+          temperature: 0.3,
+          topK: 3,
+          outputLanguage: "en",
+        });
+        usedSource = "window.ai.languageModel";
+        console.log("✅ Session created via window.ai.languageModel");
+      } else if (typeof languageModel.create === "function") {
+        console.log(
+          "🔧 Creating session via languageModel.create() (custom)..."
+        );
+        session = await languageModel.create({
+          temperature: 0.3,
+          topK: 3,
+          outputLanguage: "en",
+        });
+        usedSource = "languageModel.create() (custom)";
+        console.log("✅ Session created via custom languageModel.create()");
+      } else {
+        console.log(
+          "⚠️ languageModel object found but doesn't expose create(), skipping"
+        );
+        this.lastEnhancedSource = "languageModel-no-create";
+        return [
+          "Review security controls",
+          "Update affected systems",
+          "Monitor for exploitation",
+        ];
+      }
+    } catch (err) {
+      console.log(
+        "⚠️ Failed to create languageModel session:",
+        err.message || err
+      );
+      return [
+        "Review security controls",
+        "Update affected systems",
+        "Monitor for exploitation",
+      ];
+    }
+
+    const prompt = `
+You are a senior cybersecurity analyst. Based on this threat analysis:
+
+INITIAL THREAT:
+- URL: ${quickAnalysis.analyzedUrl}
+- Threat Type: ${quickAnalysis.threatType}
+- Risk Score: ${quickAnalysis.riskScore}%
+- Indicators: ${quickAnalysis.indicators?.join(", ")}
+
+CVE INTELLIGENCE:
+- CVE ID: ${cveData.cve_id}
+- Severity: ${cveData.severity}
+- CVSS Score: ${cveData.score}
+
+Generate 3-4 specific, actionable security recommendations.
+Focus on mitigation strategies for ${cveData.cve_id}.
+Return as a JSON array.
+`;
+
+    try {
+      console.log("📨 Sending prompt to languageModel (chars):", prompt.length);
+      const response = await session.prompt(prompt);
+      console.log("📥 Raw languageModel response:", response);
+      // Cleanup session if API exposes destroy
+      session.destroy?.();
+
+      const timeTaken = Date.now() - startTime;
+      console.log(`⏱️ languageModel response time: ${timeTaken}ms`);
+
+      let recommendations = null;
+      try {
+        recommendations = JSON.parse(response);
+      } catch (e) {
+        // If response is plain text, try to extract JSON array
+        const match = response.match(/\[.*\]/s);
+        if (match) {
+          try {
+            recommendations = JSON.parse(match[0]);
+          } catch (pe) {
+            console.log(
+              "⚠️ Failed to JSON.parse extracted array:",
+              pe.message || pe
+            );
+          }
+        }
+      }
+
+      if (!recommendations) {
+        console.log(
+          "⚠️ Enhanced analysis returned non-JSON response, using fallback. Source:",
+          usedSource || lmSource
+        );
+        this.lastEnhancedSource =
+          usedSource || lmSource || "languageModel-nonjson";
+        try {
+          this.validateRecommendations(
+            [
+              "Review security controls",
+              "Update affected systems",
+              "Monitor for exploitation",
+            ],
+            quickAnalysis,
+            cveData
+          );
+        } catch (e) {
+          console.log("⚠️ validateRecommendations threw:", e.message || e);
+        }
+        return [
+          "Review security controls",
+          "Update affected systems",
+          "Monitor for exploitation",
+        ];
+      }
+
+      console.log(
+        "✅ Enhanced recommendations generated by:",
+        usedSource || lmSource
+      );
+      this.lastEnhancedSource = usedSource || lmSource || "languageModel";
+      try {
+        this.validateRecommendations(recommendations, quickAnalysis, cveData);
+      } catch (e) {
+        console.log("⚠️ validateRecommendations threw:", e.message || e);
+      }
+
+      // Filter to keep only relevant recommendations (based on validation)
+      const validation = this.lastEnhancedValidation;
+      let filtered = Array.isArray(recommendations)
+        ? recommendations.slice()
+        : [];
+      if (
+        validation &&
+        Array.isArray(validation.items) &&
+        validation.items.length > 0
+      ) {
+        filtered = recommendations.filter(
+          (_, idx) => validation.items[idx] && validation.items[idx].relevant
+        );
+      }
+
+      // Compute a relevance score percentage
+      const total = validation
+        ? validation.total || recommendations.length
+        : recommendations.length;
+      const relevantCount = validation
+        ? validation.summary.relevant || 0
+        : filtered.length;
+      const score = Math.round((relevantCount / Math.max(1, total)) * 100);
+      this.lastEnhancedValidation = this.lastEnhancedValidation || {};
+      this.lastEnhancedValidation.score = score;
+      this.lastEnhancedFilteredRecommendations = filtered;
+
+      return filtered && filtered.length > 0 ? filtered : recommendations;
+    } catch (error) {
+      console.error("❌ Enhanced analysis failed:", error);
+      try {
+        session.destroy?.();
+      } catch (e) {
+        /* ignore */
+      }
+      try {
+        this.validateRecommendations(
+          [
+            "Review security controls",
+            "Update affected systems",
+            "Monitor for exploitation",
+          ],
+          quickAnalysis,
+          cveData
+        );
+      } catch (e) {
+        console.log("⚠️ validateRecommendations threw:", e.message || e);
+      }
+      // apply filtering/score on fallback
+      const validation2 = this.lastEnhancedValidation || null;
+      const recsFallback = [
+        "Review security controls",
+        "Update affected systems",
+        "Monitor for exploitation",
+      ];
+      const total2 = validation2
+        ? validation2.total || recsFallback.length
+        : recsFallback.length;
+      const relevantCount2 = validation2
+        ? validation2.summary.relevant || 0
+        : 0;
+      const score2 = Math.round((relevantCount2 / Math.max(1, total2)) * 100);
+      this.lastEnhancedValidation = this.lastEnhancedValidation || {};
+      this.lastEnhancedValidation.score = score2;
+      this.lastEnhancedFilteredRecommendations = recsFallback.filter(
+        (_, idx) =>
+          (validation2 &&
+            validation2.items &&
+            validation2.items[idx] &&
+            validation2.items[idx].relevant) ||
+          false
+      );
+      return this.lastEnhancedFilteredRecommendations.length > 0
+        ? this.lastEnhancedFilteredRecommendations
+        : recsFallback;
+    }
   }
 }
 

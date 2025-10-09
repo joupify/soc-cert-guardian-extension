@@ -134,70 +134,87 @@ function escapeHTML(str) {
 function renderRecommendationsList(items) {
   if (!items || !Array.isArray(items) || items.length === 0)
     return "<div>No recommendations available</div>";
-  return `
-    <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">${items
-      .map((rec) => {
-        if (!rec) return "";
-        // helper to choose icon by content
-        const chooseIcon = (text) => {
-          if (!text) return "";
-          const t = String(text).toLowerCase();
-          if (
-            t.includes("sanitize") ||
-            t.includes("validation") ||
-            t.includes("parameter")
-          )
-            return "🔧";
-          if (
-            t.includes("update") ||
-            t.includes("patch") ||
-            t.includes("upgrade")
-          )
-            return "🆙";
-          if (
-            t.includes("security header") ||
-            t.includes("headers") ||
-            t.includes("enable") ||
-            t.includes("configure")
-          )
-            return "🛡️";
-          if (
-            t.includes("waf") ||
-            t.includes("firewall") ||
-            t.includes("web application firewall")
-          )
-            return "🔥";
-          if (
-            t.includes("encode") ||
-            t.includes("encoding") ||
-            t.includes("output encoding") ||
-            t.includes("output-encoding")
-          )
-            return "🔒";
-          return "";
-        };
 
-        if (typeof rec === "string") {
-          const icon = chooseIcon(rec);
-          return `<li>${
-            icon ? `<span style="margin-right:6px;">${icon}</span>` : ""
-          }${escapeHTML(rec)}</li>`;
-        }
-        // object case
-        const title = rec.title
-          ? `<strong>${escapeHTML(rec.title)}</strong>`
-          : "";
-        const desc = rec.description
-          ? `<div style="font-size:11px; color:#ddd; margin-top:4px;">${escapeHTML(
-              rec.description
-            )}</div>`
-          : "";
-        const icon = chooseIcon(rec.title || rec.description || "");
-        return `<li style="margin-bottom:8px;">${
-          icon ? `<span style="margin-right:6px;">${icon}</span>` : ""
-        }${title}${desc}</li>`;
-      })
-      .join("")} </ul>
+  return `
+    <ul style="margin: 5px 0; padding-left: 20px; font-size: 12px;">
+      ${items
+        .map((rec) => {
+          if (!rec) return "";
+
+          // helper to choose icon by content
+          const chooseIcon = (text) => {
+            if (!text) return "";
+            const t = String(text).toLowerCase();
+            if (
+              t.includes("sanitize") ||
+              t.includes("validation") ||
+              t.includes("parameter")
+            )
+              return "🔧";
+            if (
+              t.includes("update") ||
+              t.includes("patch") ||
+              t.includes("upgrade")
+            )
+              return "🆙";
+            if (
+              t.includes("security header") ||
+              t.includes("headers") ||
+              t.includes("enable") ||
+              t.includes("configure")
+            )
+              return "🛡️";
+            if (
+              t.includes("waf") ||
+              t.includes("firewall") ||
+              t.includes("web application firewall")
+            )
+              return "🔥";
+            if (
+              t.includes("encode") ||
+              t.includes("encoding") ||
+              t.includes("output encoding") ||
+              t.includes("output-encoding")
+            )
+              return "🔒";
+            // Default icon when no keyword matched
+            return "💡";
+          };
+
+          if (typeof rec === "string") {
+            const icon = chooseIcon(rec);
+            return `<li style="display: flex; align-items: flex-start;">
+              ${
+                icon
+                  ? `<span style="display: inline; margin-right: 6px; flex-shrink: 0;">${icon}</span>`
+                  : ""
+              }
+              <span style="display: inline; flex: 1;">${escapeHTML(rec)}</span>
+            </li>`;
+          }
+
+          // object case
+          const title = rec.title
+            ? `<strong>${escapeHTML(rec.title)}</strong>`
+            : "";
+          const desc = rec.description
+            ? `<div style="font-size:11px; color:#ddd; margin-top:4px;">${escapeHTML(
+                rec.description
+              )}</div>`
+            : "";
+          const icon = chooseIcon(rec.title || rec.description || "");
+
+          return `<li style="margin-bottom: 8px; display: flex; align-items: flex-start;">
+            ${
+              icon
+                ? `<span style="display: inline; margin-right: 6px; flex-shrink: 0;">${icon}</span>`
+                : ""
+            }
+            <div style="flex: 1;">${title}${desc}</div>
+          </li>`;
+        })
+        .join("")}
+    </ul>
   `;
 }
 
@@ -242,7 +259,8 @@ function renderRecommendationsInline(items) {
           t.includes("output-encoding")
         )
           return "🔒";
-        return "";
+        // Default icon when no keyword matched
+        return "💡";
       };
       return items
         .map((rec) => {

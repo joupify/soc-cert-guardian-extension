@@ -37,6 +37,14 @@ An innovative security extension combining Chrome's Built-in AI with real-time C
 - [📄 License & Credits](#-license--credits)
 - [📞 Contact & Support](#-contact--support)
 
+## 🚀 Evolution & Awards
+
+**SOC-CERT Ecosystem Timeline:**
+
+- 🏆 **August 2025** - Winner: n8n & Bright Data AI Agents Challenge
+- 📊 **September 2025** - SOC-CERT Enterprise Dashboard (KendoReact)
+- 🌐 **October 2025** - World's First Chrome Extension with Hybrid AI
+
 ## 🎯 What Makes This Special
 
 ## 🚀 **First-of-Its-Kind Innovation**
@@ -701,12 +709,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy...
 
 ## Support
 
-### 🔗 Project Links
-
-- 📹 Demo Video: [YouTube - Coming Soon]
-- 💻 GitHub Repository: [github.com/joupify/soc-cert-extension]
-
-### 💬 Get Help
+###  Get Help
 
 - Issues: Open a GitHub issue for bugs
 - Discussions: Join our community forum

@@ -2013,20 +2013,68 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     const prompt = `
 You are a senior cybersecurity analyst. Based on this threat analysis:
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INITIAL THREAT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - URL: ${quickAnalysis.analyzedUrl}
 - Threat Type: ${quickAnalysis.threatType}
 - Risk Score: ${quickAnalysis.riskScore}%
 - Indicators: ${quickAnalysis.indicators?.join(", ")}
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 CVE INTELLIGENCE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - CVE ID: ${cveData.cve_id}
 - Severity: ${cveData.severity}
 - CVSS Score: ${cveData.score}
+- Product: ${cveData.cve_product || "Unknown"}
+- Vendor: ${cveData.cve_vendor || "Unknown"}
 
+📝 CVE Description:
+${cveData.cve_description || cveData.description || "No description available"}
+
+${
+  cveData.cve_requiredAction
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️ OFFICIAL REQUIRED ACTION (CISA KEV):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${cveData.cve_requiredAction}
+
+🎯 CRITICAL INSTRUCTION:
+Your recommendations MUST implement this official action.
+Focus on HOW to execute this requirement, not generic advice.
+`
+    : ""
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 TASK:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Generate 3-4 specific, actionable security recommendations.
-Focus on mitigation strategies for ${cveData.cve_id}.
-Return as a JSON array.
+
+${
+  cveData.cve_requiredAction
+    ? `Focus on implementing the OFFICIAL REQUIRED ACTION above for ${
+        cveData.cve_product || cveData.cve_id
+      }.`
+    : `Focus on mitigation strategies for ${cveData.cve_id}.`
+}
+
+Return ONLY a valid JSON array in this exact format:
+[
+  {
+    "icon": "🔧",
+    "title": "Short actionable title (max 60 chars)",
+    "description": "Detailed explanation (2-3 sentences)"
+  }
+]
+
+Use these icons:
+- 🔧 Implementation/Configuration
+- 🔥 High Priority/Critical
+- 🆙 Updates/Patches  
+- 💡 Best Practices
 `;
 
     try {

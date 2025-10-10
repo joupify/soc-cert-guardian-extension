@@ -563,8 +563,10 @@ function buildAPIBadgesHtml() {
     </div>
     
     <!-- Specialized -->
-    <div style="margin-bottom:6px;">
+    <div style="margin-bottom:8px;">
       <strong>Specialized:</strong> <span style="color:#1E90FF;">🔵</span> 
+    </div>
+    <div>
       <span style="display:inline-flex; gap:6px; align-items:center;">
         ${specialized.map((i) => mk(i, "specialized")).join("")}
       </span>
@@ -1055,6 +1057,15 @@ async function updateWithDeepResults(deepData) {
       return "⏳ Waiting for CVE data...";
     })()}
   </div>
+
+<a href="https://nvd.nist.gov/vuln/detail/CVE-2020-0618" target="_blank" style="color: #4a9eff; text-decoration: underline; font-size: 12px; margin-left: 8px;">
+  View on NVD →
+</a>
+
+
+
+
+
 </div>
 
     ${

@@ -503,3 +503,49 @@ h1.title {
 .recommendations ul li {
   color: #072b4a; /* keep recommendation text dark as designed */
 }
+
+/* ========================================
+   BADGE "NEW" - FIX LIGNE
+   ======================================== */
+
+/* Animation pulse pour le badge NEW */
+@keyframes pulse-new {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.85; 
+    transform: scale(1.05);
+  }
+}
+
+/* Badge NEW avec animation + FIX ligne */
+.badge-new {
+  display: inline-block;
+  background: #ffa502; /* Orange pour plus de visibilité */
+  color: white;
+  padding: 2px 5px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-left: 8px;
+  letter-spacing: 0.5px;
+  animation: pulse-new 2s ease-in-out infinite;
+  box-shadow: 0 2px 4px rgba(255, 165, 2, 0.3);
+  
+  /* 🔥 FIX : Force à rester sur la même ligne */
+  white-space: nowrap;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Style du conteneur parent pour forcer inline */
+.recommendations-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap; /* 🔥 Empêche le retour à la ligne */
+  gap: 8px;
+}

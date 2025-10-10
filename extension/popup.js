@@ -546,26 +546,37 @@ function buildAPIBadgesHtml() {
 
     const mk = (item, cls) => {
       return `<div class="api-badge ${cls}" data-api-key="${item.key}" style="display:inline-block; margin-right:6px; margin-bottom:6px;">
-          <span style="font-weight:600; margin-right:4px;">${item.label}</span>
-          <span class="api-badge-status" style="margin-left:4px; color:#aaf; font-size:12px;">⏳</span>
-        </div>`;
+      <span style="font-weight:600; margin-right:4px;">${item.label}</span>
+      <span class="api-badge-status" style="margin-left:4px; color:#aaf; font-size:12px;">⏳</span>
+    </div>`;
     };
 
     return `
-      <div id="apis-categories" style="margin-top:10px; font-size:12px; color:#ccc;">
-        <div style="margin-bottom:6px;;"><strong>Local AI:</strong> <span style="color:#7CFC00;">🟢</span> ${local
-          .map((i) => mk(i, "local"))
-          .join("")}</div>
-        <div style="margin-bottom:6px;"><strong>Specialized:</strong> <span style="color:#1E90FF;">🔵</span> <span style="display:inline-flex; gap:6px; align-items:center;">${specialized
-          .map((i) => mk(i, "specialized"))
-          .join("")}</span></div>
-        <div style="margin-bottom:6px;"><strong>Backend:</strong> <span style="color:#8A2BE2;">🟣</span> ${backend
-          .map((i) => mk(i, "backend"))
-          .join("")}</div>
-      </div>
-
-      <!-- comparison table removed per user request -->
-    `;
+  <div id="apis-categories" style="margin-top:10px; font-size:12px; color:#ccc;">
+    
+    <!-- Local AI sur sa propre ligne -->
+    <div style="margin-bottom:8px;">
+      <strong>Local AI:</strong> <span style="color:#7CFC00;">🟢</span>
+    </div>
+    <div style="margin-bottom:8px; margin-left:16px;">
+      ${local.map((i) => mk(i, "local")).join("")}
+    </div>
+    
+    <!-- Specialized -->
+    <div style="margin-bottom:6px;">
+      <strong>Specialized:</strong> <span style="color:#1E90FF;">🔵</span> 
+      <span style="display:inline-flex; gap:6px; align-items:center;">
+        ${specialized.map((i) => mk(i, "specialized")).join("")}
+      </span>
+    </div>
+    
+    <!-- Backend -->
+    <div style="margin-bottom:6px;">
+      <strong>Backend:</strong> <span style="color:#8A2BE2;">🟣</span> 
+      ${backend.map((i) => mk(i, "backend")).join("")}
+    </div>
+  </div>
+`;
   } catch (e) {
     console.log("⚠️ buildAPIBadgesHtml failed", e);
     return "";
@@ -1118,6 +1129,8 @@ async function updateWithDeepResults(deepData) {
       <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
       <div>
         <strong>💡 AI-Enhanced Recommendations:</strong>
+        <span class="badge-new orange">NEW</span>
+
         <div style="font-size: 10px; color: #888; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
       </div>
       <div style="text-align:right;">${relevanceHtml}</div>

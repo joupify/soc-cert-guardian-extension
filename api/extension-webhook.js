@@ -5,6 +5,32 @@ export default async function handler(req, res) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  // Manual JSON parsing for POST requests
+  if (req.method === "POST") {
+    if (!req.body || typeof req.body === "string") {
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const bodyString = Buffer.concat(chunks).toString();
+      try {
+        req.body = JSON.parse(bodyString);
+        console.log(
+          "📥 Manually parsed body:",
+          JSON.stringify(req.body, null, 2)
+        );
+      } catch (e) {
+        console.log(
+          "❌ Failed to parse body:",
+          e.message,
+          "Body string:",
+          bodyString
+        );
+        req.body = {};
+      }
+    }
+  }
+
   // ✅ REDIRECT GET vers extension-queue
   if (req.method === "GET") {
     console.log(
@@ -18,6 +44,25 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
+    console.log(
+      "📥 WEBHOOK RECEIVED RAW BODY:",
+      JSON.stringify(req.body, null, 2)
+    );
+    console.log("📥 req.body type:", typeof req.body);
+
+    let parsedBody = req.body;
+    if (typeof req.body === "string") {
+      try {
+        parsedBody = JSON.parse(req.body);
+        console.log(
+          "📥 Parsed req.body from string:",
+          JSON.stringify(parsedBody, null, 2)
+        );
+      } catch (e) {
+        console.log("❌ Failed to parse req.body string:", e.message);
+      }
+    }
+
     const {
       url,
       threatType,
@@ -26,8 +71,20 @@ export default async function handler(req, res) {
       extensionId,
       timestamp,
       summary,
-    } = req.body || {};
+      indicators,
+      riskScore,
+      confidence,
+    } = parsedBody || {};
     const finalAnalysis = summary || analysis || aiAnalysis;
+
+    console.log("📥 WEBHOOK EXTRACTED VALUES:");
+    console.log("  - extensionId:", extensionId);
+    console.log("  - url:", url);
+    console.log("  - threatType:", threatType);
+    console.log("  - summary:", summary);
+    console.log("  - indicators:", JSON.stringify(indicators));
+    console.log("  - riskScore:", riskScore);
+    console.log("  - confidence:", confidence);
 
     if (!extensionId || !url || !threatType) {
       return res.status(400).json({
@@ -46,6 +103,9 @@ export default async function handler(req, res) {
             threatType,
             aiAnalysis: finalAnalysis,
             extensionId,
+            indicators: indicators || [],
+            riskScore: riskScore || 0,
+            confidence: confidence || 0,
             timestamp: timestamp || new Date().toISOString(),
           }),
         }
@@ -56,6 +116,9 @@ export default async function handler(req, res) {
       }
 
       console.log(`📥 Extension stored: ${extensionId}`);
+      console.log(`  - indicators: ${JSON.stringify(indicators)}`);
+      console.log(`  - riskScore: ${riskScore}`);
+      console.log(`  - confidence: ${confidence}`);
 
       return res.json({
         success: true,

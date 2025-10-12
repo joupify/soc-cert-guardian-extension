@@ -400,7 +400,7 @@ class AIHelper {
     }
   }
 
-  // 🆕 Analyse de sécurité (version corrigée)
+  // 🆕 Analyse de sécurité
   async analyzeThreat(url, context = "") {
     const prompt = `Analysez cette URL pour les risques de sécurité et répondez en JSON strict:
 
@@ -683,15 +683,29 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       console.log(
         "🎯 ULTRA-SIMPLE MODE: No nested objects, only flat properties"
       );
+      // 🎯 PAYLOAD CORRIGÉ AVEC INDICATORS
+      console.log("🎯 SENDING COMPLETE PAYLOAD with indicators");
+
+      // 🔍 DEBUG: Vérifier le contenu de quickAnalysis
+      console.log("🔍 DEBUG quickAnalysis content:");
+      console.log("  - threatType:", quickAnalysis.threatType);
+      console.log("  - analysis:", quickAnalysis.analysis);
+      console.log("  - indicators:", JSON.stringify(quickAnalysis.indicators));
+      console.log("  - riskScore:", quickAnalysis.riskScore);
+      console.log("  - confidence:", quickAnalysis.confidence);
+
       const webhookData = {
-        extensionId: this.extensionId, // ✅ Vrai ID de l'extension
-        url: url, // ✅ Vraie URL analysée
+        extensionId: this.extensionId,
+        url: url,
         threatType: quickAnalysis.threatType || "suspicious",
         summary: quickAnalysis.analysis || "Threat detected by AI",
+
+        // ✅ AJOUTER CES CHAMPS
+        indicators: quickAnalysis.indicators || [],
         riskScore: quickAnalysis.riskScore || 65,
         confidence: quickAnalysis.confidence || 0.7,
+
         timestamp: new Date().toISOString(),
-        // ✅ AUCUN objet imbriqué - tout en propriétés de premier niveau
       };
 
       // 🚨 DÉCLENCHEMENT MANUEL ADDITIF

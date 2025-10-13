@@ -66,6 +66,228 @@ async function initializePopup() {
   }
 }
 
+// ============================================
+// SECURITY RESOURCES GENERATOR
+// ============================================
+
+class SecurityResourcesGenerator {
+  constructor() {
+    this.resourceDatabase = {
+      "SQL injection": {
+        cwe: "89",
+        cweUrl: "https://cwe.mitre.org/data/definitions/89.html",
+        guides: [
+          {
+            title: "OWASP SQL Injection Prevention Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+            description: "Comprehensive guide to preventing SQL injection attacks"
+          },
+          {
+            title: "NIST Secure Coding Guidelines",
+            url: "https://www.nist.gov/itl/ssd/software-quality-group/secure-coding",
+            description: "Official NIST recommendations for secure development"
+          },
+          {
+            title: "OWASP Testing Guide - SQL Injection",
+            url: "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection",
+            description: "How to test for SQL injection vulnerabilities"
+          }
+        ],
+        labs: [
+          {
+            title: "PortSwigger SQL Injection Lab",
+            url: "https://portswigger.net/web-security/sql-injection",
+            description: "Interactive hands-on SQL injection training"
+          },
+          {
+            title: "OWASP WebGoat SQL Injection Lessons",
+            url: "https://owasp.org/www-project-webgoat/",
+            description: "Practice SQL injection in a safe environment"
+          }
+        ]
+      },
+      "XSS": {
+        cwe: "79",
+        cweUrl: "https://cwe.mitre.org/data/definitions/79.html",
+        guides: [
+          {
+            title: "OWASP XSS Prevention Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+            description: "Best practices for preventing XSS attacks"
+          },
+          {
+            title: "OWASP DOM-based XSS Prevention",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html",
+            description: "Specific guidance for DOM-based XSS"
+          }
+        ],
+        labs: [
+          {
+            title: "PortSwigger XSS Labs",
+            url: "https://portswigger.net/web-security/cross-site-scripting",
+            description: "Interactive XSS training with various scenarios"
+          }
+        ]
+      },
+      "CSRF": {
+        cwe: "352",
+        cweUrl: "https://cwe.mitre.org/data/definitions/352.html",
+        guides: [
+          {
+            title: "OWASP CSRF Prevention Cheat Sheet",
+            url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+            description: "Comprehensive CSRF prevention strategies"
+          }
+        ],
+        labs: [
+          {
+            title: "PortSwigger CSRF Lab",
+            url: "https://portswigger.net/web-security/csrf",
+            description: "Practice CSRF attack and defense techniques"
+          }
+        ]
+      },
+      "Command Injection": {
+        cwe: "78",
+        cweUrl: "https://cwe.mitre.org/data/definitions/78.html",
+        guides: [
+          {
+            title: "OWASP Command Injection",
+            url: "https://owasp.org/www-community/attacks/Command_Injection",
+            description: "Understanding and preventing command injection"
+          }
+        ],
+        labs: [
+          {
+            title: "PortSwigger OS Command Injection Lab",
+            url: "https://portswigger.net/web-security/os-command-injection",
+            description: "Interactive command injection exercises"
+          }
+        ]
+      }
+    };
+
+    // Default resources si aucun type n'est détecté
+    this.defaultResources = {
+      cwe: "Unknown",
+      cweUrl: "https://cwe.mitre.org/",
+      guides: [
+        {
+          title: "OWASP Top 10",
+          url: "https://owasp.org/www-project-top-ten/",
+          description: "Critical security risks for web applications"
+        },
+        {
+          title: "NIST Cybersecurity Framework",
+          url: "https://www.nist.gov/cyberframework",
+          description: "Framework for improving critical infrastructure cybersecurity"
+        }
+        ],
+      labs: [
+        {
+          title: "OWASP WebGoat",
+          url: "https://owasp.org/www-project-webgoat/",
+          description: "General web security training platform"
+        }
+      ]
+    };
+  }
+
+  // Détecter le type de vulnérabilité depuis les indicators
+  detectVulnerabilityType(indicators) {
+    if (!indicators || indicators.length === 0) return null;
+
+    for (const indicator of indicators) {
+      const indicatorLower = indicator.toLowerCase();
+
+      for (const [vulnType, resources] of Object.entries(this.resourceDatabase)) {
+        if (indicatorLower.includes(vulnType.toLowerCase().replace(" ", ""))) {
+          return { type: vulnType, ...resources };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // Générer le HTML complet des ressources
+  generateResourcesHTML(indicators) {
+    const detected = this.detectVulnerabilityType(indicators);
+    const resources = detected || { type: "General Web Security", ...this.defaultResources };
+
+    return `
+      <div class="security-resources-section">
+        <div class="resources-header">
+          <h3>📚 Learn More About This Threat</h3>
+          <p class="resources-subtitle">Educational resources and hands-on practice</p>
+        </div>
+
+        <!-- Vulnerability Classification -->
+        <div class="resource-category">
+          <div class="category-header">
+            <span class="category-icon">🔍</span>
+            <h4>Vulnerability Classification</h4>
+          </div>
+          <div class="resource-content">
+            <div class="classification-item">
+              <span class="classification-label">Type:</span>
+              <span class="classification-value">${resources.type}</span>
+            </div>
+            <div class="classification-item">
+              <span class="classification-label">CWE Reference:</span>
+              <a href="${resources.cweUrl}" target="_blank" class="classification-link">
+                CWE-${resources.cwe}: ${resources.type}
+                <span class="link-icon">↗</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prevention Guides -->
+        <div class="resource-category">
+          <div class="category-header">
+            <span class="category-icon">📖</span>
+            <h4>Prevention Guides</h4>
+          </div>
+          <div class="resource-content">
+            ${resources.guides.map(guide => `
+              <div class="resource-link-card">
+                <a href="${guide.url}" target="_blank" class="resource-link">
+                  <div class="resource-link-title">${guide.title}</div>
+                  <div class="resource-link-desc">${guide.description}</div>
+                  <span class="link-icon-inline">→</span>
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Hands-On Practice -->
+        <div class="resource-category">
+          <div class="category-header">
+            <span class="category-icon">🧪</span>
+            <h4>Hands-On Practice</h4>
+          </div>
+          <div class="resource-content">
+            ${resources.labs.map(lab => `
+              <div class="resource-link-card">
+                <a href="${lab.url}" target="_blank" class="resource-link">
+                  <div class="resource-link-title">${lab.title}</div>
+                  <div class="resource-link-desc">${lab.description}</div>
+                  <span class="link-icon-inline">→</span>
+                </a>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+// ✅ Initialiser le générateur
+const resourcesGenerator = new SecurityResourcesGenerator();
+
 // Helper to show/hide a deep analysis spinner inside #analysis-content
 function showDeepSpinner() {
   const container = document.getElementById("analysis-content");
@@ -893,8 +1115,7 @@ async function updateWithDeepResults(deepData) {
       typeof aiHelper.generateEnhancedAnalysis === "function" &&
       window.currentAnalysis
     ) {
-      console.log("✅ generateEnhancedAnalysis function found");
-      console.log("📊 Current analysis data:", window.currentAnalysis);
+      console.log("✅ AI: generateEnhancedAnalysis will be called");
 
       // Appelle la fonction de génération enrichie (Gemini)
       enhancedRecommendations = await aiHelper.generateEnhancedAnalysis(
@@ -936,12 +1157,7 @@ async function updateWithDeepResults(deepData) {
         );
       }
     } else {
-      console.log(
-        "❌ generateEnhancedAnalysis not available or missing currentAnalysis"
-      );
-      if (!window.currentAnalysis) {
-        console.log("⚠️ window.currentAnalysis is undefined!");
-      }
+      console.log("❌ AI: generateEnhancedAnalysis not available or missing data");
     }
   } catch (error) {
     console.log("⚠️ Enhanced analysis skipped:", error.message);
@@ -982,7 +1198,19 @@ async function updateWithDeepResults(deepData) {
         console.log("✅ CVE found:", deepData.deepResults.cve_id);
         return `
           <div class="cve-item">
-            <strong>${deepData.deepResults.cve_id}</strong> 
+            <!-- ✅ NOUVEAU : Badge CVE Type -->
+            <div class="cve-header">
+              <span class="cve-id">${deepData.deepResults.cve_id}</span>
+              
+              <!-- Badge selon le type -->
+              <span class="cve-badge ${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'emerging-threat' : 'official-cve'}">
+                <span class="badge-icon">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? '🔮' : '✅'}</span>
+                <span class="badge-text">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'Emerging Threat' : 'Official CVE'}</span>
+                <span class="badge-tooltip">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'AI-detected threat not yet in NVD' : 'Verified CVE from official database'}</span>
+              </span>
+              
+              <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${deepData.deepResults.severity}</span>
+            </div>
             <span class="badge badge-${
               deepData.deepResults.severity?.toLowerCase() || "critical"
             }" style="
@@ -1043,7 +1271,19 @@ async function updateWithDeepResults(deepData) {
           .map(
             (cve) => `
             <div class="cve-item">
-              <strong>${cve.cve_id}</strong> 
+              <!-- ✅ NOUVEAU : Badge CVE Type -->
+              <div class="cve-header">
+                <span class="cve-id">${cve.cve_id}</span>
+                
+                <!-- Badge selon le type -->
+                <span class="cve-badge ${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'emerging-threat' : 'official-cve'}">
+                  <span class="badge-icon">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? '🔮' : '✅'}</span>
+                  <span class="badge-text">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'Emerging Threat' : 'Official CVE'}</span>
+                  <span class="badge-tooltip">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'AI-detected threat not yet in NVD' : 'Verified CVE from official database'}</span>
+                </span>
+                
+                <span class="severity ${cve.severity?.toLowerCase()}">${cve.severity}</span>
+              </div>
               <span class="badge badge-${
                 cve.severity?.toLowerCase() || "unknown"
               }">
@@ -1185,12 +1425,90 @@ async function updateWithDeepResults(deepData) {
       </div>
       ${renderRecommendationsList(enhancedRecommendations)}
     </div>
-    
-      <div style="margin: 14px 0; text-align:center; color:#888; font-weight:600;">
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        <div style="margin-top:6px; font-size:13px;">🔬 Deep Analysis Completed</div>
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      </div>
+
+    <!-- 🎯 POINT 2: Educational Resources Section -->
+    ${(() => {
+      // Extract indicators from deepData for resource generation
+      let indicators = [];
+
+      if (deepData.deepResults?.indicators) {
+        indicators = deepData.deepResults.indicators;
+      } else if (deepData.deepResults?.results?.length > 0) {
+        // Extract indicators from results array
+        indicators = deepData.deepResults.results
+          .filter(result => result.indicators)
+          .flatMap(result => result.indicators);
+      }
+
+      console.log("🔍 DEBUG: Indicators for resources:", indicators);
+      console.log("🔍 DEBUG: deepData.deepResults:", deepData.deepResults);
+
+      // Always show educational resources section (use default if no specific indicators)
+      const detected = resourcesGenerator.detectVulnerabilityType(indicators);
+      const resources = detected || { type: "General Web Security", ...resourcesGenerator.defaultResources };
+
+        return `
+          <div style="margin: 20px 0; padding: 15px; background: rgba(0,255,255,0.05); border-radius: 10px; border-left: 3px solid #00ffff;">
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <span style="font-size: 20px; margin-right: 10px;">📚</span>
+              <div>
+                <h3 style="margin: 0; color: #00ffff; font-size: 16px;">Learn More About This Threat</h3>
+                <p style="margin: 2px 0 0 0; font-size: 12px; color: #aaa;">Educational resources and hands-on practice</p>
+              </div>
+            </div>
+
+            <!-- Vulnerability Classification -->
+            <div style="margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px;">🔍</span>
+                <h4 style="margin: 0; font-size: 14px; color: #fff;">Vulnerability Classification</h4>
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 12px;">
+                <div style="margin-bottom: 6px;"><strong>Type:</strong> ${resources.type}</div>
+                <div><strong>CWE Reference:</strong> <a href="${resources.cweUrl}" target="_blank" style="color: #00aaff;">CWE-${resources.cwe}: ${resources.type} ↗</a></div>
+              </div>
+            </div>
+
+            <!-- Prevention Guides -->
+            <div style="margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px;">📖</span>
+                <h4 style="margin: 0; font-size: 14px; color: #fff;">Prevention Guides</h4>
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                ${resources.guides.map(guide => `
+                  <div style="margin-bottom: 6px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <a href="${guide.url}" target="_blank" style="color: #00aaff; text-decoration: none; display: block;">
+                      <div style="font-weight: bold; margin-bottom: 3px;">${guide.title}</div>
+                      <div style="font-size: 11px; color: #ccc; margin-bottom: 3px;">${guide.description}</div>
+                      <span style="font-size: 12px;">→</span>
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+
+            <!-- Hands-On Practice -->
+            <div>
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 16px; margin-right: 8px;">🧪</span>
+                <h4 style="margin: 0; font-size: 14px; color: #fff;">Hands-On Practice</h4>
+              </div>
+              <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
+                ${resources.labs.map(lab => `
+                  <div style="margin-bottom: 6px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
+                    <a href="${lab.url}" target="_blank" style="color: #00aaff; text-decoration: none; display: block;">
+                      <div style="font-weight: bold; margin-bottom: 3px;">${lab.title}</div>
+                      <div style="font-size: 11px; color: #ccc; margin-bottom: 3px;">${lab.description}</div>
+                      <span style="font-size: 12px;">→</span>
+                    </a>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+    })()}
 
       <div style="font-size: 11px; color: #aaa; text-align: right;">
         🔬 Deep analysis completed in ${deepData.attempt * 3}s

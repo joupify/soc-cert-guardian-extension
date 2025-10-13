@@ -6,6 +6,109 @@ document.addEventListener("DOMContentLoaded", function () {
   setTimeout(initializePopup, 100);
 });
 
+// ============================================
+// VIRTUAL CVE STATISTICS
+// ============================================
+
+async function loadVirtualCVEStats() {
+  console.log("📊 Loading Virtual CVE stats...");
+
+  try {
+    // Appeler l'API pour récupérer les stats
+    const response = await fetch(`${API_BASE_URL}/api/virtual-cve-stats`);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const stats = await response.json();
+
+    console.log("✅ Stats loaded:", stats);
+
+    // Mettre à jour l'UI
+    document.getElementById("total-virtual-cves").textContent =
+      stats.totalVirtualCVEs || 0;
+    document.getElementById("threats-24h").textContent =
+      stats.threatsLast24h || 0;
+    document.getElementById("avg-confidence").textContent = stats.avgConfidence
+      ? `${Math.round(stats.avgConfidence * 100)}%`
+      : "-";
+
+    // Optionnel : Ajouter une animation de compteur
+    animateCounter("total-virtual-cves", 0, stats.totalVirtualCVEs || 0, 1000);
+    animateCounter("threats-24h", 0, stats.threatsLast24h || 0, 800);
+  } catch (error) {
+    console.error("❌ Failed to load Virtual CVE stats:", error);
+
+    // ✅ Fallback : afficher 0 au lieu de valeurs hardcodées
+    document.getElementById("total-virtual-cves").textContent = "0";
+    document.getElementById("threats-24h").textContent = "0";
+    document.getElementById("avg-confidence").textContent = "-";
+  }
+}
+
+// Animation de compteur
+function animateCounter(elementId, start, end, duration) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const range = end - start;
+  const increment = range / (duration / 16); // 60 FPS
+  let current = start;
+
+  const timer = setInterval(() => {
+    current += increment;
+    if (
+      (increment > 0 && current >= end) ||
+      (increment < 0 && current <= end)
+    ) {
+      current = end;
+      clearInterval(timer);
+    }
+    element.textContent = Math.round(current).toLocaleString();
+  }, 16);
+}
+
+// ✅ Appeler au chargement de la popup
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Popup loaded, loading stats...");
+  await loadVirtualCVEStats();
+});
+
+// Animation de compteur (optionnelle)
+function animateCounter(elementId, start, end, duration) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const range = end - start;
+  const increment = range / (duration / 16); // 60 FPS
+  let current = start;
+
+  const timer = setInterval(() => {
+    current += increment;
+    if (
+      (increment > 0 && current >= end) ||
+      (increment < 0 && current <= end)
+    ) {
+      current = end;
+      clearInterval(timer);
+    }
+    element.textContent = Math.round(current).toLocaleString();
+  }, 16);
+}
+
+// ✅ Appeler au chargement de la popup
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Popup loaded, initializing...");
+
+  // Charger les stats
+  await loadVirtualCVEStats();
+});
+
+// ============================================
+//FIN  VIRTUAL CVE STATISTICS
+// ============================================
+
 async function initializePopup() {
   try {
     // Check if aiHelper is available
@@ -80,72 +183,73 @@ class SecurityResourcesGenerator {
           {
             title: "OWASP SQL Injection Prevention Cheat Sheet",
             url: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
-            description: "Comprehensive guide to preventing SQL injection attacks"
+            description:
+              "Comprehensive guide to preventing SQL injection attacks",
           },
           {
             title: "NIST Secure Coding Guidelines",
             url: "https://www.nist.gov/itl/ssd/software-quality-group/secure-coding",
-            description: "Official NIST recommendations for secure development"
+            description: "Official NIST recommendations for secure development",
           },
           {
             title: "OWASP Testing Guide - SQL Injection",
             url: "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/05-Testing_for_SQL_Injection",
-            description: "How to test for SQL injection vulnerabilities"
-          }
+            description: "How to test for SQL injection vulnerabilities",
+          },
         ],
         labs: [
           {
             title: "PortSwigger SQL Injection Lab",
             url: "https://portswigger.net/web-security/sql-injection",
-            description: "Interactive hands-on SQL injection training"
+            description: "Interactive hands-on SQL injection training",
           },
           {
             title: "OWASP WebGoat SQL Injection Lessons",
             url: "https://owasp.org/www-project-webgoat/",
-            description: "Practice SQL injection in a safe environment"
-          }
-        ]
+            description: "Practice SQL injection in a safe environment",
+          },
+        ],
       },
-      "XSS": {
+      XSS: {
         cwe: "79",
         cweUrl: "https://cwe.mitre.org/data/definitions/79.html",
         guides: [
           {
             title: "OWASP XSS Prevention Cheat Sheet",
             url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
-            description: "Best practices for preventing XSS attacks"
+            description: "Best practices for preventing XSS attacks",
           },
           {
             title: "OWASP DOM-based XSS Prevention",
             url: "https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html",
-            description: "Specific guidance for DOM-based XSS"
-          }
+            description: "Specific guidance for DOM-based XSS",
+          },
         ],
         labs: [
           {
             title: "PortSwigger XSS Labs",
             url: "https://portswigger.net/web-security/cross-site-scripting",
-            description: "Interactive XSS training with various scenarios"
-          }
-        ]
+            description: "Interactive XSS training with various scenarios",
+          },
+        ],
       },
-      "CSRF": {
+      CSRF: {
         cwe: "352",
         cweUrl: "https://cwe.mitre.org/data/definitions/352.html",
         guides: [
           {
             title: "OWASP CSRF Prevention Cheat Sheet",
             url: "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
-            description: "Comprehensive CSRF prevention strategies"
-          }
+            description: "Comprehensive CSRF prevention strategies",
+          },
         ],
         labs: [
           {
             title: "PortSwigger CSRF Lab",
             url: "https://portswigger.net/web-security/csrf",
-            description: "Practice CSRF attack and defense techniques"
-          }
-        ]
+            description: "Practice CSRF attack and defense techniques",
+          },
+        ],
       },
       "Command Injection": {
         cwe: "78",
@@ -154,17 +258,17 @@ class SecurityResourcesGenerator {
           {
             title: "OWASP Command Injection",
             url: "https://owasp.org/www-community/attacks/Command_Injection",
-            description: "Understanding and preventing command injection"
-          }
+            description: "Understanding and preventing command injection",
+          },
         ],
         labs: [
           {
             title: "PortSwigger OS Command Injection Lab",
             url: "https://portswigger.net/web-security/os-command-injection",
-            description: "Interactive command injection exercises"
-          }
-        ]
-      }
+            description: "Interactive command injection exercises",
+          },
+        ],
+      },
     };
 
     // Default resources si aucun type n'est détecté
@@ -175,21 +279,22 @@ class SecurityResourcesGenerator {
         {
           title: "OWASP Top 10",
           url: "https://owasp.org/www-project-top-ten/",
-          description: "Critical security risks for web applications"
+          description: "Critical security risks for web applications",
         },
         {
           title: "NIST Cybersecurity Framework",
           url: "https://www.nist.gov/cyberframework",
-          description: "Framework for improving critical infrastructure cybersecurity"
-        }
-        ],
+          description:
+            "Framework for improving critical infrastructure cybersecurity",
+        },
+      ],
       labs: [
         {
           title: "OWASP WebGoat",
           url: "https://owasp.org/www-project-webgoat/",
-          description: "General web security training platform"
-        }
-      ]
+          description: "General web security training platform",
+        },
+      ],
     };
   }
 
@@ -200,7 +305,9 @@ class SecurityResourcesGenerator {
     for (const indicator of indicators) {
       const indicatorLower = indicator.toLowerCase();
 
-      for (const [vulnType, resources] of Object.entries(this.resourceDatabase)) {
+      for (const [vulnType, resources] of Object.entries(
+        this.resourceDatabase
+      )) {
         if (indicatorLower.includes(vulnType.toLowerCase().replace(" ", ""))) {
           return { type: vulnType, ...resources };
         }
@@ -213,7 +320,10 @@ class SecurityResourcesGenerator {
   // Générer le HTML complet des ressources
   generateResourcesHTML(indicators) {
     const detected = this.detectVulnerabilityType(indicators);
-    const resources = detected || { type: "General Web Security", ...this.defaultResources };
+    const resources = detected || {
+      type: "General Web Security",
+      ...this.defaultResources,
+    };
 
     return `
       <div class="security-resources-section">
@@ -235,7 +345,9 @@ class SecurityResourcesGenerator {
             </div>
             <div class="classification-item">
               <span class="classification-label">CWE Reference:</span>
-              <a href="${resources.cweUrl}" target="_blank" class="classification-link">
+              <a href="${
+                resources.cweUrl
+              }" target="_blank" class="classification-link">
                 CWE-${resources.cwe}: ${resources.type}
                 <span class="link-icon">↗</span>
               </a>
@@ -250,7 +362,9 @@ class SecurityResourcesGenerator {
             <h4>Prevention Guides</h4>
           </div>
           <div class="resource-content">
-            ${resources.guides.map(guide => `
+            ${resources.guides
+              .map(
+                (guide) => `
               <div class="resource-link-card">
                 <a href="${guide.url}" target="_blank" class="resource-link">
                   <div class="resource-link-title">${guide.title}</div>
@@ -258,7 +372,9 @@ class SecurityResourcesGenerator {
                   <span class="link-icon-inline">→</span>
                 </a>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
         </div>
 
@@ -269,7 +385,9 @@ class SecurityResourcesGenerator {
             <h4>Hands-On Practice</h4>
           </div>
           <div class="resource-content">
-            ${resources.labs.map(lab => `
+            ${resources.labs
+              .map(
+                (lab) => `
               <div class="resource-link-card">
                 <a href="${lab.url}" target="_blank" class="resource-link">
                   <div class="resource-link-title">${lab.title}</div>
@@ -277,7 +395,9 @@ class SecurityResourcesGenerator {
                   <span class="link-icon-inline">→</span>
                 </a>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
         </div>
       </div>
@@ -824,29 +944,34 @@ async function updateAPIBadgesStatus(
       if (el) el.textContent = text;
     };
 
-  // languageModel - prefer usedAPIs if available
-  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.languageModel) setStatus("languageModel", "✅");
+    // languageModel - prefer usedAPIs if available
+    if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.languageModel)
+      setStatus("languageModel", "✅");
     else if (aiHelper.hasNativeAI || status.languageModel === "available")
       setStatus("languageModel", "✅");
     else setStatus("languageModel", "⏳");
 
-  // summarizer
-  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.summarizer) setStatus("summarizer", "✅");
+    // summarizer
+    if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.summarizer)
+      setStatus("summarizer", "✅");
     else if (status.summarizer === "available") setStatus("summarizer", "✅");
     else setStatus("summarizer", "⏳");
 
-  // writer
-  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.writer) setStatus("writer", "✅");
+    // writer
+    if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.writer)
+      setStatus("writer", "✅");
     else if (status.writer === "available") setStatus("writer", "✅");
     else setStatus("writer", "⏳");
 
-  // translator
-  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.translator) setStatus("translator", "✅");
+    // translator
+    if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.translator)
+      setStatus("translator", "✅");
     else if (status.translator === "available") setStatus("translator", "✅");
     else setStatus("translator", "⏳");
 
-  // proofreader
-  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.proofreader) setStatus("proofreader", "✅");
+    // proofreader
+    if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.proofreader)
+      setStatus("proofreader", "✅");
     else if (status.proofreader === "available") setStatus("proofreader", "✅");
     else setStatus("proofreader", "⏳");
 
@@ -1157,7 +1282,9 @@ async function updateWithDeepResults(deepData) {
         );
       }
     } else {
-      console.log("❌ AI: generateEnhancedAnalysis not available or missing data");
+      console.log(
+        "❌ AI: generateEnhancedAnalysis not available or missing data"
+      );
     }
   } catch (error) {
     console.log("⚠️ Enhanced analysis skipped:", error.message);
@@ -1203,13 +1330,39 @@ async function updateWithDeepResults(deepData) {
               <span class="cve-id">${deepData.deepResults.cve_id}</span>
               
               <!-- Badge selon le type -->
-              <span class="cve-badge ${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'emerging-threat' : 'official-cve'}">
-                <span class="badge-icon">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? '🔮' : '✅'}</span>
-                <span class="badge-text">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'Emerging Threat' : 'Official CVE'}</span>
-                <span class="badge-tooltip">${deepData.deepResults.isVirtual || (deepData.deepResults.cve_id && deepData.deepResults.cve_id.startsWith('CVE-2026')) ? 'AI-detected threat not yet in NVD' : 'Verified CVE from official database'}</span>
+              <span class="cve-badge ${
+                deepData.deepResults.isVirtual ||
+                (deepData.deepResults.cve_id &&
+                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                  ? "emerging-threat"
+                  : "official-cve"
+              }">
+                <span class="badge-icon">${
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                    ? "🔮"
+                    : "✅"
+                }</span>
+                <span class="badge-text">${
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                    ? "Emerging Threat"
+                    : "Official CVE"
+                }</span>
+                <span class="badge-tooltip">${
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                    ? "AI-detected threat not yet in NVD"
+                    : "Verified CVE from official database"
+                }</span>
               </span>
               
-              <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${deepData.deepResults.severity}</span>
+              <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${
+          deepData.deepResults.severity
+        }</span>
             </div>
             <span class="badge badge-${
               deepData.deepResults.severity?.toLowerCase() || "critical"
@@ -1236,14 +1389,25 @@ async function updateWithDeepResults(deepData) {
               const item = deepData.deepResults;
               if (!item) return "";
 
-              const isVirtual = item.isVirtual || (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+              const isVirtual =
+                item.isVirtual ||
+                (item.cve_id && item.cve_id.startsWith("CVE-2026"));
               let nvdLink;
               let nvdLinkText;
 
               if (isVirtual) {
-                const searchQuery = (item.indicators && item.indicators.join(" ")) || item.threatType || "web vulnerability";
-                nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(searchQuery)}`;
-                nvdLinkText = `🔍 Search NVD for ${(item.indicators && item.indicators[0]) || item.threatType || "vulnerabilities"}`;
+                const searchQuery =
+                  (item.indicators && item.indicators.join(" ")) ||
+                  item.threatType ||
+                  "web vulnerability";
+                nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
+                  searchQuery
+                )}`;
+                nvdLinkText = `🔍 Search NVD for ${
+                  (item.indicators && item.indicators[0]) ||
+                  item.threatType ||
+                  "vulnerabilities"
+                }`;
               } else if (item.cve_id) {
                 nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
                 nvdLinkText = "View on NVD";
@@ -1255,7 +1419,11 @@ async function updateWithDeepResults(deepData) {
                 return "";
               }
 
-              return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${isVirtual ? 'Search for similar vulnerabilities in NVD' : 'View official CVE details'}">${nvdLinkText} →</a>`;
+              return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${
+                isVirtual
+                  ? "Search for similar vulnerabilities in NVD"
+                  : "View official CVE details"
+              }">${nvdLinkText} →</a>`;
             })()}
           </div>
         `;
@@ -1276,13 +1444,35 @@ async function updateWithDeepResults(deepData) {
                 <span class="cve-id">${cve.cve_id}</span>
                 
                 <!-- Badge selon le type -->
-                <span class="cve-badge ${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'emerging-threat' : 'official-cve'}">
-                  <span class="badge-icon">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? '🔮' : '✅'}</span>
-                  <span class="badge-text">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'Emerging Threat' : 'Official CVE'}</span>
-                  <span class="badge-tooltip">${cve.isVirtual || (cve.cve_id && cve.cve_id.startsWith('CVE-2026')) ? 'AI-detected threat not yet in NVD' : 'Verified CVE from official database'}</span>
+                <span class="cve-badge ${
+                  cve.isVirtual ||
+                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                    ? "emerging-threat"
+                    : "official-cve"
+                }">
+                  <span class="badge-icon">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "🔮"
+                      : "✅"
+                  }</span>
+                  <span class="badge-text">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "Emerging Threat"
+                      : "Official CVE"
+                  }</span>
+                  <span class="badge-tooltip">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "AI-detected threat not yet in NVD"
+                      : "Verified CVE from official database"
+                  }</span>
                 </span>
                 
-                <span class="severity ${cve.severity?.toLowerCase()}">${cve.severity}</span>
+                <span class="severity ${cve.severity?.toLowerCase()}">${
+              cve.severity
+            }</span>
               </div>
               <span class="badge badge-${
                 cve.severity?.toLowerCase() || "unknown"
@@ -1295,14 +1485,25 @@ async function updateWithDeepResults(deepData) {
                 const item = cve;
                 if (!item) return "";
 
-                const isVirtual = item.isVirtual || (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+                const isVirtual =
+                  item.isVirtual ||
+                  (item.cve_id && item.cve_id.startsWith("CVE-2026"));
                 let nvdLink;
                 let nvdLinkText;
 
                 if (isVirtual) {
-                  const searchQuery = (item.indicators && item.indicators.join(" ")) || item.threatType || "web vulnerability";
-                  nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(searchQuery)}`;
-                  nvdLinkText = `🔍 Search NVD for ${(item.indicators && item.indicators[0]) || item.threatType || "vulnerabilities"}`;
+                  const searchQuery =
+                    (item.indicators && item.indicators.join(" ")) ||
+                    item.threatType ||
+                    "web vulnerability";
+                  nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
+                    searchQuery
+                  )}`;
+                  nvdLinkText = `🔍 Search NVD for ${
+                    (item.indicators && item.indicators[0]) ||
+                    item.threatType ||
+                    "vulnerabilities"
+                  }`;
                 } else if (item.cve_id) {
                   nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
                   nvdLinkText = "View on NVD";
@@ -1436,8 +1637,8 @@ async function updateWithDeepResults(deepData) {
       } else if (deepData.deepResults?.results?.length > 0) {
         // Extract indicators from results array
         indicators = deepData.deepResults.results
-          .filter(result => result.indicators)
-          .flatMap(result => result.indicators);
+          .filter((result) => result.indicators)
+          .flatMap((result) => result.indicators);
       }
 
       console.log("🔍 DEBUG: Indicators for resources:", indicators);
@@ -1445,9 +1646,12 @@ async function updateWithDeepResults(deepData) {
 
       // Always show educational resources section (use default if no specific indicators)
       const detected = resourcesGenerator.detectVulnerabilityType(indicators);
-      const resources = detected || { type: "General Web Security", ...resourcesGenerator.defaultResources };
+      const resources = detected || {
+        type: "General Web Security",
+        ...resourcesGenerator.defaultResources,
+      };
 
-        return `
+      return `
           <div style="margin: 20px 0; padding: 15px; background: rgba(0,255,255,0.05); border-radius: 10px; border-left: 3px solid #00ffff;">
             <div style="display: flex; align-items: center; margin-bottom: 15px;">
               <span style="font-size: 20px; margin-right: 10px;">📚</span>
@@ -1464,8 +1668,14 @@ async function updateWithDeepResults(deepData) {
                 <h4 style="margin: 0; font-size: 14px; color: #fff;">Vulnerability Classification</h4>
               </div>
               <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; font-size: 12px;">
-                <div style="margin-bottom: 6px;"><strong>Type:</strong> ${resources.type}</div>
-                <div><strong>CWE Reference:</strong> <a href="${resources.cweUrl}" target="_blank" style="color: #00aaff;">CWE-${resources.cwe}: ${resources.type} ↗</a></div>
+                <div style="margin-bottom: 6px;"><strong>Type:</strong> ${
+                  resources.type
+                }</div>
+                <div><strong>CWE Reference:</strong> <a href="${
+                  resources.cweUrl
+                }" target="_blank" style="color: #00aaff;">CWE-${
+        resources.cwe
+      }: ${resources.type} ↗</a></div>
               </div>
             </div>
 
@@ -1476,7 +1686,9 @@ async function updateWithDeepResults(deepData) {
                 <h4 style="margin: 0; font-size: 14px; color: #fff;">Prevention Guides</h4>
               </div>
               <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
-                ${resources.guides.map(guide => `
+                ${resources.guides
+                  .map(
+                    (guide) => `
                   <div style="margin-bottom: 6px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
                     <a href="${guide.url}" target="_blank" style="color: #00aaff; text-decoration: none; display: block;">
                       <div style="font-weight: bold; margin-bottom: 3px;">${guide.title}</div>
@@ -1484,7 +1696,9 @@ async function updateWithDeepResults(deepData) {
                       <span style="font-size: 12px;">→</span>
                     </a>
                   </div>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </div>
             </div>
 
@@ -1495,7 +1709,9 @@ async function updateWithDeepResults(deepData) {
                 <h4 style="margin: 0; font-size: 14px; color: #fff;">Hands-On Practice</h4>
               </div>
               <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px;">
-                ${resources.labs.map(lab => `
+                ${resources.labs
+                  .map(
+                    (lab) => `
                   <div style="margin-bottom: 6px; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px;">
                     <a href="${lab.url}" target="_blank" style="color: #00aaff; text-decoration: none; display: block;">
                       <div style="font-weight: bold; margin-bottom: 3px;">${lab.title}</div>
@@ -1503,7 +1719,9 @@ async function updateWithDeepResults(deepData) {
                       <span style="font-size: 12px;">→</span>
                     </a>
                   </div>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </div>
             </div>
           </div>

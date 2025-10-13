@@ -1,4 +1,3 @@
-// ai-helper.js - Version corrigée
 class AIHelper {
   constructor() {
     this.hasNativeAI = false;
@@ -481,13 +480,16 @@ Répondez UNIQUEMENT avec ce format JSON exact:
                 length: "short",
               })
                 .then(async (summarizer) => {
-                  const summary = await summarizer.summarize(
-                    `Security Analysis Result: ${
-                      parsedResult.analysis
-                    }. Risk Score: ${parsedResult.riskScore}%. Threat Type: ${
+                  const summary = await writer.write(
+                    `Generate exactly 2 concise security summary sentences for ${
                       parsedResult.threatType
-                    }. Indicators: ${parsedResult.indicators.join(", ")}.`
+                    } threat.
+   Format: Two separate sentences, max 12 words each, no bullets.
+   Context: ${parsedResult.riskScore}% risk, ${parsedResult.indicators?.join(
+                      ", "
+                    )}`
                   );
+
                   summarizer.destroy();
                   return { type: "summary", content: summary };
                 })
@@ -511,7 +513,11 @@ Répondez UNIQUEMENT avec ce format JSON exact:
               })
                 .then(async (writer) => {
                   const recommendations = await writer.write(
-                    `Generate 3 specific cybersecurity recommendations for: ${parsedResult.threatType} threat with ${parsedResult.riskScore}% risk. Context: ${parsedResult.analysis}`
+                    `Generate exactly 3 concise cybersecurity recommendations for ${
+                      parsedResult.threatType
+                    } threat. 
+   Format: bullet points, max 10 words each, no explanations.
+   Context: ${parsedResult.indicators?.join(", ")}`
                   );
 
                   writer.destroy();
@@ -1001,6 +1007,15 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           // ✅ Support des deux formats d'API
           let resultData = null;
           let hasResults = false;
+
+          // Debug filter by URL
+          console.log("🔍 URL FILTER DEBUG:");
+          console.log("  - Current URL:", url);
+          console.log("  - All results:", data.results?.length);
+          console.log("  - First result link:", data.results?.[0]?.link);
+          console.log("  - URL === Link?", url === data.results?.[0]?.link);
+          console.log("  - URL length:", url?.length);
+          console.log("  - Link length:", data.results?.[0]?.link?.length);
 
           // Filtrer les résultats par URL actuelle
           let urlFilteredResults = data.results

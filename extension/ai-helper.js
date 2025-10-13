@@ -30,14 +30,17 @@ class AIHelper {
       console.log("🔍 Checking AI availability...");
       console.log("  window.ai:", !!window.ai);
       console.log("  window.LanguageModel:", !!window.LanguageModel);
-      console.log("  window.chrome?.ai:", !!(window.chrome && window.chrome.ai));
+      console.log(
+        "  window.chrome?.ai:",
+        !!(window.chrome && window.chrome.ai)
+      );
 
       // 🎆 Utiliser uniquement ce qui fonctionne: window.LanguageModel
       if (window.LanguageModel) {
         this.nativeAI = { languageModel: window.LanguageModel };
         console.log("✅ Chrome Built-in AI detected via window.LanguageModel");
         await this.testAIAvailability();
-        
+
         // ✅ WARM-UP AU DÉMARRAGE pour éviter les analyses fausses
         await this.warmupGeminiNano();
       } else {
@@ -138,19 +141,19 @@ class AIHelper {
 
     return {
       summarizer:
-        window.Summarizer || window.chrome?.ai?.summarizer
+        window.Summarizer || (window.chrome && window.chrome.ai && window.chrome.ai.summarizer)
           ? "available"
           : "not-available",
       writer:
-        window.Writer || window.chrome?.ai?.writer
+        window.Writer || (window.chrome && window.chrome.ai && window.chrome.ai.writer)
           ? "available"
           : "not-available",
       translator:
-        window.Translator || window.chrome?.ai?.translator
+        window.Translator || (window.chrome && window.chrome.ai && window.chrome.ai.translator)
           ? "available"
           : "not-available",
       proofreader:
-        window.Proofreader || window.chrome?.ai?.proofreader
+        window.Proofreader || (window.chrome && window.chrome.ai && window.chrome.ai.proofreader)
           ? "available"
           : "not-available",
     };
@@ -182,7 +185,7 @@ class AIHelper {
             outputLanguage: "en",
           });
           if (tempSession) {
-            tempSession.destroy?.();
+            if (tempSession.destroy) tempSession.destroy();
             console.log("🔄 Session temporaire créée pour activer window.ai");
           }
         } catch (e) {
@@ -230,7 +233,7 @@ class AIHelper {
     console.log("🔍 APIs alternatives détectées:", alternativeAPIs);
 
     // Essayer window.chrome.ai
-    if (window.chrome?.ai) {
+    if (window.chrome && window.chrome.ai) {
       console.log(
         "🔍 window.chrome.ai détecté:",
         Object.keys(window.chrome.ai)
@@ -267,7 +270,7 @@ class AIHelper {
         this.hasNativeAI = true;
 
         // Nettoyer la session de test
-        if (session?.destroy) {
+        if (session && session.destroy) {
           session.destroy();
         }
 
@@ -290,7 +293,7 @@ class AIHelper {
     console.log("📥 Téléchargement des APIs spécialisées...");
 
     // Télécharger Summarizer si disponible
-    if (window.ai?.summarizer) {
+    if (window.ai && window.ai.summarizer) {
       try {
         const summarizerAvailability =
           await window.ai.summarizer.availability();
@@ -310,7 +313,7 @@ class AIHelper {
     }
 
     // Télécharger Writer si disponible
-    if (window.ai?.writer) {
+    if (window.ai && window.ai.writer) {
       try {
         const writerAvailability = await window.ai.writer.availability();
         if (writerAvailability === "downloadable") {
@@ -329,7 +332,7 @@ class AIHelper {
     }
 
     // Translator est généralement déjà disponible (modèle expert)
-    if (window.ai?.translator) {
+    if (window.ai && window.ai.translator) {
       try {
         const translatorAvailability =
           await window.ai.translator.availability();
@@ -354,7 +357,7 @@ class AIHelper {
   // 🆕 PRIORITÉ MAXIMUM - SUMMARIZER API
   async createSummarizer(options = {}) {
     try {
-      if (window.ai?.summarizer) {
+      if (window.ai && window.ai.summarizer) {
         const summarizer = await window.ai.summarizer.create({
           type: options.type || "key-points",
           format: options.format || "markdown",
@@ -444,7 +447,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
         const result = await session.prompt(prompt);
 
         // Nettoyer la session seulement si elle n'est pas la session pré-warmée
-        if (session !== this.aiSession && session?.destroy) {
+        if (session !== this.aiSession && session && session.destroy) {
           session.destroy();
         }
 
@@ -1107,7 +1110,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
           // /////////////////////////************************************************ */
 
-          console.log("✅ After sort:", urlFilteredResults[0]?.cve_id);
+          console.log("✅ After sort:", urlFilteredResults[0] && urlFilteredResults[0].cve_id);
 
           // Format ANCIEN : {success: true, results: [...]}
           if (
@@ -1348,18 +1351,18 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     try {
       console.log("🎯 Starting specialized AI generation for deep analysis...");
       console.log("🎯 Available APIs check:", {
-        summarizer: !!window.ai?.summarizer,
-        writer: !!window.ai?.writer,
-        translator: !!window.ai?.translator,
+        summarizer: !!(window.ai && window.ai.summarizer),
+        writer: !!(window.ai && window.ai.writer),
+        translator: !!(window.ai && window.ai.translator),
         proofreader: !!window.Proofreader,
       });
 
       // Pour des résultats immédiats, on va forcer des résultats de test si les APIs ne sont pas prêtes
       console.log("🎯 Checking API readiness...");
-      const summarizerReady = window.ai?.summarizer
+      const summarizerReady = (window.ai && window.ai.summarizer)
         ? (await window.ai.summarizer.availability()) === "ready"
         : false;
-      const writerReady = window.ai?.writer
+      const writerReady = (window.ai && window.ai.writer)
         ? (await window.ai.writer.availability()) === "ready"
         : false;
 
@@ -1393,7 +1396,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         );
       } else {
         // 📝 SUMMARIZER pour l'analyse
-        if (window.ai?.summarizer) {
+        if (window.ai && window.ai.summarizer) {
           console.log("📝 Testing Summarizer availability...");
           const summarizerAvailability =
             await window.ai.summarizer.availability();
@@ -1417,7 +1420,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         }
 
         // ✍️ WRITER pour recommandations améliorées
-        if (window.ai?.writer) {
+        if (window.ai && window.ai.writer) {
           console.log("✍️ Testing Writer availability...");
           const writerAvailability = await window.ai.writer.availability();
           console.log("✍️ Writer availability:", writerAvailability);
@@ -1450,7 +1453,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
 
         // 🌐 TRANSLATOR pour analyse multilingue
         if (
-          window.ai?.translator &&
+          (window.ai && window.ai.translator) &&
           analysisText &&
           !analysisText.match(/^[A-Za-z\s.,!?-]+$/)
         ) {
@@ -1570,11 +1573,11 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     Description: ${cveData.description}
     Severity: ${cveData.severity}
     CVSS: ${cveData.cvss}
-    Affected Products: ${cveData.products?.join(", ") || "Unknown"}
+    Affected Products: ${(cveData.products && cveData.products.join(", ")) || "Unknown"}
     `;
 
     try {
-      if (this.hasNativeAI && this.nativeAI?.summarizer) {
+      if (this.hasNativeAI && this.nativeAI && this.nativeAI.summarizer) {
         console.log("📝 Using Chrome AI Summarizer for CVE");
         const summary = await this.nativeAI.summarizer.summarize({
           text: text,
@@ -1602,11 +1605,11 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
   // 🆕 Détecter langue (version corrigée)
   async detectLanguage(text) {
     try {
-      if (this.hasNativeAI && this.nativeAI?.languageDetector) {
+      if (this.hasNativeAI && this.nativeAI && this.nativeAI.languageDetector) {
         const result = await this.nativeAI.languageDetector.detect({
           text: text,
         });
-        console.log(`🌍 Detected language: ${result[0]?.detectedLanguage}`);
+        console.log(`🌍 Detected language: ${(result[0] && result[0].detectedLanguage)}`);
         return result;
       } else {
         return await mockAI.languageDetector.detect({ text });
@@ -1622,11 +1625,11 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     Generate SOC response recommendations:
     Threat Type: ${threatContext.threatType}
     Risk Score: ${threatContext.riskScore}
-    Indicators: ${threatContext.indicators?.join(", ")}
+    Indicators: ${(threatContext.indicators && threatContext.indicators.join(", "))}
     `;
 
     try {
-      if (this.hasNativeAI && this.nativeAI?.writer) {
+      if (this.hasNativeAI && this.nativeAI && this.nativeAI.writer) {
         console.log("📋 Generating SOC recommendations with Chrome AI");
         return await this.nativeAI.writer.write({
           prompt: prompt,
@@ -1819,7 +1822,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
   // Méthodes principales CORRIGÉES
   async summarize(text, options = {}) {
     try {
-      if (this.hasNativeAI && this.nativeAI?.summarizer) {
+      if (this.hasNativeAI && this.nativeAI && this.nativeAI.summarizer) {
         console.log("📝 Using native Chrome summarizer");
         return await this.nativeAI.summarizer.summarize({
           text: text,
@@ -2337,7 +2340,7 @@ Use these icons:
 
   // ✅ NOUVELLE FONCTION : Warm-up Gemini Nano pour éviter les analyses fausses
   async warmupGeminiNano() {
-    console.log('🔥 Warming up Gemini Nano AI...');
+    console.log("🔥 Warming up Gemini Nano AI...");
 
     try {
       // Créer la session si elle n'existe pas
@@ -2346,7 +2349,7 @@ Use these icons:
           temperature: 0.7,
           topK: 3,
         });
-        console.log('✅ AI session created for warm-up');
+        console.log("✅ AI session created for warm-up");
       }
 
       // Test prompt pour warm-up
@@ -2354,24 +2357,25 @@ Use these icons:
         const warmupPrompt = `Analyze this URL for security: https://example.com/test`;
         const warmupResponse = await this.aiSession.prompt(warmupPrompt);
 
-        console.log('✅ Gemini Nano warmed up successfully');
-        console.log('📝 Warmup response:', warmupResponse.substring(0, 100));
+        console.log("✅ Gemini Nano warmed up successfully");
+        console.log("📝 Warmup response:", warmupResponse.substring(0, 100));
 
         this.isAIReady = true;
         this.aiWarmupAttempts++;
       } else {
-        console.log('⚠️ AI session not available for warm-up');
+        console.log("⚠️ AI session not available for warm-up");
       }
-
     } catch (error) {
-      console.error('❌ Gemini Nano warmup failed:', error);
+      console.error("❌ Gemini Nano warmup failed:", error);
 
       // Retry jusqu'à 3 fois
       if (this.aiWarmupAttempts < 3) {
-        console.log(`🔄 Retrying warmup (attempt ${this.aiWarmupAttempts + 1}/3)...`);
+        console.log(
+          `🔄 Retrying warmup (attempt ${this.aiWarmupAttempts + 1}/3)...`
+        );
         setTimeout(() => this.warmupGeminiNano(), 2000);
       } else {
-        console.error('❌ Gemini Nano warmup failed after 3 attempts');
+        console.error("❌ Gemini Nano warmup failed after 3 attempts");
       }
     }
   }

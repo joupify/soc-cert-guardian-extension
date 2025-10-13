@@ -526,7 +526,7 @@ function buildAPIBadgesHtml() {
     const specialized = [];
     const backend = [];
 
-    if (aiHelper?.hasNativeAI) {
+    if (aiHelper && aiHelper.hasNativeAI) {
       local.push({ key: "languageModel", label: "🧠 Gemini / LanguageModel" });
     } else {
       // still show Gemini as possible
@@ -602,29 +602,29 @@ async function updateAPIBadgesStatus(
       if (el) el.textContent = text;
     };
 
-    // languageModel - prefer usedAPIs if available
-    if (aiHelper.usedAPIs?.languageModel) setStatus("languageModel", "✅");
+  // languageModel - prefer usedAPIs if available
+  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.languageModel) setStatus("languageModel", "✅");
     else if (aiHelper.hasNativeAI || status.languageModel === "available")
       setStatus("languageModel", "✅");
     else setStatus("languageModel", "⏳");
 
-    // summarizer
-    if (aiHelper.usedAPIs?.summarizer) setStatus("summarizer", "✅");
+  // summarizer
+  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.summarizer) setStatus("summarizer", "✅");
     else if (status.summarizer === "available") setStatus("summarizer", "✅");
     else setStatus("summarizer", "⏳");
 
-    // writer
-    if (aiHelper.usedAPIs?.writer) setStatus("writer", "✅");
+  // writer
+  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.writer) setStatus("writer", "✅");
     else if (status.writer === "available") setStatus("writer", "✅");
     else setStatus("writer", "⏳");
 
-    // translator
-    if (aiHelper.usedAPIs?.translator) setStatus("translator", "✅");
+  // translator
+  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.translator) setStatus("translator", "✅");
     else if (status.translator === "available") setStatus("translator", "✅");
     else setStatus("translator", "⏳");
 
-    // proofreader
-    if (aiHelper.usedAPIs?.proofreader) setStatus("proofreader", "✅");
+  // proofreader
+  if (aiHelper && aiHelper.usedAPIs && aiHelper.usedAPIs.proofreader) setStatus("proofreader", "✅");
     else if (status.proofreader === "available") setStatus("proofreader", "✅");
     else setStatus("proofreader", "⏳");
 
@@ -725,9 +725,9 @@ async function analyzeCurrentPage() {
     });
 
     console.log("📊 Tab info:", {
-      url: tab?.url,
-      title: tab?.title,
-      id: tab?.id,
+      url: tab && tab.url,
+      title: tab && tab.title,
+      id: tab && tab.id,
     });
 
     if (tab && tab.url) {
@@ -1004,11 +1004,31 @@ async function updateWithDeepResults(deepData) {
             <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
               deepData.deepResults.score || "N/A"
             }</span>
-            ${
-              deepData.deepResults.link
-                ? `<br><a href="${deepData.deepResults.link}" target="_blank" style="color: #00aaff; font-size: 11px;">View Details →</a>`
-                : ""
-            }
+            ${(() => {
+              const item = deepData.deepResults;
+              if (!item) return "";
+
+              const isVirtual = item.isVirtual || (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+              let nvdLink;
+              let nvdLinkText;
+
+              if (isVirtual) {
+                const searchQuery = (item.indicators && item.indicators.join(" ")) || item.threatType || "web vulnerability";
+                nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(searchQuery)}`;
+                nvdLinkText = `🔍 Search NVD for ${(item.indicators && item.indicators[0]) || item.threatType || "vulnerabilities"}`;
+              } else if (item.cve_id) {
+                nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
+                nvdLinkText = "View on NVD";
+              } else if (item.link) {
+                // fallback to provided link
+                nvdLink = item.link;
+                nvdLinkText = "View Details";
+              } else {
+                return "";
+              }
+
+              return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${isVirtual ? 'Search for similar vulnerabilities in NVD' : 'View official CVE details'}">${nvdLinkText} →</a>`;
+            })()}
           </div>
         `;
       }
@@ -1031,11 +1051,30 @@ async function updateWithDeepResults(deepData) {
               </span>
               <br>
               <span class="cve-score">Score: ${cve.score || "N/A"}</span>
-              ${
-                cve.link
-                  ? `<br><a href="${cve.link}" target="_blank">View Details →</a>`
-                  : ""
-              }
+              ${(() => {
+                const item = cve;
+                if (!item) return "";
+
+                const isVirtual = item.isVirtual || (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+                let nvdLink;
+                let nvdLinkText;
+
+                if (isVirtual) {
+                  const searchQuery = (item.indicators && item.indicators.join(" ")) || item.threatType || "web vulnerability";
+                  nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(searchQuery)}`;
+                  nvdLinkText = `🔍 Search NVD for ${(item.indicators && item.indicators[0]) || item.threatType || "vulnerabilities"}`;
+                } else if (item.cve_id) {
+                  nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
+                  nvdLinkText = "View on NVD";
+                } else if (item.link) {
+                  nvdLink = item.link;
+                  nvdLinkText = "View Details";
+                } else {
+                  return "";
+                }
+
+                return `\n                <br><a href="${nvdLink}" target="_blank">${nvdLinkText} →</a>`;
+              })()}
             </div>
           `
           )
@@ -1058,9 +1097,7 @@ async function updateWithDeepResults(deepData) {
     })()}
   </div>
 
-<a href="https://nvd.nist.gov/vuln/detail/CVE-2020-0618" target="_blank" style="color: #4a9eff; text-decoration: underline; font-size: 12px; margin-left: 8px;">
-  View on NVD →
-</a>
+<!-- NVD link now generated per-item above -->
 
 
 

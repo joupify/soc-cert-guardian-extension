@@ -141,19 +141,23 @@ class AIHelper {
 
     return {
       summarizer:
-        window.Summarizer || (window.chrome && window.chrome.ai && window.chrome.ai.summarizer)
+        window.Summarizer ||
+        (window.chrome && window.chrome.ai && window.chrome.ai.summarizer)
           ? "available"
           : "not-available",
       writer:
-        window.Writer || (window.chrome && window.chrome.ai && window.chrome.ai.writer)
+        window.Writer ||
+        (window.chrome && window.chrome.ai && window.chrome.ai.writer)
           ? "available"
           : "not-available",
       translator:
-        window.Translator || (window.chrome && window.chrome.ai && window.chrome.ai.translator)
+        window.Translator ||
+        (window.chrome && window.chrome.ai && window.chrome.ai.translator)
           ? "available"
           : "not-available",
       proofreader:
-        window.Proofreader || (window.chrome && window.chrome.ai && window.chrome.ai.proofreader)
+        window.Proofreader ||
+        (window.chrome && window.chrome.ai && window.chrome.ai.proofreader)
           ? "available"
           : "not-available",
     };
@@ -477,14 +481,13 @@ Répondez UNIQUEMENT avec ce format JSON exact:
                 length: "short",
               })
                 .then(async (summarizer) => {
-                  const summary = await summarizer.summarize({
-                    input: `Security Analysis Result: ${
+                  const summary = await summarizer.summarize(
+                    `Security Analysis Result: ${
                       parsedResult.analysis
                     }. Risk Score: ${parsedResult.riskScore}%. Threat Type: ${
                       parsedResult.threatType
-                    }. Indicators: ${parsedResult.indicators.join(", ")}.`,
-                    context: "Cybersecurity threat assessment summary",
-                  });
+                    }. Indicators: ${parsedResult.indicators.join(", ")}.`
+                  );
                   summarizer.destroy();
                   return { type: "summary", content: summary };
                 })
@@ -507,10 +510,10 @@ Répondez UNIQUEMENT avec ce format JSON exact:
                 length: "short",
               })
                 .then(async (writer) => {
-                  const recommendations = await writer.write({
-                    input: `Generate 3 specific cybersecurity recommendations for: ${parsedResult.threatType} threat with ${parsedResult.riskScore}% risk. Context: ${parsedResult.analysis}`,
-                    context: "Professional cybersecurity guidance",
-                  });
+                  const recommendations = await writer.write(
+                    `Generate 3 specific cybersecurity recommendations for: ${parsedResult.threatType} threat with ${parsedResult.riskScore}% risk. Context: ${parsedResult.analysis}`
+                  );
+
                   writer.destroy();
                   return {
                     type: "enhanced_recommendations",
@@ -1110,7 +1113,10 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
           // /////////////////////////************************************************ */
 
-          console.log("✅ After sort:", urlFilteredResults[0] && urlFilteredResults[0].cve_id);
+          console.log(
+            "✅ After sort:",
+            urlFilteredResults[0] && urlFilteredResults[0].cve_id
+          );
 
           // Format ANCIEN : {success: true, results: [...]}
           if (
@@ -1359,12 +1365,14 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
 
       // Pour des résultats immédiats, on va forcer des résultats de test si les APIs ne sont pas prêtes
       console.log("🎯 Checking API readiness...");
-      const summarizerReady = (window.ai && window.ai.summarizer)
-        ? (await window.ai.summarizer.availability()) === "ready"
-        : false;
-      const writerReady = (window.ai && window.ai.writer)
-        ? (await window.ai.writer.availability()) === "ready"
-        : false;
+      const summarizerReady =
+        window.ai && window.ai.summarizer
+          ? (await window.ai.summarizer.availability()) === "ready"
+          : false;
+      const writerReady =
+        window.ai && window.ai.writer
+          ? (await window.ai.writer.availability()) === "ready"
+          : false;
 
       console.log("🎯 API readiness:", { summarizerReady, writerReady });
 
@@ -1453,7 +1461,8 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
 
         // 🌐 TRANSLATOR pour analyse multilingue
         if (
-          (window.ai && window.ai.translator) &&
+          window.ai &&
+          window.ai.translator &&
           analysisText &&
           !analysisText.match(/^[A-Za-z\s.,!?-]+$/)
         ) {
@@ -1573,7 +1582,9 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     Description: ${cveData.description}
     Severity: ${cveData.severity}
     CVSS: ${cveData.cvss}
-    Affected Products: ${(cveData.products && cveData.products.join(", ")) || "Unknown"}
+    Affected Products: ${
+      (cveData.products && cveData.products.join(", ")) || "Unknown"
+    }
     `;
 
     try {
@@ -1609,7 +1620,9 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         const result = await this.nativeAI.languageDetector.detect({
           text: text,
         });
-        console.log(`🌍 Detected language: ${(result[0] && result[0].detectedLanguage)}`);
+        console.log(
+          `🌍 Detected language: ${result[0] && result[0].detectedLanguage}`
+        );
         return result;
       } else {
         return await mockAI.languageDetector.detect({ text });
@@ -1625,7 +1638,9 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     Generate SOC response recommendations:
     Threat Type: ${threatContext.threatType}
     Risk Score: ${threatContext.riskScore}
-    Indicators: ${(threatContext.indicators && threatContext.indicators.join(", "))}
+    Indicators: ${
+      threatContext.indicators && threatContext.indicators.join(", ")
+    }
     `;
 
     try {

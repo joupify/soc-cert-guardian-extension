@@ -5,11 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SOC Cert Extension</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #f7f7f7; text-align: center; margin-top: 10vh; }
-    h1 { color: #2c3e50; }
-    .api-list { margin-top: 2em; }
-    .api-list a { display: block; margin: 0.5em 0; color: #2980b9; text-decoration: none; }
-    .api-list a:hover { text-decoration: underline; }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
+      color: #f7f7f7;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      color: #4fc3f7;
+      font-size: 2.8em;
+      margin-bottom: 0.2em;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px #0f0c29;
+    }
+    p {
+      font-size: 1.2em;
+      color: #b3c6ff;
+      margin-bottom: 2em;
+      text-shadow: 0 1px 4px #302b63;
+    }
+    .api-list {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 2em 2.5em;
+      box-shadow: 0 4px 24px rgba(48,43,99,0.15);
+    }
+    .api-list h2 {
+      color: #66bb6a;
+      margin-bottom: 1em;
+      font-size: 1.3em;
+      text-shadow: 0 1px 4px #0f0c29;
+    }
+    .api-list a {
+      display: block;
+      margin: 0.7em 0;
+      color: #4fc3f7;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 1.1em;
+      transition: color 0.2s, transform 0.2s;
+      border-bottom: 1px solid #302b63;
+      padding-bottom: 2px;
+    }
+    .api-list a:hover {
+      color: #66bb6a;
+      transform: scale(1.05);
+      border-bottom: 2px solid #66bb6a;
+    }
+    @media (max-width: 600px) {
+      .api-list { padding: 1em; }
+      h1 { font-size: 2em; }
+    }
   </style>
 </head>
 <body>

@@ -4,6 +4,9 @@ class AIHelper {
     this.hasNativeAI = false;
     this.nativeAI = null;
     this.needsDownload = false;
+    this.aiSession = null; // Session AI pré-warmée
+    this.isAIReady = false; // Flag pour savoir si AI est prêt
+    this.aiWarmupAttempts = 0; // Compteur de tentatives de warm-up
 
     // ✅ Récupérer l'ID persistant unique depuis chrome.storage.local
     chrome.storage.local.get(["extensionId"], (result) => {
@@ -27,13 +30,16 @@ class AIHelper {
       console.log("🔍 Checking AI availability...");
       console.log("  window.ai:", !!window.ai);
       console.log("  window.LanguageModel:", !!window.LanguageModel);
-      console.log("  window.chrome?.ai:", !!window.chrome?.ai);
+      console.log("  window.chrome?.ai:", !!(window.chrome && window.chrome.ai));
 
       // 🎆 Utiliser uniquement ce qui fonctionne: window.LanguageModel
       if (window.LanguageModel) {
         this.nativeAI = { languageModel: window.LanguageModel };
         console.log("✅ Chrome Built-in AI detected via window.LanguageModel");
         await this.testAIAvailability();
+        
+        // ✅ WARM-UP AU DÉMARRAGE pour éviter les analyses fausses
+        await this.warmupGeminiNano();
       } else {
         console.log("❌ Aucune API Chrome AI détectée");
         console.log("🔧 Using mock system only");
@@ -49,7 +55,7 @@ class AIHelper {
       if (window.LanguageModel) {
         availability = await window.LanguageModel.availability();
         console.log("🧠 LanguageModel availability:", availability);
-      } else if (window.ai?.languageModel) {
+      } else if (window.ai && window.ai.languageModel) {
         availability = await window.ai.languageModel.availability();
         console.log("� window.ai.languageModel availability:", availability);
       }
@@ -107,7 +113,7 @@ class AIHelper {
     }
 
     // Chercher sur window.chrome
-    if (window.chrome?.ai) {
+    if (window.chrome && window.chrome.ai) {
       console.log(
         "� window.chrome.ai detected:",
         Object.keys(window.chrome.ai)
@@ -421,17 +427,24 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       if (this.hasNativeAI && window.LanguageModel) {
         console.log("🤖 Using Gemini Nano for threat analysis");
 
-        // Créer une session temporaire pour l'analyse
-        const session = await window.LanguageModel.create({
-          systemPrompt:
-            "You are a cybersecurity expert. Analyze URLs for threats and respond ONLY in valid JSON format.",
-          outputLanguage: "en",
-        });
+        // Utiliser la session pré-warmée si disponible, sinon créer une nouvelle
+        let session;
+        if (this.aiSession && this.isAIReady) {
+          console.log("🔥 Using pre-warmed AI session");
+          session = this.aiSession;
+        } else {
+          console.log("🆕 Creating new session for analysis");
+          session = await window.LanguageModel.create({
+            systemPrompt:
+              "You are a cybersecurity expert. Analyze URLs for threats and respond ONLY in valid JSON format.",
+            outputLanguage: "en",
+          });
+        }
 
         const result = await session.prompt(prompt);
 
-        // Nettoyer la session immédiatement
-        if (session?.destroy) {
+        // Nettoyer la session seulement si elle n'est pas la session pré-warmée
+        if (session !== this.aiSession && session?.destroy) {
           session.destroy();
         }
 
@@ -984,8 +997,6 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           let hasResults = false;
 
           // Filtrer les résultats par URL actuelle
-          // Filtrer les résultats par URL actuelle
-          // Filtrer les résultats par URL actuelle
           let urlFilteredResults = data.results
             ? data.results.filter((r) => r.link === url)
             : [];
@@ -996,26 +1007,105 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             "results"
           );
 
-          // Trier pour privilégier les CVEs réels (pas virtuels)
-          urlFilteredResults.sort((a, b) => {
-            const aIsReal = !a.cve_id?.startsWith("CVE-2026"); // ✅ CORRIGÉ
-            const bIsReal = !b.cve_id?.startsWith("CVE-2026"); // ✅ CORRIGÉ
+          // ///////////////////////// ✅ FILTRER PAR URL DU SITE CONSULTÉ + TRIER PAR SEVERITY/SCORE
 
-            console.log(
-              `🔍 Compare: ${a.cve_id} (${aIsReal ? "REAL" : "VIRTUAL"}) vs ${
-                b.cve_id
-              } (${bIsReal ? "REAL" : "VIRTUAL"})`
-            );
+          // // ✅ FILTRER PAR URL DU SITE CONSULTÉ + TRIER PAR SEVERITY/SCORE
+          // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          //   const currentUrl = tabs[0]?.url;
+          //   console.log(`🌐 Current tab URL: ${currentUrl}`);
 
-            if (aIsReal && !bIsReal) return -1;
-            if (!aIsReal && bIsReal) return 1;
+          //   // 1️⃣ FILTRER : Afficher UNIQUEMENT les CVE de cette URL
+          //   const urlFilteredResults = data.filter((item) => {
+          //     const itemUrl = item.link || item.url || "";
 
-            // Si les deux sont du même type, garder l'ordre chronologique
-            return (
-              new Date(b.timestamp || b.receivedAt) -
-              new Date(a.timestamp || a.receivedAt)
-            );
-          });
+          //     // ✅ Match exact
+          //     if (itemUrl === currentUrl) {
+          //       console.log(`✅ EXACT MATCH: ${item.cve_id} - ${itemUrl}`);
+          //       return true;
+          //     }
+
+          //     // ✅ Match partiel (sans protocole et sans query params)
+          //     const normalizeUrl = (url) => {
+          //       try {
+          //         const urlObj = new URL(url);
+          //         return urlObj.hostname + urlObj.pathname;
+          //       } catch {
+          //         return url.replace(/^https?:\/\//, "").split("?")[0];
+          //       }
+          //     };
+
+          //     const normalizedItemUrl = normalizeUrl(itemUrl);
+          //     const normalizedCurrentUrl = normalizeUrl(currentUrl);
+
+          //     if (normalizedItemUrl === normalizedCurrentUrl) {
+          //       console.log(`✅ PARTIAL MATCH: ${item.cve_id} - ${itemUrl}`);
+          //       return true;
+          //     }
+
+          //     return false;
+          //   });
+
+          //   console.log(
+          //     `🔍 Filtered by URL: ${urlFilteredResults.length} results for ${currentUrl}`
+          //   );
+
+          //   // 2️⃣ TRIER : Par Severity > Score > Type (Real/Virtual) > Date
+          //   urlFilteredResults.sort((a, b) => {
+          //     // 1️⃣ Comparer par SEVERITY (Critical > High > Medium > Low)
+          //     const severityOrder = {
+          //       Critical: 0,
+          //       High: 1,
+          //       Medium: 2,
+          //       Low: 3,
+          //       Unknown: 4,
+          //     };
+          //     const aSeverity = severityOrder[a.severity] ?? 4;
+          //     const bSeverity = severityOrder[b.severity] ?? 4;
+
+          //     if (aSeverity !== bSeverity) {
+          //       console.log(
+          //         `🔥 Sort by severity: ${a.severity} (${aSeverity}) vs ${b.severity} (${bSeverity})`
+          //       );
+          //       return aSeverity - bSeverity; // ✅ Plus critique en premier
+          //     }
+
+          //     // 2️⃣ Si même severity, comparer par SCORE (90 > 80 > 70...)
+          //     const aScore = a.score || 0;
+          //     const bScore = b.score || 0;
+
+          //     if (aScore !== bScore) {
+          //       console.log(`📊 Sort by score: ${aScore} vs ${bScore}`);
+          //       return bScore - aScore; // ✅ Score plus élevé en premier
+          //     }
+
+          //     // 3️⃣ Si même severity ET même score, ALORS privilégier CVE réel
+          //     const aIsReal = !a.cve_id?.startsWith("CVE-2026");
+          //     const bIsReal = !b.cve_id?.startsWith("CVE-2026");
+
+          //     console.log(
+          //       `🔍 Compare CVE type: ${a.cve_id} (${
+          //         aIsReal ? "REAL" : "VIRTUAL"
+          //       }) vs ${b.cve_id} (${bIsReal ? "REAL" : "VIRTUAL"})`
+          //     );
+
+          //     if (aIsReal && !bIsReal) return -1; // ✅ CVE réel en premier (à égalité)
+          //     if (!aIsReal && bIsReal) return 1; // ✅ CVE virtuel en dernier (à égalité)
+
+          //     // 4️⃣ Si tout est égal, trier par date (plus récent en premier)
+          //     const aDate = new Date(a.timestamp || 0);
+          //     const bDate = new Date(b.timestamp || 0);
+          //     return bDate - aDate; // ✅ Plus récent en premier
+          //   });
+
+          //   console.log(
+          //     `✅ After sort: ${urlFilteredResults[0]?.cve_id} (severity: ${urlFilteredResults[0]?.severity}, score: ${urlFilteredResults[0]?.score})`
+          //   );
+
+          //   // 3️⃣ Afficher les résultats
+          //   this.displayResults(urlFilteredResults);
+          // });
+
+          // /////////////////////////************************************************ */
 
           console.log("✅ After sort:", urlFilteredResults[0]?.cve_id);
 
@@ -1970,7 +2060,13 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         "🔄 Attempting to create languageModel session (source):",
         lmSource
       );
-      if (languageModel === window.LanguageModel) {
+
+      // 🔥 Priorité à la session pré-warmée
+      if (this.aiSession && this.isAIReady) {
+        console.log("🔥 Using pre-warmed AI session for enhanced analysis");
+        session = this.aiSession;
+        usedSource = "pre-warmed-session";
+      } else if (languageModel === window.LanguageModel) {
         console.log("🔧 Creating session via window.LanguageModel.create()...");
         session = await window.LanguageModel.create({
           temperature: 0.3,
@@ -2095,8 +2191,10 @@ Use these icons:
       console.log("📨 Sending prompt to languageModel (chars):", prompt.length);
       const response = await session.prompt(prompt);
       console.log("📥 Raw languageModel response:", response);
-      // Cleanup session if API exposes destroy
-      session.destroy?.();
+      // Cleanup session if API exposes destroy (mais pas la session pré-warmée)
+      if (session !== this.aiSession) {
+        session.destroy?.();
+      }
 
       const timeTaken = Date.now() - startTime;
       console.log(`⏱️ languageModel response time: ${timeTaken}ms`);
@@ -2188,7 +2286,9 @@ Use these icons:
     } catch (error) {
       console.error("❌ Enhanced analysis failed:", error);
       try {
-        session.destroy?.();
+        if (session !== this.aiSession) {
+          session.destroy?.();
+        }
       } catch (e) {
         /* ignore */
       }
@@ -2232,6 +2332,47 @@ Use these icons:
       return this.lastEnhancedFilteredRecommendations.length > 0
         ? this.lastEnhancedFilteredRecommendations
         : recsFallback;
+    }
+  }
+
+  // ✅ NOUVELLE FONCTION : Warm-up Gemini Nano pour éviter les analyses fausses
+  async warmupGeminiNano() {
+    console.log('🔥 Warming up Gemini Nano AI...');
+
+    try {
+      // Créer la session si elle n'existe pas
+      if (!this.aiSession && window.ai?.languageModel) {
+        this.aiSession = await window.ai.languageModel.create({
+          temperature: 0.7,
+          topK: 3,
+        });
+        console.log('✅ AI session created for warm-up');
+      }
+
+      // Test prompt pour warm-up
+      if (this.aiSession) {
+        const warmupPrompt = `Analyze this URL for security: https://example.com/test`;
+        const warmupResponse = await this.aiSession.prompt(warmupPrompt);
+
+        console.log('✅ Gemini Nano warmed up successfully');
+        console.log('📝 Warmup response:', warmupResponse.substring(0, 100));
+
+        this.isAIReady = true;
+        this.aiWarmupAttempts++;
+      } else {
+        console.log('⚠️ AI session not available for warm-up');
+      }
+
+    } catch (error) {
+      console.error('❌ Gemini Nano warmup failed:', error);
+
+      // Retry jusqu'à 3 fois
+      if (this.aiWarmupAttempts < 3) {
+        console.log(`🔄 Retrying warmup (attempt ${this.aiWarmupAttempts + 1}/3)...`);
+        setTimeout(() => this.warmupGeminiNano(), 2000);
+      } else {
+        console.error('❌ Gemini Nano warmup failed after 3 attempts');
+      }
     }
   }
 }

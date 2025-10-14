@@ -4,7 +4,7 @@
   "version": "1.0",
   "description": "AI-powered security analysis using Chrome's built-in AI",
 
-  "permissions": ["activeTab", "storage", "scripting", "tabs"],
+  "permissions": ["activeTab", "storage", "scripting", "tabs", "notifications"],
 
   "content_security_policy": {
     "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'none';"

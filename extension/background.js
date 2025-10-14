@@ -339,15 +339,41 @@ async function checkPageForThreats(tabId, url) {
 
       // 2. Notification système
       try {
-        chrome.notifications.create({
-          type: "basic",
-          iconUrl: "icons/icon.png",
-          title: "🚨 SOC-CERT Threat Alert",
-          message: `Risk Score: ${analysis.riskScore}/100 - ${analysis.threatType}`,
-          priority: 2,
-        });
+        if (chrome.notifications && chrome.notifications.create) {
+          const iconPath =
+            chrome.runtime && chrome.runtime.getURL
+              ? chrome.runtime.getURL("icons/icon128.png")
+              : "icons/icon128.png";
+
+          chrome.notifications.create(
+            {
+              type: "basic",
+              iconUrl: iconPath,
+              title: "🚨 SOC-CERT Threat Alert",
+              message: `Risk Score: ${analysis.riskScore}/100 - ${analysis.threatType}`,
+              priority: 2,
+            },
+            (notifId) => {
+              if (chrome.runtime.lastError) {
+                console.warn(
+                  "⚠️ Notification create error:",
+                  chrome.runtime.lastError.message
+                );
+              } else {
+                console.log("🔔 Notification created id:", notifId);
+              }
+            }
+          );
+        } else {
+          console.log(
+            "⚠️ chrome.notifications API not available - skipping notification"
+          );
+        }
       } catch (notifError) {
-        console.log("⚠️ Notification skipped:", notifError.message);
+        console.log(
+          "⚠️ Notification skipped:",
+          notifError && notifError.message ? notifError.message : notifError
+        );
       }
 
       // 3. Badge rouge sur l'icône

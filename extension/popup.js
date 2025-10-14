@@ -11,11 +11,20 @@ document.addEventListener("DOMContentLoaded", function () {
 // ============================================
 
 async function loadVirtualCVEStats() {
+  const API_BASE_URL = "https://soc-cert-extension.vercel.app";
   console.log("📊 Loading Virtual CVE stats...");
 
   try {
-    // Appeler l'API pour récupérer les stats
-    const response = await fetch(`${API_BASE_URL}/api/virtual-cve-stats`);
+    // ✅ AJOUT : Cache-busting avec timestamp
+    const response = await fetch(
+      `${API_BASE_URL}/api/virtual-cve-stats?t=${Date.now()}`,
+      {
+        cache: "no-cache", // ✅ Force refresh
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -35,17 +44,30 @@ async function loadVirtualCVEStats() {
       : "-";
 
     // Optionnel : Ajouter une animation de compteur
-    animateCounter("total-virtual-cves", 0, stats.totalVirtualCVEs || 0, 1000);
-    animateCounter("threats-24h", 0, stats.threatsLast24h || 0, 800);
+    if (typeof animateCounter === "function") {
+      animateCounter(
+        "total-virtual-cves",
+        0,
+        stats.totalVirtualCVEs || 0,
+        1000
+      );
+      animateCounter("threats-24h", 0, stats.threatsLast24h || 0, 800);
+    }
   } catch (error) {
     console.error("❌ Failed to load Virtual CVE stats:", error);
 
-    // ✅ Fallback : afficher 0 au lieu de valeurs hardcodées
+    // Fallback : afficher 0
     document.getElementById("total-virtual-cves").textContent = "0";
     document.getElementById("threats-24h").textContent = "0";
     document.getElementById("avg-confidence").textContent = "-";
   }
 }
+
+// // ✅ AJOUT : Auto-refresh toutes les 10 secondes
+// setInterval(loadVirtualCVEStats, 10000);
+
+// ✅ Charger immédiatement au démarrage
+loadVirtualCVEStats();
 
 // Animation de compteur
 function animateCounter(elementId, start, end, duration) {
@@ -72,36 +94,6 @@ function animateCounter(elementId, start, end, duration) {
 // ✅ Appeler au chargement de la popup
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Popup loaded, loading stats...");
-  await loadVirtualCVEStats();
-});
-
-// Animation de compteur (optionnelle)
-function animateCounter(elementId, start, end, duration) {
-  const element = document.getElementById(elementId);
-  if (!element) return;
-
-  const range = end - start;
-  const increment = range / (duration / 16); // 60 FPS
-  let current = start;
-
-  const timer = setInterval(() => {
-    current += increment;
-    if (
-      (increment > 0 && current >= end) ||
-      (increment < 0 && current <= end)
-    ) {
-      current = end;
-      clearInterval(timer);
-    }
-    element.textContent = Math.round(current).toLocaleString();
-  }, 16);
-}
-
-// ✅ Appeler au chargement de la popup
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 Popup loaded, initializing...");
-
-  // Charger les stats
   await loadVirtualCVEStats();
 });
 

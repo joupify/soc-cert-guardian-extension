@@ -1307,228 +1307,214 @@ async function updateWithDeepResults(deepData) {
     <div style="margin: 12px 0; text-align:center; color:#888;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
 
     <div style="margin-bottom: 10px;">
-  <strong>🚨 CVE Correlation:</strong>
-  <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 12px;">
-    ${(() => {
-      console.log("🔍 DEBUG CVE Display:", deepData.deepResults);
+  <strong class="cve-correlation-header">
 
-      // ✅ CAS 1 : CVE direct dans deepResults
-      if (deepData.deepResults?.cve_id) {
-        console.log("✅ CVE found:", deepData.deepResults.cve_id);
-        return `
-          <div class="cve-item">
-            <!-- ✅ NOUVEAU : Badge CVE Type -->
-            <div class="cve-header">
-              <span class="cve-id">${deepData.deepResults.cve_id}</span>
-              
-              <!-- Badge selon le type -->
-              <span class="cve-badge ${
+  🚨 CVE Correlation
+  
+  <!-- 💡 INFOBULLE EXPLICATIVE -->
+  <span class="info-tooltip-trigger">i
+    <span class="info-tooltip-content">
+      <div class="tooltip-header">
+        <span class="tooltip-icon">🔮</span>
+        <div>
+          <strong class="tooltip-title">VIRTUAL CVE(AI-Generated CVE)</strong>
+                    <span class="tooltip-subtitle">Threat detected in real time by Gemini Nano AI</span>
+        </div>
+      </div>
+      <div class="tooltip-divider">
+              <span class="tooltip-label">✨ <strong>Our advantage:</strong></span>
+              <span class="tooltip-description">
+                Instant detection of emerging threats by SOC-CERT<br/>
+                not yet listed in the official NVD database.
+                Official NVD CVEs are published with a delay of several weeks or months. This early detection allows you to take action before public disclosure.
+              </span>
+            </div>
+      <span class="tooltip-arrow"></span>
+    </span>
+  </span>
+</strong>
+
+<div class="cve-container">
+  ${(() => {
+    console.log("🔍 DEBUG CVE Display:", deepData.deepResults);
+
+    // ✅ CAS 1 : CVE direct dans deepResults
+    if (deepData.deepResults?.cve_id) {
+      console.log("✅ CVE found:", deepData.deepResults.cve_id);
+      return `
+        <div class="cve-item">
+          <div class="cve-header">
+            <span class="cve-id">${deepData.deepResults.cve_id}</span>
+            
+            <span class="cve-badge ${
+              deepData.deepResults.isVirtual ||
+              (deepData.deepResults.cve_id &&
+                deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                ? "emerging-threat"
+                : "official-cve"
+            }">
+              <span class="badge-icon">${
                 deepData.deepResults.isVirtual ||
                 (deepData.deepResults.cve_id &&
                   deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                  ? "🔮"
+                  : "✅"
+              }</span>
+              <span class="badge-text">${
+                deepData.deepResults.isVirtual ||
+                (deepData.deepResults.cve_id &&
+                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                  ? "EMERGING THREAT"
+                  : "Official CVE"
+              }</span>
+              <span class="badge-tooltip">${
+                deepData.deepResults.isVirtual ||
+                (deepData.deepResults.cve_id &&
+                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                  ? "🚀 Threat detected in real time by our AI - Not yet listed in NVD"
+                  : "Verified CVE from official database"
+              }</span>
+            </span>
+            
+            <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${
+        deepData.deepResults.severity
+      }</span>
+          </div>
+          <span class="badge badge-${
+            deepData.deepResults.severity?.toLowerCase() || "critical"
+          }" style="
+            background: ${
+              deepData.deepResults.severity === "Critical"
+                ? "#ff0000"
+                : "#ff9900"
+            };
+            color: white;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 8px;
+          ">
+            ${deepData.deepResults.severity || "Critical"}
+          </span>
+          <br>
+          <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
+            deepData.deepResults.score || "N/A"
+          }</span>
+          ${(() => {
+            const item = deepData.deepResults;
+            if (!item) return "";
+
+            const isVirtual =
+              item.isVirtual ||
+              (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+            let nvdLink;
+            let nvdLinkText;
+
+            if (isVirtual) {
+              const searchQuery =
+                (item.indicators && item.indicators.join(" ")) ||
+                item.threatType ||
+                "web vulnerability";
+              nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
+                searchQuery
+              )}`;
+              nvdLinkText = `🔍 Search NVD for ${
+                (item.indicators && item.indicators[0]) ||
+                item.threatType ||
+                "vulnerabilities"
+              }`;
+            } else if (item.cve_id) {
+              nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
+              nvdLinkText = "View on NVD";
+            } else if (item.link) {
+              nvdLink = item.link;
+              nvdLinkText = "View Details";
+            } else {
+              return "";
+            }
+
+            return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${
+              isVirtual
+                ? "Search for similar vulnerabilities in NVD"
+                : "View official CVE details"
+            }">${nvdLinkText} →</a>`;
+          })()}
+        </div>
+      `;
+    }
+
+    // ✅ CAS 2 : Array de results
+    if (deepData.deepResults?.results?.length > 0) {
+      console.log(
+        "✅ CVE results array found:",
+        deepData.deepResults.results.length
+      );
+      return deepData.deepResults.results
+        .map(
+          (cve) => `
+          <div class="cve-item">
+            <div class="cve-header">
+              <span class="cve-id">${cve.cve_id}</span>
+              
+              <span class="cve-badge ${
+                cve.isVirtual ||
+                (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
                   ? "emerging-threat"
                   : "official-cve"
               }">
                 <span class="badge-icon">${
-                  deepData.deepResults.isVirtual ||
-                  (deepData.deepResults.cve_id &&
-                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                  cve.isVirtual ||
+                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
                     ? "🔮"
                     : "✅"
                 }</span>
                 <span class="badge-text">${
-                  deepData.deepResults.isVirtual ||
-                  (deepData.deepResults.cve_id &&
-                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                    ? "Emerging Threat"
+                  cve.isVirtual ||
+                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                    ? "Virtual CVE"
                     : "Official CVE"
                 }</span>
                 <span class="badge-tooltip">${
-                  deepData.deepResults.isVirtual ||
-                  (deepData.deepResults.cve_id &&
-                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                    ? "AI-detected threat not yet in NVD"
+                  cve.isVirtual ||
+                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                    ? "🚀 Menace détectée en temps réel par notre IA"
                     : "Verified CVE from official database"
                 }</span>
               </span>
               
-              <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${
-          deepData.deepResults.severity
-        }</span>
+              <span class="severity ${cve.severity?.toLowerCase()}">${
+            cve.severity
+          }</span>
             </div>
             <span class="badge badge-${
-              deepData.deepResults.severity?.toLowerCase() || "critical"
-            }" style="
-              background: ${
-                deepData.deepResults.severity === "Critical"
-                  ? "#ff0000"
-                  : "#ff9900"
-              };
-              color: white;
-              padding: 3px 8px;
-              border-radius: 3px;
-              font-size: 10px;
-              font-weight: bold;
-              margin-left: 8px;
-            ">
-              ${deepData.deepResults.severity || "Critical"}
+              cve.severity?.toLowerCase() || "unknown"
+            }">
+              ${cve.severity || "Unknown"}
             </span>
             <br>
-            <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
-              deepData.deepResults.score || "N/A"
-            }</span>
-            ${(() => {
-              const item = deepData.deepResults;
-              if (!item) return "";
-
-              const isVirtual =
-                item.isVirtual ||
-                (item.cve_id && item.cve_id.startsWith("CVE-2026"));
-              let nvdLink;
-              let nvdLinkText;
-
-              if (isVirtual) {
-                const searchQuery =
-                  (item.indicators && item.indicators.join(" ")) ||
-                  item.threatType ||
-                  "web vulnerability";
-                nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
-                  searchQuery
-                )}`;
-                nvdLinkText = `🔍 Search NVD for ${
-                  (item.indicators && item.indicators[0]) ||
-                  item.threatType ||
-                  "vulnerabilities"
-                }`;
-              } else if (item.cve_id) {
-                nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
-                nvdLinkText = "View on NVD";
-              } else if (item.link) {
-                // fallback to provided link
-                nvdLink = item.link;
-                nvdLinkText = "View Details";
-              } else {
-                return "";
-              }
-
-              return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${
-                isVirtual
-                  ? "Search for similar vulnerabilities in NVD"
-                  : "View official CVE details"
-              }">${nvdLinkText} →</a>`;
-            })()}
+            <span class="cve-score">Score: ${cve.score || "N/A"}</span>
           </div>
-        `;
-      }
+        `
+        )
+        .join("<br>");
+    }
 
-      // ✅ CAS 2 : Array de results
-      if (deepData.deepResults?.results?.length > 0) {
-        console.log(
-          "✅ CVE results array found:",
-          deepData.deepResults.results.length
-        );
-        return deepData.deepResults.results
-          .map(
-            (cve) => `
-            <div class="cve-item">
-              <!-- ✅ NOUVEAU : Badge CVE Type -->
-              <div class="cve-header">
-                <span class="cve-id">${cve.cve_id}</span>
-                
-                <!-- Badge selon le type -->
-                <span class="cve-badge ${
-                  cve.isVirtual ||
-                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                    ? "emerging-threat"
-                    : "official-cve"
-                }">
-                  <span class="badge-icon">${
-                    cve.isVirtual ||
-                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                      ? "🔮"
-                      : "✅"
-                  }</span>
-                  <span class="badge-text">${
-                    cve.isVirtual ||
-                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                      ? "Emerging Threat"
-                      : "Official CVE"
-                  }</span>
-                  <span class="badge-tooltip">${
-                    cve.isVirtual ||
-                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                      ? "AI-detected threat not yet in NVD"
-                      : "Verified CVE from official database"
-                  }</span>
-                </span>
-                
-                <span class="severity ${cve.severity?.toLowerCase()}">${
-              cve.severity
-            }</span>
-              </div>
-              <span class="badge badge-${
-                cve.severity?.toLowerCase() || "unknown"
-              }">
-                ${cve.severity || "Unknown"}
-              </span>
-              <br>
-              <span class="cve-score">Score: ${cve.score || "N/A"}</span>
-              ${(() => {
-                const item = cve;
-                if (!item) return "";
+    // ✅ CAS 3 : Array de cveResults
+    if (deepData.deepResults?.cveResults?.length > 0) {
+      console.log(
+        "✅ CVE cveResults array found:",
+        deepData.deepResults.cveResults.length
+      );
+      return deepData.deepResults.cveResults
+        .map((cve) => `${cve.id} (${cve.severity}) - ${cve.description}`)
+        .join("<br>");
+    }
 
-                const isVirtual =
-                  item.isVirtual ||
-                  (item.cve_id && item.cve_id.startsWith("CVE-2026"));
-                let nvdLink;
-                let nvdLinkText;
-
-                if (isVirtual) {
-                  const searchQuery =
-                    (item.indicators && item.indicators.join(" ")) ||
-                    item.threatType ||
-                    "web vulnerability";
-                  nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
-                    searchQuery
-                  )}`;
-                  nvdLinkText = `🔍 Search NVD for ${
-                    (item.indicators && item.indicators[0]) ||
-                    item.threatType ||
-                    "vulnerabilities"
-                  }`;
-                } else if (item.cve_id) {
-                  nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
-                  nvdLinkText = "View on NVD";
-                } else if (item.link) {
-                  nvdLink = item.link;
-                  nvdLinkText = "View Details";
-                } else {
-                  return "";
-                }
-
-                return `\n                <br><a href="${nvdLink}" target="_blank">${nvdLinkText} →</a>`;
-              })()}
-            </div>
-          `
-          )
-          .join("<br>");
-      }
-
-      // ✅ CAS 3 : Array de cveResults
-      if (deepData.deepResults?.cveResults?.length > 0) {
-        console.log(
-          "✅ CVE cveResults array found:",
-          deepData.deepResults.cveResults.length
-        );
-        return deepData.deepResults.cveResults
-          .map((cve) => `${cve.id} (${cve.severity}) - ${cve.description}`)
-          .join("<br>");
-      }
-
-      console.log("❌ No CVE data found in deepResults");
-      return "⏳ Waiting for CVE data...";
-    })()}
-  </div>
+    console.log("❌ No CVE data found in deepResults");
+    return "⏳ Waiting for CVE data...";
+  })()}
+</div>
 
 <!-- NVD link now generated per-item above -->
 
@@ -1813,11 +1799,31 @@ function displayThreatAnalysis(analysis, siteUrl) {
         analysis.indicators && analysis.indicators.length > 0
           ? `
         <div style="margin-bottom: 15px;">
-          <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
-            <span style="margin-right: 5px;">🚨</span> Threat Indicators (${
-              analysis.indicators.length
-            })
-          </div>
+          <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+  <span style="margin-right: 5px;">🚨</span> 
+  Threat Indicators (${analysis.indicators.length})
+  
+  <!-- 💡 INFOBULLE EXPLICATIVE -->
+  <span class="info-tooltip-trigger">i
+    <span class="info-tooltip-content">
+      <div class="tooltip-header">
+        <span class="tooltip-icon">🎯</span>
+        <div>
+          <strong class="tooltip-title">Threat Indicators</strong>
+          <span class="tooltip-subtitle">Types de vulnérabilités détectées</span>
+        </div>
+      </div>
+      <div class="tooltip-divider">
+        <span class="tooltip-description">
+          Describes the type of vulnerability detected<br/>
+          by our AI security analysis engine
+        </span>
+      </div>
+      <span class="tooltip-arrow"></span>
+    </span>
+  </span>
+</div>
+
           <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px;">
             ${analysis.indicators.map((ind) => `• ${ind}`).join("<br>")}
           </div>

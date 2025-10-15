@@ -911,3 +911,125 @@ h1.title {
 .stat-card:nth-child(2) { animation-delay: 0.2s; }
 .stat-card:nth-child(3) { animation-delay: 0.3s; }
 .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* ============================================
+   INFOBULLE CVE VIRTUELLE
+   ============================================ */
+
+.cve-correlation-header {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: help;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.info-tooltip-trigger:hover {
+  transform: scale(1.1);
+}
+
+.info-tooltip-content {
+  position: absolute;
+  bottom: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: normal;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  border: 1px solid rgba(102, 126, 234, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1000;
+  min-width: 280px;
+  text-align: left;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.info-tooltip-trigger:hover .info-tooltip-content {
+  opacity: 1;
+  visibility: visible;
+  bottom: 30px;
+}
+
+.tooltip-header {
+  display: flex;
+  align-items: start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tooltip-icon {
+  font-size: 16px;
+}
+
+.tooltip-title {
+  color: #667eea;
+  display: block;
+  margin-bottom: 4px;
+  font-weight: bold;
+}
+
+.tooltip-subtitle {
+  color: #ccc;
+  font-size: 10px;
+}
+
+.tooltip-divider {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.tooltip-label {
+  color: #aaa;
+  font-size: 10px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.tooltip-description {
+  color: #bbb;
+  font-size: 10px;
+}
+
+.tooltip-arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid rgba(102, 126, 234, 0.3);
+}
+
+.cve-container {
+  background: rgba(0,0,0,0.2);
+  padding: 8px;
+  border-radius: 5px;
+  margin-top: 5px;
+  font-size: 12px;
+}

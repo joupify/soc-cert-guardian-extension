@@ -1018,14 +1018,67 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           console.log("  - Link length:", data.results?.[0]?.link?.length);
 
           // Filtrer les résultats par URL actuelle
-          let urlFilteredResults = data.results
-            ? data.results.filter((r) => r.link === url)
-            : [];
+          // Filtrer par URL visitée (normalisée) — seul critère demandé par l'utilisateur.
+          // Ne pas appliquer de priorisation real/virtual ici : afficher simplement la CVE
+          // qui correspond à l'URL analysée. Si plusieurs résultats existent pour la même URL,
+          // on prend le plus récent (receivedAt > timestamp) — cela reflète ce que le backend
+          // (n8n) a retourné en dernier pour cette URL.
+          const normalizeUrl = (u) => {
+            if (!u) return "";
+            try {
+              const o = new URL(u);
+              // garder hostname + pathname + query (search) pour correspondance stricte
+              return (o.hostname + o.pathname + (o.search || "")).replace(
+                /\/$/,
+                ""
+              );
+            } catch (err) {
+              // fallback simple pour chaînes non-URL
+              return String(u)
+                .replace(/^https?:\/\//, "")
+                .split("?")[0]
+                .replace(/\/$/, "");
+            }
+          };
+
+          let urlFilteredResults = [];
+          if (data.results && Array.isArray(data.results)) {
+            const normalizedCurrent = normalizeUrl(url);
+            urlFilteredResults = data.results.filter((r) => {
+              const rlink = r.link || r.url || "";
+              return normalizeUrl(rlink) === normalizedCurrent;
+            });
+          }
 
           console.log(
             "🔍 Filtered by URL:",
             urlFilteredResults.length,
             "results"
+          );
+
+          // If multiple matches, pick the most recent (receivedAt > timestamp), fallback to highest score
+          let selectedResult = null;
+          if (urlFilteredResults.length === 1) {
+            selectedResult = urlFilteredResults[0];
+          } else if (urlFilteredResults.length > 1) {
+            selectedResult = urlFilteredResults.reduce((best, cur) => {
+              const bestTime = new Date(
+                best.receivedAt || best.timestamp || 0
+              ).getTime();
+              const curTime = new Date(
+                cur.receivedAt || cur.timestamp || 0
+              ).getTime();
+              if (curTime !== bestTime) return curTime > bestTime ? cur : best;
+              // tie-breaker: higher score
+              const bScore = best.score || 0;
+              const cScore = cur.score || 0;
+              return cScore > bScore ? cur : best;
+            }, urlFilteredResults[0]);
+          }
+
+          console.log(
+            "✅ Selected by URL:",
+            selectedResult && selectedResult.cve_id
           );
 
           // ///////////////////////// ✅ FILTRER PAR URL DU SITE CONSULTÉ + TRIER PAR SEVERITY/SCORE

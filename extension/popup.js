@@ -925,6 +925,21 @@ async function updateAPIBadgesStatus(
   deepResults = null
 ) {
   try {
+    // Handle custom status object format
+    if (typeof deepCompleted === "object" && deepCompleted !== null) {
+      const customStatuses = deepCompleted;
+      Object.keys(customStatuses).forEach((key) => {
+        const statusInfo = customStatuses[key];
+        const el = document.querySelector(
+          `[data-api-key="${key}"] .api-badge-status`
+        );
+        if (el) {
+          el.textContent = statusInfo.label || statusInfo.status || "❓";
+        }
+      });
+      return;
+    }
+
     const status = await (aiHelper.testSpecializedAPIs
       ? aiHelper.testSpecializedAPIs()
       : Promise.resolve({}));
@@ -1097,12 +1112,97 @@ async function analyzeCurrentPage() {
       `;
 
       // 4. CONTINUER AVEC L'ANALYSE NORMALE EXISTANTE
-      const progressiveAnalysis = await aiHelper.analyzeCompleteFlow(
-        tab.url,
-        `Analyzing: ${tab.title}`
-      );
+      // 🔄 Check for stored background analysis first
+      const storageKey = `analysis_${tab.url}`;
+      const stored = await chrome.storage.local.get([storageKey]);
+      let progressiveAnalysis;
+      let usedStoredAnalysis = false;
+
+      if (
+        stored[storageKey] &&
+        Date.now() - stored[storageKey].timestamp < 5 * 60 * 1000
+      ) {
+        // 5 minutes
+        console.log("🔄 Using stored background analysis for:", tab.url);
+        usedStoredAnalysis = true;
+        const bgAnalysis = stored[storageKey].analysis;
+        progressiveAnalysis = {
+          ...bgAnalysis,
+          isProgressive: true,
+          currentStep: "quick-analysis",
+          steps: {
+            quickAnalysis: { status: "completed", data: bgAnalysis },
+            deepAnalysis: { status: "pending", data: null },
+            cveEnrichment: { status: "pending", data: null },
+            finalRecommendations: { status: "pending", data: null },
+          },
+        };
+
+        // 🛡️ Check if safe URL
+        if (bgAnalysis.threatType && bgAnalysis.threatType.includes("safe")) {
+          progressiveAnalysis.isSafeUrl = true;
+          progressiveAnalysis.safeReason = `Threat type: ${bgAnalysis.threatType} - No deep analysis needed`;
+        }
+      } else {
+        // 🔄 Wait a bit for background analysis to complete
+        console.log("⏳ Waiting for background analysis to complete...");
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
+        // Check again for stored analysis
+        const storedAgain = await chrome.storage.local.get([storageKey]);
+        if (
+          storedAgain[storageKey] &&
+          Date.now() - storedAgain[storageKey].timestamp < 5 * 60 * 1000
+        ) {
+          console.log(
+            "🔄 Using stored background analysis (after wait) for:",
+            tab.url
+          );
+          usedStoredAnalysis = true;
+          const bgAnalysis = storedAgain[storageKey].analysis;
+          progressiveAnalysis = {
+            ...bgAnalysis,
+            isProgressive: true,
+            currentStep: "quick-analysis",
+            steps: {
+              quickAnalysis: { status: "completed", data: bgAnalysis },
+              deepAnalysis: { status: "pending", data: null },
+              cveEnrichment: { status: "pending", data: null },
+              finalRecommendations: { status: "pending", data: null },
+            },
+          };
+
+          // 🛡️ Check if safe URL
+          if (bgAnalysis.threatType && bgAnalysis.threatType.includes("safe")) {
+            progressiveAnalysis.isSafeUrl = true;
+            progressiveAnalysis.safeReason = `Threat type: ${bgAnalysis.threatType} - No deep analysis needed`;
+          }
+        } else {
+          console.log("🆕 Running new analysis for:", tab.url);
+          progressiveAnalysis = await aiHelper.analyzeCompleteFlow(
+            tab.url,
+            `Analyzing: ${tab.title}`
+          );
+        }
+      }
 
       console.log("📈 Progressive analysis started:", progressiveAnalysis);
+
+      // 🔄 If using stored analysis and not safe, trigger deep analysis
+      if (usedStoredAnalysis && !progressiveAnalysis.isSafeUrl) {
+        console.log("🔄 Triggering deep analysis for stored non-safe URL");
+        setTimeout(async () => {
+          try {
+            await aiHelper.triggerDeepAnalysis(
+              tab.url,
+              `Analyzing: ${tab.title}`,
+              progressiveAnalysis
+            );
+          } catch (error) {
+            console.error("❌ Error triggering deep analysis:", error);
+          }
+        }, 100);
+      }
 
       // Display quick analysis immediately
       console.log(
@@ -1112,37 +1212,48 @@ async function analyzeCurrentPage() {
       );
       displayThreatAnalysis(progressiveAnalysis, tab.url);
       console.log("📌 After displayThreatAnalysis", new Date().toISOString());
-      // Ensure deep analysis status shows running state for new analysis
-      setDeepAnalysisStatusRunning();
-      console.log(
-        "📌 After setDeepAnalysisStatusRunning",
-        new Date().toISOString()
-      );
-      // Ensure AI status shows running state too
-      setAIStatusRunning();
-      console.log("📌 After setAIStatusRunning", new Date().toISOString());
 
-      // LISTEN FOR DEEP ANALYSIS UPDATES
-      // Show spinner while deep analysis / polling is running
-      console.log(
-        "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
-        new Date().toISOString()
-      );
-      showDeepSpinner();
-
-      window.addEventListener("deepAnalysisUpdate", (event) => {
+      // Only start deep analysis spinner if NOT a safe URL
+      if (!progressiveAnalysis.isSafeUrl) {
+        // Ensure deep analysis status shows running state for new analysis
+        setDeepAnalysisStatusRunning();
         console.log(
-          "🔍 Deep analysis update received:",
-          event.detail,
+          "📌 After setDeepAnalysisStatusRunning",
           new Date().toISOString()
         );
-        // Keep spinner visible while enhanced analysis (Gemini) runs
-        updateWithDeepResults(event.detail);
-      });
-      console.log(
-        "📌 deepAnalysisUpdate listener attached",
-        new Date().toISOString()
-      );
+        // Ensure AI status shows running state too
+        setAIStatusRunning();
+        console.log("📌 After setAIStatusRunning", new Date().toISOString());
+
+        // LISTEN FOR DEEP ANALYSIS UPDATES
+        // Show spinner while deep analysis / polling is running
+        console.log(
+          "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
+          new Date().toISOString()
+        );
+        showDeepSpinner();
+
+        window.addEventListener("deepAnalysisUpdate", (event) => {
+          console.log(
+            "🔍 Deep analysis update received:",
+            event.detail,
+            new Date().toISOString()
+          );
+          // Keep spinner visible while enhanced analysis (Gemini) runs
+          updateWithDeepResults(event.detail);
+        });
+        console.log(
+          "📌 deepAnalysisUpdate listener attached",
+          new Date().toISOString()
+        );
+      } else {
+        console.log("🛡️ Safe URL detected - skipping deep analysis spinner");
+        // For safe URLs, mark deep analysis as completed/skipped
+        updateAPIBadgesStatus({
+          gemini: { status: "completed", label: "✅ Gemini (safe)" },
+          n8n: { status: "skipped", label: "⏭️ n8n (not needed)" },
+        });
+      }
     } else {
       console.log("❌ No valid tab found");
       document.getElementById("analysis-content").innerHTML = `
@@ -1519,80 +1630,9 @@ async function updateWithDeepResults(deepData) {
 
 <!-- NVD link now generated per-item above -->
 
-
-
-
-
 </div>
 
-    ${
-      deepData.deepResults?.aiSummary ||
-      deepData.deepResults?.enhancedRecommendations ||
-      deepData.deepResults?.translatedAnalysis ||
-      deepData.deepResults?.proofreadAnalysis
-        ? `
-      <div style="margin-bottom: 10px;">
-        <strong>🤖 Specialized AI Analysis:</strong>
-        
-        ${
-          deepData.deepResults?.aiSummary
-            ? `
-          <div style="margin: 5px 0;">
-            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Summarizer:</div>
-            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-              ${deepData.deepResults.aiSummary}
-            </div>
-          </div>
-        `
-            : ""
-        }
-        
-        ${
-          deepData.deepResults?.enhancedRecommendations
-            ? `
-          <div style="margin: 5px 0;">
-            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">✍️ Writer:</div>
-            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-              ${
-                Array.isArray(deepData.deepResults.enhancedRecommendations)
-                  ? deepData.deepResults.enhancedRecommendations.join("<br>")
-                  : deepData.deepResults.enhancedRecommendations
-              }
-            </div>
-          </div>
-        `
-            : ""
-        }
-        
-        ${
-          deepData.deepResults?.translatedAnalysis
-            ? `
-          <div style="margin: 5px 0;">
-            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">🌐 Translator:</div>
-            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; font-style: italic;">
-              ${deepData.deepResults.translatedAnalysis}
-            </div>
-          </div>
-        `
-            : ""
-        }
-        
-        ${
-          deepData.deepResults?.proofreadAnalysis
-            ? `
-          <div style="margin: 5px 0;">
-            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Proofreader:</div>
-            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-              ${deepData.deepResults.proofreadAnalysis}
-            </div>
-          </div>
-        `
-            : ""
-        }
-      </div>
-    `
-        : ""
-    }
+    ${""}
     
       <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
       <div>
@@ -1723,6 +1763,60 @@ async function updateWithDeepResults(deepData) {
 }
 function displayThreatAnalysis(analysis, siteUrl) {
   window.currentAnalysis = analysis;
+
+  // 🛡️ SPECIAL HANDLING FOR SAFE URLs
+  if (analysis.isSafeUrl) {
+    console.log("🛡️ Displaying safe URL message");
+    const content = document.getElementById("analysis-content");
+    content.innerHTML = `
+      <div style="background: rgba(0,255,0,0.1); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #00ff00;">
+        <!-- Analyzed URL -->
+        <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
+          <strong>🌐 Analyzed URL:</strong><br>
+          <a href="${siteUrl}" target="_blank" style="color:#00aaff;">${siteUrl}</a>
+        </div>
+
+        <!-- Safe URL header -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+          <div style="display: flex; align-items: center;">
+            <span style="font-size: 24px; margin-right: 10px;">✅</span>
+            <div>
+              <div style="font-size: 18px; font-weight: bold;">Safe URL</div>
+              <div style="font-size: 12px; opacity: 0.8;">No deep analysis needed</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 28px; font-weight: bold; color: #00ff00">${
+              analysis.riskScore
+            }%</div>
+            <div style="font-size: 10px; opacity: 0.7;">Risk score</div>
+          </div>
+        </div>
+
+        <!-- Safe message -->
+        <div style="background: rgba(0,255,0,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,255,0,0.2);">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">🛡️</span>
+            <div>
+              <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">URL Considered Safe</div>
+              <div style="font-size: 14px; color: #cccccc;">${
+                analysis.safeReason ||
+                "This URL has been analyzed and determined to be safe. No further analysis required."
+              }</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Update API badges to show safe status
+    updateAPIBadgesStatus({
+      gemini: { status: "completed", label: "✅ Gemini (safe)" },
+      n8n: { status: "skipped", label: "⏭️ n8n (not needed)" },
+    });
+
+    return;
+  }
 
   const riskConfig = {
     safe: {

@@ -1461,3 +1461,28 @@ MIT License - Part of SOC-CERT Chrome Extension
 **Last Updated:** October 7, 2025  
 **Version:** 1.0.0  
 **Status:** ✅ Production Ready
+
+## 🏆 For Competition Judges
+
+SOC-CERT demonstrates **innovation in threat intelligence** through:
+
+1. **Virtual CVE Generation**: First browser extension to generate CVE-like identifiers for zero-day threats
+2. **AI-Powered Analysis**: Uses Chrome's built-in Gemini Nano for privacy-first threat detection
+3. **Instant Protection**: No waiting for NVD - threats identified in seconds
+4. **Resilient Architecture**: Works with or without internet connectivity
+
+### Testing Recommendations
+
+**Simple Test** (Recommended):
+
+1. Load the extension
+2. Visit testphp.vulnweb.com/artists.php?artist=1'
+3. See instant threat detection and virtual CVE
+
+**Advanced Test** (Optional):
+
+1. Set up n8n workflow (see n8n-workflows/README.md)
+2. Enables CISA KEV correlation and threat feeds
+3. Not required for judging - core features work without it
+
+The extension is designed to work perfectly in both scenarios.

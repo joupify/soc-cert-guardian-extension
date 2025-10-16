@@ -98,7 +98,7 @@ function showThreatOverlay(data) {
               </div>
             </div>
             
-            <!-- Détails compacts -->
+            
             <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 12px;">
               <span style="opacity: 0.9;">
                 <strong style="color: #ffa726;">Type:</strong> ${
@@ -173,14 +173,14 @@ function showThreatOverlay(data) {
   document.body.appendChild(overlay);
   console.log("✅ Overlay added to DOM");
 
-  // Event listeners avec effets hover améliorés
+  // Event listeners
   const viewBtn = document.getElementById("soc-cert-view-details");
   const dismissBtn = document.getElementById("soc-cert-dismiss");
 
   if (viewBtn) {
     viewBtn.addEventListener("click", () => {
       console.log("📋 View Details clicked");
-      // Ouvre l'extension directement sur cette page
+      // Open extension directly on this  page
       chrome.runtime.sendMessage({
         action: "showExtensionOnCurrentPage",
       });
@@ -213,7 +213,7 @@ function showThreatOverlay(data) {
     });
   }
 
-  // Auto-dismiss après 12 secondes
+  // Auto-dismiss after 12 seconds
   setTimeout(() => {
     if (document.getElementById("soc-cert-threat-overlay")) {
       console.log("⏱️ Auto-dismiss timeout");

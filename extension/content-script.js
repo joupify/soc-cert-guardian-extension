@@ -56,21 +56,48 @@ async function triggerAutoAnalysis() {
   try {
     const url = window.location.href;
 
-    console.log("🚨 Starting REAL security alert detection for:", url);
+    console.log("🔍 Starting security analysis for:", url);
 
-    // 🎯 DETECT REAL SECURITY ALERTS
+    // ✅ ÉTAPE 1: Analyse Gemini Nano FIRST
+    const geminiAnalysis = await window.socAI?.analyzeURL?.(url);
+
+    if (!geminiAnalysis) {
+      console.log("⚠️ Gemini analysis not available");
+      return;
+    }
+
+    console.log("📊 Gemini Analysis Result:", {
+      isSafe: geminiAnalysis.isSafe,
+      riskScore: geminiAnalysis.riskScore,
+      threatType: geminiAnalysis.threatType,
+    });
+
+    // ✅ ÉTAPE 2: CHECK si site SAFE selon Gemini (même seuil que popup)
+    if (geminiAnalysis.riskScore < 40) {
+      console.log(
+        `✅ Site marked as SAFE by Gemini (risk: ${geminiAnalysis.riskScore}/100) - SKIP n8n`
+      );
+      return; // ❌ STOP - Ne pas envoyer à n8n
+    }
+
+    // ✅ ÉTAPE 3: Site suspect - Détecte les alertes réelles
+    console.log("⚠️ Suspicious site detected - Running security checks...");
     const realSecurityAlerts = detectRealSecurityAlerts();
 
     if (realSecurityAlerts.length > 0) {
-      console.log("🚨 SECURITY ALERTS DETECTED:", realSecurityAlerts);
+      console.log(
+        `🚨 ${realSecurityAlerts.length} SECURITY ALERTS DETECTED:`,
+        realSecurityAlerts
+      );
 
-      // 🎯 SEND REAL ALERTS DIRECTLY TO N8N
+      // ✅ ÉTAPE 4: Envoie à n8n seulement si vraies menaces
+      console.log("📡 Sending to n8n for KEV correlation...");
       await sendRealAlertsToN8N(url, realSecurityAlerts);
     } else {
-      console.log("✅ No security alerts detected on this page");
+      console.log("⚠️ Suspicious but no specific alerts detected");
     }
   } catch (error) {
-    console.log("❌ Real security detection error:", error);
+    console.error("❌ Security analysis error:", error);
   }
 }
 

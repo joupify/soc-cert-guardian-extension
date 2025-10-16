@@ -385,9 +385,27 @@ async function checkPageForThreats(tabId, url) {
     setTimeout(async () => {
       try {
         const geminiAnalysis = await performQuickAnalysisInBackground(url);
-        if (geminiAnalysis && geminiAnalysis.riskScore > 60) {
-          console.log("🤖 Gemini analysis confirmed threat");
-          // Here you can update the overlay later if needed
+        if (geminiAnalysis) {
+          console.log(
+            "🤖 Gemini analysis completed:",
+            geminiAnalysis.riskScore
+          );
+
+          // 💾 Store the analysis result for popup reuse
+          const storageKey = `analysis_${url}`;
+          const storedData = {
+            analysis: geminiAnalysis,
+            timestamp: Date.now(),
+            url: url,
+            source: "background",
+          };
+          chrome.storage.local.set({ [storageKey]: storedData });
+          console.log("💾 Stored background analysis for:", url);
+
+          if (geminiAnalysis.riskScore > 60) {
+            console.log("🤖 Gemini analysis confirmed threat");
+            // Here you can update the overlay later if needed
+          }
         }
       } catch (geminiError) {
         console.log("🤖 Gemini analysis failed:", geminiError);
@@ -405,7 +423,7 @@ async function getAnalysisFromAPI(url) {
     const data = await chrome.storage.local.get(["extensionId"]);
     const extensionId = data.extensionId;
 
-    console.log("🔑 extensionId:", extensionId); // ← AJOUTE CE LOG
+    console.log("🔑 extensionId:", extensionId);
 
     if (!extensionId) {
       console.log("⚠️ No extensionId found");

@@ -414,19 +414,48 @@ class AIHelper {
 
   // 🆕 Security analysis
   async analyzeThreat(url, context = "") {
-    const prompt = `Analyze this URL for security risks and respond in strict JSON:
+    const prompt = `You are a cybersecurity expert analyzing URLs for threats.
 
-URL: ${url}
-Context: ${context}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 URL TO ANALYZE:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${url}
 
-Respond ONLY with this exact JSON format:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 TASK: Identify 2-3 CONCISE threat indicators
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FORMAT REQUIREMENTS:
+✅ Max 50 characters per indicator
+✅ Pattern: "Threat type (visible evidence)"
+✅ ALWAYS use URL-encoded format (%27, %3C, %3E) instead of decoded characters (', <, >)
+✅ Include actual URL patterns as they appear in the address bar
+✅ NO redundant words like "indicating", "potential vulnerability"
+
+GOOD EXAMPLES (use encoded format):
+✅ "SQL injection (parameter contains %27)"
+✅ "XSS attempt (encoded %3C%3E detected)"
+✅ "Parameter tampering (artist=%27)"
+✅ "Script injection (%3Cscript%3E found)"
+
+BAD EXAMPLES (don't use decoded):
+❌ "SQL injection (parameter contains ')"
+❌ "XSS attempt (< > detected)"
+❌ "Script injection (<script> found)"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📤 OUTPUT (strict JSON):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "riskScore": [number 0-100],
-  "threatType": "safe|suspicious|phishing|malicious", 
-  "indicators": ["indicator1", "indicator2"],
-  "confidence": [number 0-1],
-  "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
-  "analysis": "short description"
+  "riskScore": [0-100],
+  "threatType": "safe|suspicious|phishing|malicious",
+  "indicators": [
+    "Threat type (pattern in %XX format)",
+    "Another threat (%XX encoded)"
+  ],
+  "confidence": [0-1],
+  "recommendations": ["action1", "action2"],
+  "analysis": "brief summary"
 }`;
 
     try {
@@ -677,8 +706,29 @@ Respond ONLY with this exact JSON format:
         },
       };
 
-      // STEP 2: Deep analysis via n8n (in background)
-      console.log("🔄 ÉTAPE 2: Deep analysis via n8n...");
+      // STEP 2: Deep analysis via n8n (in background) - ONLY IF NOT SAFE
+      console.log("🔄 ÉTAPE 2: Vérification sécurité avant deep analysis...");
+
+      // 🛡️ SAFETY CHECK: Skip n8n if URL is considered safe
+      const isSafeUrl =
+        quickAnalysis.threatType && quickAnalysis.threatType.includes("safe");
+      if (isSafeUrl) {
+        console.log(
+          `✅ URL considérée SAFE (threatType: ${quickAnalysis.threatType}) - PAS d'envoi à n8n`
+        );
+        console.log("🛡️ Skipping deep analysis for safe URL");
+
+        // Update progressive result to indicate safe URL
+        progressiveResult.isSafeUrl = true;
+        progressiveResult.safeReason = `Risk score ${quickAnalysis.riskScore}/100 - No deep analysis needed`;
+
+        // Return immediately without triggering deep analysis
+        return progressiveResult;
+      }
+
+      console.log(
+        `⚠️ URL à risque (riskScore: ${quickAnalysis.riskScore}) - Lancement deep analysis n8n...`
+      );
       console.log("📡 Démarrage triggerDeepAnalysis avec:", {
         url,
         quickAnalysis,
@@ -749,6 +799,8 @@ Respond ONLY with this exact JSON format:
           console.log("🎯 Tentative d'appel direct au workflow n8n...");
           const directResponse = await fetch(
             "https://soc-cert-extension.vercel.app/api/extension-queue",
+            // "https://FAUSSE-URL-INEXISTANTE.com/webhook",
+
             {
               method: "GET",
               headers: { "Content-Type": "application/json" },
@@ -1030,25 +1082,31 @@ Respond ONLY with this exact JSON format:
           // that matches the analyzed URL. If multiple results exist for the same URL,
           // we take the most recent (receivedAt > timestamp) — this reflects what the backend
           // (n8n) returned last for this URL.
-          const normalizeUrl = (u) => {
-            if (!u) return "";
+          // ✅ Fonction pour normaliser les URLs (décoder les caractères)
+          function normalizeUrl(url) {
             try {
-              // Encode the URL to handle special characters consistently
-              const encoded = encodeURI(u);
-              const o = new URL(encoded);
-              // garder hostname + pathname + query (search) pour correspondance stricte
-              return (o.hostname + o.pathname + (o.search || "")).replace(
-                /\/$/,
-                ""
-              );
-            } catch (err) {
-              // simple fallback for non-URL strings
-              return String(u)
-                .replace(/^https?:\/\//, "")
-                .split("?")[0]
-                .replace(/\/$/, "");
+              // Créer un objet URL
+              const urlObj = new URL(url);
+
+              // Décoder tous les paramètres
+              const params = new URLSearchParams(urlObj.search);
+              const decodedParams = new URLSearchParams();
+
+              for (const [key, value] of params) {
+                // Décoder le paramètre (transform %27 → ')
+                decodedParams.set(key, decodeURIComponent(value));
+              }
+
+              // Reconstruire l'URL avec paramètres décodés
+              urlObj.search = decodedParams.toString();
+
+              return urlObj.toString();
+            } catch (error) {
+              console.error("URL normalization error:", error);
+              // Fallback: décoder simplement toute l'URL
+              return decodeURIComponent(url);
             }
-          };
+          }
 
           let urlFilteredResults = [];
           if (data.results && Array.isArray(data.results)) {
@@ -1196,13 +1254,9 @@ Respond ONLY with this exact JSON format:
           );
 
           // Format ANCIEN : {success: true, results: [...]}
-          if (
-            data.success &&
-            urlFilteredResults &&
-            urlFilteredResults.length > 0
-          ) {
+          if (data.success && selectedResult && urlFilteredResults.length > 0) {
             console.log("✅ Deep analysis résultats trouvés (format ancien)!");
-            resultData = urlFilteredResults[0];
+            resultData = selectedResult;
             hasResults = true;
           }
           // Format NOUVEAU : {result: {...}}
@@ -1266,6 +1320,18 @@ Respond ONLY with this exact JSON format:
     return coherentFallback;
   }
 
+  // Ligne ~1320
+  simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    // Format: 6 chiffres (ex: 148724)
+    return Math.abs(hash).toString().slice(0, 6).padStart(6, "0");
+  }
+
   // 🎯 CONSISTENT GENERATION FALLBACK with Gemini analysis
   async generateCoherentFallback(quickAnalysis, url) {
     console.log("🎯 Génération fallback cohérent pour:", quickAnalysis);
@@ -1291,9 +1357,8 @@ Respond ONLY with this exact JSON format:
     }
 
     // 🎯 DYNAMIC CVE BASED ON ANALYSIS
-    const cveId = `CVE-${new Date().getFullYear()}-${
-      Math.floor(Math.random() * 90000) + 10000
-    }`;
+    const urlHash = this.simpleHash(url + threatType);
+    const cveId = `CVE-2026-${urlHash}`;
 
     // 🎯 DYNAMIC TITLE BASED ON THREAT TYPE
     const generateTitle = () => {
@@ -1342,13 +1407,32 @@ Respond ONLY with this exact JSON format:
       let generationMethod = "rule-based";
       try {
         console.log("🤖 Requesting recommendations from Gemini...");
-        const prompt = `As a cybersecurity expert, provide 2-3 specific, actionable security recommendations for:
+        const prompt = `You are a senior SOC analyst. Generate SPECIFIC recommendations.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 THREAT CONTEXT:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Threat Type: ${threatType}
 - Risk Level: ${riskScore}%
 - Indicators: ${indicators.join(", ")}
-- URL Context: ${url}
+- URL: ${url}
 
-Format: Short, actionable phrases (max 50 chars each). Focus on immediate actions.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 TASK: Generate 2-3 ACTIONABLE recommendations
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REQUIREMENTS:
+✅ Address the SPECIFIC indicators detected
+✅ Max 60 characters per recommendation
+✅ Use technical security terminology
+✅ Focus on immediate mitigation actions
+
+EXAMPLES:
+✅ "Block URLs with encoded apostrophes (%27)"
+✅ "Implement WAF rules for SQL injection patterns"
+✅ "Review Appspot domain traffic logs"
+
+Format: Plain list, no bullets, 2-3 lines only.`;
 
         if (window.LanguageModel) {
           const session = await window.LanguageModel.create({
@@ -1619,38 +1703,49 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       console.log("🎯 Emergency fallback applied:", specializedResults);
     }
 
+    // Ligne ~1467 dans generateCoherentFallback()
     return {
       aiAnalysis: enhancedAnalysis,
-      ...specializedResults, // Add specialized AI results
-      cveResults: [
-        {
-          id: cveId,
-          title: generateTitle(),
-          severity: coherentSeverity,
-          description: generateDescription(),
-          cvss:
-            riskScore >= 70
-              ? (7.0 + Math.random() * 2).toFixed(1)
-              : riskScore >= 40
-              ? (4.0 + Math.random() * 3).toFixed(1)
-              : (1.0 + Math.random() * 3).toFixed(1),
-          threatType: threatType,
-          indicators: indicators,
-        },
-      ],
+      ...specializedResults,
+
+      // ✅ FORMAT IDENTIQUE À N8N - STRUCTURE COMPLÈTE
+      cve_id: cveId,
+      title: generateTitle(),
+      severity: coherentSeverity,
+      score: riskScore,
+      link: url,
+      timestamp: new Date().toISOString(),
+      source: "Local AI Fallback",
+      status: "New",
+      cve_description: generateDescription(),
+      cve_vulnerabilityName:
+        threatType.charAt(0).toUpperCase() + threatType.slice(1) + " Activity",
+      cve_requiredAction:
+        "Investigate and remediate based on AI recommendations",
+      cve_notes: `AI Detection - Indicators: ${indicators.join(
+        " | "
+      )}. Risk Score: ${riskScore}. Confidence: ${Math.round(
+        coherentConfidence * 100
+      )}%. Context: ${generateDescription()}`,
+      cve_product: "Web Application",
+      cve_vendor: "Unknown Vendor",
+      cve_dateAdded: "",
+      cve_dueDate: "",
+      cve_knownRansomwareCampaignUse: "Unknown",
+      mappedCVE: false,
+      mappingConfidence: 0,
+      mappingSource: "local_fallback",
+      isVirtual: true,
+      processedBy: "local-ai-fallback",
+
+      // ✅ AUSSI AJOUTER recommendations POUR COMPATIBILITÉ
       recommendations: recommendations,
       recommendationsSource:
         recMethod === "gemini-ai"
-          ? "🤖 Generated by Gemini AI"
-          : "📋 Rule-based analysis",
+          ? "Generated by Gemini AI"
+          : "Rule-based analysis",
       confidence: coherentConfidence,
-      processingTime: `${(25 + Math.random() * 10).toFixed(1)}s`,
-      correlationWithQuickAnalysis: {
-        originalRisk: riskScore,
-        enhancedConfidence: coherentConfidence,
-        threatType: threatType,
-        consistencyCheck: "✅ Results align with initial assessment",
-      },
+      processingTime: `${(2.5 + Math.random() * 1.0).toFixed(1)}s`,
     };
   }
   async summarizeCVE(cveData) {
@@ -1840,11 +1935,28 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       // Clean response (remove markdown, spaces, etc.)
       let cleanResponse = response.trim();
 
-      // Look for JSON in response
-      const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
+      // Remove markdown code blocks if present
+      cleanResponse = cleanResponse
+        .replace(/^```json\s*/, "")
+        .replace(/\s*```$/, "");
+
+      // Look for JSON in response - try multiple patterns
+      let jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        // Try to find JSON between first { and last }
+        const firstBrace = cleanResponse.indexOf("{");
+        const lastBrace = cleanResponse.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+          cleanResponse = cleanResponse.substring(firstBrace, lastBrace + 1);
+        }
+      } else {
         cleanResponse = jsonMatch[0];
       }
+
+      console.log(
+        "🔍 Attempting to parse JSON:",
+        cleanResponse.substring(0, 200) + "..."
+      );
 
       const parsed = JSON.parse(cleanResponse);
       console.log("✅ Réponse IA parsée avec succès:", parsed);
@@ -1865,36 +1977,48 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       };
     } catch (error) {
       console.log(
-        "⚠️ JSON parsing failed, using AI text directly:",
+        "⚠️ JSON parsing failed, using fallback analysis:",
         error.message
       );
-      // Create analysis based on raw text
-      const text = response.toLowerCase();
-      let riskScore = 25;
-      let threatType = "safe";
 
-      if (text.includes("malicious") || text.includes("dangerous")) {
-        riskScore = 90;
-        threatType = "malicious";
-      } else if (text.includes("suspicious") || text.includes("risk")) {
-        riskScore = 70;
-        threatType = "suspicious";
-      } else if (text.includes("phishing") || text.includes("scam")) {
+      // Fallback: Conservative approach - if we can't parse, assume moderate risk
+      // Don't trigger deep analysis for parsing failures
+      const text = response.toLowerCase();
+
+      // Default to moderate risk when parsing fails
+      let riskScore = 60; // Moderate risk
+      let threatType = "suspicious";
+
+      // Only increase risk for clear malicious indicators
+      if (
+        text.includes("malware") ||
+        text.includes("trojan") ||
+        text.includes("ransomware")
+      ) {
         riskScore = 85;
+        threatType = "malicious";
+      } else if (
+        text.includes("phishing") &&
+        (text.includes("scam") || text.includes("fraud"))
+      ) {
+        riskScore = 80;
         threatType = "phishing";
       }
+      // For other cases like "phishing attempts" in legitimate analysis, keep moderate risk
+
+      console.log(`🔄 Fallback analysis: ${threatType} (score: ${riskScore})`);
 
       return {
         riskScore: riskScore,
         threatType: threatType,
-        indicators: [response.substring(0, 150) + "..."],
-        confidence: 0.9, // Gemini Nano confidence
+        indicators: ["AI analysis parsing failed - manual review recommended"],
+        confidence: 0.6, // Lower confidence for fallback
         recommendations: [
-          "Review AI analysis details",
-          "Cross-reference with threat intel",
-          "Monitor for suspicious activity",
+          "Manual security review recommended",
+          "Verify analysis results",
+          "Consider additional scanning",
         ],
-        analysis: "Gemini Nano AI Analysis",
+        analysis: "AI response parsing failed - fallback analysis applied",
         analyzedUrl: "Current page",
       };
     }

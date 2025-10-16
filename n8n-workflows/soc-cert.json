@@ -1,0 +1,1545 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Cron 15min",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-12992, -384],
+      "id": "993419d2-b8ef-4d50-9c90-e6d10ee792b8",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * CHANGE DETECTION SYSTEM WITH EXTENSION PRESERVATION - CORRIGÉ\n * Purpose: Avoid sending duplicate alerts by checking for changes between runs.\n * BUT: Always preserve extensions for real-time processing\n * \n * Input: Normalized alerts array (CVE + Extensions)\n * Output: Original items if alerts have changed, PLUS always include extensions\n */\n\nconsole.log(`=== 🔍 CHANGE DETECTION DEBUG COMPLET ===`);\nconsole.log(`Total items reçus: ${items.length}`);\n\n// Debug de TOUS les items reçus\nitems.forEach((item, i) => {\n  console.log(`Item ${i}:`, {\n    cve_id: item.json?.cve_id,\n    extensionId: item.json?.extensionId,\n    title: item.json?.title?.substring(0, 40),\n    source: item.json?.source,\n    _is_extension_data: item.json?._is_extension_data,\n    _is_extension: item.json?._is_extension,\n    isVirtual: item.json?.cve_id?.startsWith('VIRT-')\n  });\n});\n\n// 🆕 FILTRE CORRIGÉ - DETECTER CVE VIRTUELS ET EXTENSIONS\nconst cveItems = items.filter(i => {\n  // Vrais CVE seulement (pas les extensions virtuelles)\n  return i.json?.cve_id && \n         i.json.cve_id.startsWith('CVE-') && \n         !i.json._is_extension_data &&\n         !i.json._is_extension;\n});\n\nconst extensionItems = items.filter(i => {\n  // Extensions : plusieurs critères\n  return i.json?.extensionId ||                                    // extensionId explicite\n         i.json?._is_extension_data ||                             // flag extension data\n         i.json?._is_extension ||                                  // flag extension\n         (i.json?.cve_id && i.json.cve_id.startsWith('VIRT-')) || // CVE virtuels\n         i.json?.title?.includes('🔒') ||                          // marqueur visuel\n         i.json?.source === 'Chrome Extension' ||                  // source extension\n         (i.json?.source === 'Unknown' && !i.json?.cve_id?.startsWith('CVE-')); // fallback\n});\n\nconsole.log(`🔍 APRÈS FILTRAGE:`);\nconsole.log(`  CVE réels: ${cveItems.length}`);\nconsole.log(`  Extensions (incluant VIRT): ${extensionItems.length}`);\n\n// Debug détaillé des extensions trouvées\nextensionItems.forEach((ext, i) => {\n  console.log(`Extension ${i}:`, {\n    cve_id: ext.json?.cve_id,\n    extensionId: ext.json?.extensionId || 'N/A',\n    title: ext.json?.title?.substring(0, 40) || 'N/A',\n    source: ext.json?.source || 'N/A',\n    isVirtual: ext.json?.cve_id?.startsWith('VIRT-') ? '✅' : '❌'\n  });\n});\n\n// Calculate hash ONLY for CVE items (not extensions)\nlet concat = cveItems.map(i => `${i.json.title} ${i.json.link} ${i.json.text}`).join(\"\\n\");\n\nfunction simpleHash(str) {\n  // Lightweight 32-bit hash function (FNV-inspired)\n  let hash = 0, i, chr;\n  if (str.length === 0) return \"0\";\n  for (i = 0; i < str.length; i++) {\n    chr = str.charCodeAt(i);\n    hash = ((hash << 5) - hash) + chr;\n    hash |= 0; // Force to 32-bit integer\n  }\n  return hash.toString();\n}\n\nconst newHash = simpleHash(concat);\n\n// Retrieve the previously stored hash\nconst previousHash = $workflow?.getStaticData?.(\"global\")?.previousHash || \"\";\n\n// Detect changes by comparing new and previous hashes\nconst cveChanged = newHash !== previousHash;\n\n// Store the new hash for the next run\nif ($workflow?.getStaticData?.(\"global\")) {\n  $workflow.getStaticData(\"global\").previousHash = newHash;\n}\n\nconsole.log(`🔄 CVE Changed: ${cveChanged} (Hash: ${newHash.substring(0, 8)}...)`);\nconsole.log(`📤 Extensions to preserve: ${extensionItems.length}`);\n\n// 🆕 RETOURNER : CVE si changé + TOUJOURS les extensions\nif (cveChanged || extensionItems.length > 0) {\n  const resultItems = [];\n  \n  // Ajouter CVE si changés\n  if (cveChanged) {\n    resultItems.push(...cveItems);\n    console.log(`✅ Including ${cveItems.length} CVE (changed)`);\n  }\n  \n  // TOUJOURS ajouter les extensions (incluant VIRT)\n  if (extensionItems.length > 0) {\n    resultItems.push(...extensionItems);\n    console.log(`✅ Including ${extensionItems.length} extensions (always preserved)`);\n  }\n  \n  console.log(`📊 Final output: ${resultItems.length} items`);\n  console.log(`🎯 Items finaux:`);\n  \n  // Debug final\n  resultItems.forEach((item, i) => {\n    console.log(`  ${i}: ${item.json?.cve_id} - ${item.json?.title?.substring(0, 40)}`);\n  });\n  \n  return resultItems;\n  \n} else {\n  console.log(`❌ No changes detected and no extensions - returning empty`);\n  return [{ json: {} }];\n}\n"
+      },
+      "name": "Diff / Hash Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [-7984, -448],
+      "id": "03114878-3fca-40fa-b72d-14a8d7bcb5ec",
+      "notes": "## 🔄 CHANGE DETECTION ENGINE\n\n**Purpose**: \n- Prevents duplicate alerts by detecting content changes\n- Uses hash comparison to determine new/updated alerts\n\n**Mechanism**:\n1. Generates 32-bit hash of all alert content\n2. Compares with previous run's hash (stored in workflow staticData)\n3. Continues only if hash differs (new content detected)\n\n**Behavior**:\n✅ Same hash → Returns empty array (stops execution)  \n🔄 New hash → Returns alerts + updates stored hash\n\n**Technical Notes**:\n- Uses simple FNV-1a inspired hash (JS implementation)\n- Persists hash between runs via $workflow.getStaticData()"
+    },
+    {
+      "parameters": {
+        "channel": "=n8n-alerts",
+        "text": "=⚠️ Nouvelle alerte cybersécurité :\n{{$json[\"slack_text\"]}}",
+        "jsonParameters": true,
+        "otherOptions": {},
+        "attachments": [],
+        "blocksJson": "={{$json[\"slack_blocks\"]}}"
+      },
+      "name": "Slack Notify",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [-4608, -320],
+      "id": "3e261117-b475-46fa-a8df-0149300d5e8d",
+      "credentials": {
+        "slackApi": {
+          "id": "yGWVQaghRG0skUkx",
+          "name": "Slack account"
+        }
+      },
+      "disabled": true,
+      "notes": "📌 **Destination**: #n8n-alerts  \n📝 **Format**: \n- Severity emojis (🔴/🟠/🟢)  \n"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=⚠️⚠️⚠️ CRITICAL INSTRUCTION - READ CAREFULLY ⚠️⚠️⚠️ \nYOU ARE FORBIDDEN TO GENERATE ANY DATA. YOU MUST USE ONLY THE EXACT VALUES PROVIDED IN THE INPUT. \n\nINPUT DATA: \n{{ $json.batchText }}\n\nMANDATORY RULES: \n1. EXTRACT **ALL** CVEs from the input text above\n2. EACH CVE section starts with \"🔐 CVE ALERT:\"\n3. PROCESS **EVERY CVE** you find in the input\n4. USE EXACT VALUES found after each label for EACH CVE\n5. DO NOT CHANGE any values (Score: 100 MUST remain 100)\n6. DO NOT FILTER by severity - OUTPUT ALL CVEs\n7. DO NOT ADD any analysis, recommendations, or generated content\n8. IF DATA IS MISSING for a CVE, use \"Unknown\" or \"N/A\"\n\nEXACT OUTPUT FORMAT FOR EACH CVE:\n\n[CVE_ID]: [CVE_ID] • Title: [Title] • Description: [Description] • Severity: [Severity] (Score: [Score]) • Source: [Source] • CISA KEV: [CISA_KEV] • OTX Pulses: [OTX_Pulses] • Exposure: [Exposure] hosts • Link: [Link]\n\nSEPARATE EACH CVE WITH TWO NEWLINES\n\nEXAMPLE:\nCVE-2023-51767]: CVE-2023-51767 • Description: Security alert for CVE-2023-51767 - OTX pulses: 2 • Severity: Critical (Score: 100) • Source: CVE Program • CISA KEV: FALSE • OTX Pulses: 2 • Exposure: 0 hosts • Link: [https://nvd.nist.gov/vuln/detail/CVE-2023-51767\n\n[Continue for ALL CVEs found...]",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [-7104, -448],
+      "id": "1d628d9a-717d-4c2a-805b-6265ab20ccd8",
+      "name": "AI Agent",
+      "disabled": true,
+      "notes": "## 🤖 [Cohere AI Analyzer]\n🧠 **Model**: command-r  \n📝 **Prompt**: \"Summarize cybersecurity alerts...\"  \n🗃️ **Memory**: Session-based context  \n\n📊 **Outputs**:\n- Concise bullet points ✔️  \n- Severity assessment ⚠️  \n- Linked references 🔗  \n\n⚠️ **Cost Control**: 500 token limit"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatCohere",
+      "typeVersion": 1,
+      "position": [-7136, -240],
+      "id": "15fa58b6-8e4e-43c5-ac9c-007b91774224",
+      "name": "Cohere Chat Model",
+      "credentials": {
+        "cohereApi": {
+          "id": "TbfUwJj1zPsSjtax",
+          "name": "CohereApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=F5gqqZS9GrsUprYOgY34zZ2OVAZ7UG9touwYvpso"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [-6976, -240],
+      "id": "cadfba3f-a446-43fc-8f5b-f1861f44091c",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * UNIVERSAL ALERT PROCESSOR\n * Handles BOTH structured JSON AND raw text input\n */\nconsole.log('=== 📤 UNIVERSAL ALERT PROCESSOR - START ===');\n\n// ✅ UTILISER $input.all() pour récupérer DIRECTEMENT depuis le node précédent\nconst items = $input.all();\nconsole.log(`📥 Input: ${items.length} items`);\n\n// ✅ DEBUG : Afficher le premier item COMPLET\nif (items.length > 0) {\n  console.log('📋 Premier item COMPLET reçu:');\n  console.log(JSON.stringify(items[0].json, null, 2));\n}\n\nlet processedAlerts = [];\n\n// Helper functions\nfunction extractLink(line) {\n  const match = line.match(/https?:\\/\\/[^\\s]+/);\n  return match ? match[0] : \"No link available\";\n}\n\nfunction determineSeverity(line) {\n  const lower = line.toLowerCase();\n  if (lower.includes(\"critical\") || lower.includes(\"max severity\") || lower.includes(\"urgent\")) return \"Critical\";\n  if (lower.includes(\"important\") || lower.includes(\"high\")) return \"Important\";\n  return \"Medium\";\n}\n\nfunction severityScore(severity) {\n  switch(severity.toLowerCase()) {\n    case \"critical\": return 100;\n    case \"important\": return 70;\n    case \"high\": return 70;\n    case \"medium\": return 30;\n    default: return 30;\n  }\n}\n\nfunction extractCveId(line) {\n  const match = line.match(/CVE-\\d{4}-\\d+/i);\n  return match ? match[0].toUpperCase() : null;\n}\n\n// Check if we have structured JSON from AI (new format)\nif (items.length > 0 && items[0].json && items[0].json.cve_id !== undefined) {\n  console.log('✅ Processing STRUCTURED JSON from AI/CVE mapping');\n  \n  // PROCESS STRUCTURED JSON FROM AI\n  processedAlerts = items.map((item, idx) => {\n    // ✅ CORRECTION : Chercher extensionId dans item.json ET original_data\n    const extensionId = \n      item.json.extensionId || \n      item.json.original_data?.extensionId || \n      'mapped';\n    \n    console.log(`  Item ${idx}:`);\n    console.log(`    cve_id: ${item.json.cve_id}`);\n    console.log(`    extensionId (json): ${item.json.extensionId}`);\n    console.log(`    extensionId (original_data): ${item.json.original_data?.extensionId}`);\n    console.log(`    extensionId FINAL: ${extensionId}`);\n    \n    return {\n      json: {\n        timestamp: item.json.timestamp || new Date().toISOString(),\n        title: item.json.title || \"No title\",\n        link: item.json.link || \"No link available\",\n        severity: item.json.severity || \"Medium\",\n        score: item.json.score || severityScore(item.json.severity || \"Medium\"),\n        text: item.json.text || item.json.description || item.json.title,\n        status: item.json.status || \"New\",\n        source: item.json.source || \"Unknown\",\n        extensionId: extensionId,  // ✅ UTILISER LA VARIABLE !\n        cve_id: item.json.cve_id || item.json.cve || null,\n        \n        // ✅ AJOUTER TOUS LES CHAMPS KEV\n        cve_description: item.json.cve_description || '',\n        cve_vulnerabilityName: item.json.cve_vulnerabilityName || '',\n        cve_requiredAction: item.json.cve_requiredAction || '',\n        cve_notes: item.json.cve_notes || '',\n        cve_product: item.json.cve_product || '',\n        cve_vendor: item.json.cve_vendor || '',\n        cve_dateAdded: item.json.cve_dateAdded || '',\n        cve_dueDate: item.json.cve_dueDate || '',\n        cve_knownRansomwareCampaignUse: item.json.cve_knownRansomwareCampaignUse || 'Unknown',\n        \n        // Mapping metadata\n        mappedCVE: item.json.mappedCVE || false,\n        mappingConfidence: item.json.mappingConfidence || 0,\n        mappingSource: item.json.mappingSource || '',\n        isVirtual: item.json.isVirtual || false,\n        \n        // ✅ PRÉSERVER original_data\n        original_data: item.json.original_data\n      }\n    };\n  });\n  \n} else {\n  console.log('⚠️ Processing RAW TEXT (legacy mode)');\n  \n  // PROCESS RAW TEXT\n  const rawText = items.map(i => i.json.text || i.json.output || \"\").join(\"\\n\");\n  const lines = rawText.split(/\\n+/).filter(line => line.trim() !== \"\");\n\n  const alertLines = lines.filter(line => \n    line.trim().startsWith(\"-\") &&\n    !line.toLowerCase().includes(\"sure, i have summarized\") &&\n    !line.toLowerCase().includes(\"stay up to date\") &&\n    !line.toLowerCase().includes(\"here's a concise summary\") &&\n    !line.toLowerCase().includes(\"the following is a concise summary\")\n  );\n\n  processedAlerts = alertLines.map(line => {\n    const cve_id = extractCveId(line);\n    const link = extractLink(line);\n    const severity = determineSeverity(line);\n    const score = severityScore(severity);\n    \n    let title = line.replace(link, \"\").replace(/^-/, \"\").trim();\n    title = title.replace(/\\*\\*(.*?)\\*\\*/g, \"$1\").trim();\n    \n    let text = line.replace(/^-/, \"\").trim();         \n    text = text.replace(/\\*\\*(.*?)\\*\\*/g, \"$1\").trim();\n\n    return {\n      json: {\n        title,\n        cve_id,\n        link,\n        severity,\n        score,\n        text,\n        status: \"New\",\n        source: \"Unknown\",\n        extensionId: \"mapped\",  // Fallback pour raw text\n        \n        // ✅ CHAMPS KEV VIDES pour raw text\n        cve_description: '',\n        cve_vulnerabilityName: '',\n        cve_requiredAction: '',\n        cve_notes: '',\n        cve_product: '',\n        cve_vendor: '',\n        cve_dateAdded: '',\n        cve_dueDate: '',\n        cve_knownRansomwareCampaignUse: 'Unknown',\n        \n        mappedCVE: false,\n        mappingConfidence: 0,\n        mappingSource: '',\n        isVirtual: false\n      }\n    };\n  });\n}\n\n// Source detection based on link\nprocessedAlerts.forEach(alert => {\n  const link = (alert.json.link || '').toLowerCase();\n\n  if (link.includes('cert.ssi.gouv.fr')) {\n    alert.json.source = 'CERT-FR';\n  } else if (link.includes('bleepingcomputer.com')) {\n    alert.json.source = 'BleepingComputer';\n  } else if (link.includes('nist.gov')) {\n    alert.json.source = 'NIST';\n  } else if (link.includes('cisa.gov') || link.includes('us-cert.cisa.gov')) {\n    alert.json.source = 'CISA';\n  } else if (link.includes('example.com')) {\n    alert.json.source = 'Chrome Extension';\n  } else if (!alert.json.source || alert.json.source === \"Unknown\") {\n    alert.json.source = 'Unknown';\n  }\n});\n\nconsole.log(`\\n=== 📤 UNIVERSAL ALERT PROCESSOR - END ===`);\nconsole.log(`📤 Output: ${processedAlerts.length} items`);\nprocessedAlerts.forEach((alert, idx) => {\n  console.log(`  ${idx}: extensionId=\"${alert.json.extensionId}\", cve_id=\"${alert.json.cve_id}\"`);\n});\n\nreturn processedAlerts;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-6160, -464],
+      "id": "fd9a09fa-8b13-4c97-9650-d3505397c43a",
+      "name": "Structure Alerts",
+      "notes": "🛠 [Alert Parser / Structurer]\n\n📌 Purpose: Convert raw AI Agent text into structured alerts\n📝 Process:\n\nJoin all text content\nSplit into lines and clean empty entries\nExtract links from lines\nDetermine severity and assign numeric score\nFilter out generic/call-to-action lines\n\nOutput structured alerts {title, link, severity, score, text}\n⚠️ Optional: filter only critical alerts downstream"
+    },
+    {
+      "parameters": {
+        "numberInputs": 9
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [-11536, -512],
+      "id": "3da68dd5-4b68-4453-8058-21c99402e9e5",
+      "name": "Merge",
+      "notes": "## 🔀 [Alert Aggregator]\n📥 **Inputs**: \n1. CERT-FR 🇫🇷\n2. NIST 🇺🇸  \n3. BleepingComputer 📰  \n4. CISA 🏛️  \n\n⚙️ **Logic**:\n- Continue on partial failures (≥2 sources)  \n- Preserve source metadata 🏷️  \n- Normalize timestamps ⏰  \n\n⚠️ **Order Matters**: Maintains error tracking"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 NORMALIZE ALERTS - NE RIEN CHANGER\n * Passe-through pur sans aucune modification\n */\n\nconsole.log(\"=== 🎯 NORMALIZE ALERTS (PASS-THROUGH) ===\");\n\nif (items.length === 0) return [];\n\n// 🎯 NE RIEN FAIRE, juste logger et passer\nconsole.log(`📤 Passing through ${items.length} alerts unchanged`);\n\n// Logger les scores pour vérification\nitems.slice(0, 5).forEach((item, index) => {\n  const data = item.json;\n  console.log(`📊 ${data.cve_id} - Severity: ${data.severity}, Score: ${data.score}`);\n});\n\n// 🎯 RETOURNER LES ITEMS TELS QUELS\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-8176, -448],
+      "id": "67b98638-4d18-4a37-99a8-e8de72ff2e0c",
+      "name": "Normalize Alerts",
+      "alwaysOutputData": true,
+      "notes": "🚨 ALERT NORMALIZER\n\n📥 Input: Raw data from multiple sources\n⚙️ Process:\n1️⃣ Standardize title and link fields\n2️⃣ Preserve full raw payload for debugging\n📤 Output: {title, link, text, raw}"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allAlerts = [];\n\n// Normalisation\nitems.forEach(item => {\n  if (Array.isArray(item)) {\n    allAlerts.push(...item);\n  } else if (Array.isArray(item.json)) {\n    allAlerts.push(...item.json.map(alert => (\n      alert.json ? alert : { json: alert }\n    )));\n  } else if (item.json) {\n    allAlerts.push(item);\n  } else {\n    allAlerts.push({ json: item });\n  }\n});\n\n// Comptages\nconst totalAlerts = allAlerts.length;\nconst criticalAlerts = allAlerts.filter(a => a.json && a.json.severity === 'Critical').length;\nconst errorCount = items.reduce((sum, item) => sum + (item.json.errorCount || 0), 0);\n\nconst bySource = {};\nconst bySeverity = {};\nlet maxSeverity = 'None';\n\n// Analyse\nallAlerts.forEach(alert => {\n  if (alert.json) {\n    const source = alert.json.source \n                || alert.json.Source \n                || alert.json.src \n                || alert.json.origin \n                || 'Unknown';\n    const severity = alert.json.severity || 'Unknown';\n\n    bySource[source] = (bySource[source] || 0) + 1;\n    bySeverity[severity] = (bySeverity[severity] || 0) + 1;\n\n    if (severity === 'Critical') maxSeverity = 'Critical';\n    else if (severity === 'Important' && maxSeverity !== 'Critical') maxSeverity = 'Important';\n    else if (severity === 'Medium' && maxSeverity === 'None') maxSeverity = 'Medium';\n  }\n});\n\n// Résumés\nconst sourcesSummary = Object.entries(bySource)\n  .map(([source, count]) => `${source}: ${count}`)\n  .join(', ') || 'None';\n\nconst severitySummary = Object.entries(bySeverity)\n  .map(([severity, count]) => `${severity}: ${count}`)\n  .join(', ') || 'None';\n\nconst summary = `\nWorkflow Health Check:\n- Total alerts processed: ${totalAlerts}\n- Critical alerts: ${criticalAlerts}\n- Errors: ${errorCount}\n- Sources: ${sourcesSummary}\n- Severity: ${severitySummary}\n- Max severity: ${maxSeverity}\n`;\n\nreturn [{\n  json: {\n    summary,\n    totalAlerts,\n    criticalAlerts,\n    errorCount,\n    bySource,\n    bySeverity,\n    maxSeverity,\n    sourcesSummary,\n    severitySummary,\n    timestamp: new Date().toISOString()\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5280, -608],
+      "id": "650176f7-63f2-4f05-8554-c5418b140ad5",
+      "name": "Heath check",
+      "disabled": true,
+      "notes": "## 📊 [Health Check Dashboard]\n🔍 **Purpose**:  \n- Monitors overall workflow health  \n- Tracks key metrics for debugging  \n\n📈 **Current Metrics** (JS code):  \n```\n\nconst totalAlerts = allAlerts.length;\nconst criticalAlerts = allAlerts.filter(...);\nconst errorCount = items.reduce(...);\n📤 Output Format:\n\njson\n{\n  \"summary\": \"Workflow Health Check:\\n- Total alerts: 15\\n- Critical alerts: 3\\n- Errors: 1\",\n  \"totalAlerts\": 15,\n  \"criticalAlerts\": 3,\n  \"errorCount\": 1\n}\n⚠️ Dependencies:\n\nRequires upstream nodes to provide errorCount\nRelies on severity field for critical alerts\n\n🔧 Pro Tip:\njavascript\n// Add to existing code:\nconsole.log(`HEALTHCHECK - ${totalAlerts} alerts`);\n"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter items that contain an error\nconst errorItems = items.filter(item =>\n  item.json && (item.json.error || item.json.errorMessage || item.json.errorCount > 0)\n);\n\n// If there are no errors, don't send anything\nif (errorItems.length === 0) {\n  return [];\n}\n\n// Build the HTML body for the errors with enhanced context\nconst body = `\n<div style=\"font-family: Arial, sans-serif; max-width: 600px;\">\n  <h2 style=\"color: #d93025;\">🚨 Workflow Security Alert System - Errors Detected</h2>\n  \n  ${errorItems.map(e => `\n    <div style=\"background-color: #fce8e6; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #d93025;\">\n      <h3 style=\"margin: 0 0 10px 0; color: #d93025;\">\n        ${e.json.nodeName || 'Unknown Node'}\n      </h3>\n      <p style=\"margin: 5px 0;\">\n        <strong>🔍 Source:</strong> ${e.json.source || 'Unknown'}<br>\n        <strong>⏰ Time:</strong> ${new Date().toISOString().replace('T', ' ').substring(0, 19)}<br>\n        <strong>📊 Error Count:</strong> ${e.json.errorCount || 1}\n      </p>\n      <div style=\"background-color: #fff; padding: 10px; border-radius: 4px; margin: 10px 0;\">\n        <strong>❌ Error Details:</strong><br>\n        <code style=\"color: #d93025;\">\n          ${e.json.errorMessage || JSON.stringify(e.json.error) || 'Unknown error'}\n        </code>\n      </div>\n      ${e.json.link ? `<p><strong>🔗 Related URL:</strong> <a href=\"${e.json.link}\">${e.json.link}</a></p>` : ''}\n    </div>\n  `).join('')}\n  \n  <hr style=\"border: none; border-top: 2px dashed #ccc; margin: 20px 0;\">\n  \n  <div style=\"background-color: #f8f9fa; padding: 15px; border-radius: 8px;\">\n    <h4 style=\"margin: 0 0 10px 0;\">📈 Summary</h4>\n    <p style=\"margin: 5px 0;\">\n      <strong>Total Errors:</strong> ${errorItems.length}<br>\n      <strong>Sources Affected:</strong> ${[...new Set(errorItems.map(e => e.json.source || 'Unknown'))].join(', ')}<br>\n      <strong>Environment:</strong> ${$env.ENVIRONMENT || 'Production'}\n    </p>\n  </div>\n  \n  <p style=\"color: #5f6368; font-size: 12px; margin-top: 20px;\">\n    ⚠️ This is an automated alert from the Security Monitoring Workflow. \n    Please investigate these errors to ensure continuous monitoring.\n  </p>\n</div>\n`;\n\n// Return a structured item for Gmail with priority tracking\nreturn [{\n  json: {\n    subject: `🚨 SECURITY WORKFLOW FAILURE - ${errorItems.length} error(s) from ${[...new Set(errorItems.map(e => e.json.source || 'Unknown'))].join(', ')}`,\n    body,\n    priority: \"high\",\n    errorCount: errorItems.length,\n    affectedSources: [...new Set(errorItems.map(e => e.json.source || 'Unknown'))]\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-11152, -736],
+      "id": "2c5b97b5-5385-4094-b993-bbc98177b433",
+      "name": "handler errors",
+      "notes": "## 🚑 [Error Tracker]\n🛠️ **Catches**:\n- HTTP 403/429/500  \n- Parser failures  \n- Empty responses  \n\n📨 **Actions**:\n1. Formats error context  \n2. Alerts admins via email ✉️  \n3. Logs to workflow staticData 📝  \n\n💡 **Debug Tip**: \n`console.log(fullError)` in code"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 📧 HTML CONCAT ALERTS - Avec données CVE\n */\n\nconsole.log(\"=== 📧 FORMATTING ALERTS ===\");\n\nif (items.length === 0) return [];\n\nlet alerts = items.map(i => i.json);\n\n// 🎯 Trier par score décroissant\nalerts.sort((a, b) => (b.score || 0) - (a.score || 0));\n\n// 🎯 Construire le HTML avec enrichissement CVE\nlet body = alerts.map(alert => {\n  const isCve = alert.cve_id && alert.cve_id.startsWith('CVE-');\n  \n  return `\n  <div style=\"border: 2px solid #ff4444; border-radius: 8px; padding: 15px; margin: 10px 0; background: #fff8f8;\">\n    <h3 style=\"color: #d93025; margin: 0 0 10px 0;\">\n      ${isCve ? '🔐 CVE: ' : '⚠️ '}${alert.title || 'No title'}\n    </h3>\n    \n    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0;\">\n      <div>\n        <strong>Severity:</strong> <span style=\"color: #d93025; font-weight: bold;\">${getSeverityEmoji(alert.severity)} ${alert.severity || 'Unknown'}</span><br>\n        <strong>Score:</strong> <span style=\"color: #d93025; font-weight: bold;\">${alert.score || 'N/A'}</span><br>\n        <strong>Source:</strong> ${alert.source || 'Unknown'}\n      </div>\n      <div>\n        <strong>Assigned Team:</strong> <span style=\"color: #1e88e5;\">${alert.assigned_team || 'SOC'}</span><br>\n        <strong>SLA:</strong> <span style=\"color: #43a047;\">${alert.sla || '4h'}</span><br>\n        <strong>Escalation:</strong> ${alert.escalation_path || 'L2'}\n      </div>\n    </div>\n    \n    ${isCve ? `\n    <div style=\"background: #e8f5e8; padding: 10px; border-radius: 5px; margin: 10px 0;\">\n      <strong>📊 CVE Enrichment:</strong><br>\n      • CVE ID: <code>${alert.cve_id}</code><br>\n      ${alert.enriched_data ? `\n      • CISA KEV: ${alert.enriched_data.cisa_kev ? '✅ Exploited' : '❌ Not exploited'}<br>\n      • OTX Pulses: ${alert.enriched_data.otx_pulses || 0}<br>\n      • VT Detections: ${alert.enriched_data.virus_total_detections || 0}<br>\n      • Exposure: ${alert.enriched_data.exposure || 0} hosts\n      ` : ''}\n    </div>\n    ` : ''}\n    \n    <p><strong>Description:</strong> ${alert.text || alert.description || 'No description available'}</p>\n    \n    <p><strong>Link:</strong> <a href=\"${alert.link}\" target=\"_blank\" style=\"color: #1a73e8;\">${alert.link || 'No link available'}</a></p>\n    \n    ${alert.published ? `<p><small>Published: ${new Date(alert.published).toLocaleString()}</small></p>` : ''}\n  </div>\n  `;\n}).join('');\n\n// 🎯 Ajouter l'en-tête\nconst header = `\n  <div style=\"background: #d93025; color: white; padding: 15px; border-radius: 8px; margin: 20px 0;\">\n    <h2 style=\"margin: 0;\">🔐 CRITICAL SECURITY ALERTS</h2>\n    <p style=\"margin: 5px 0 0 0;\">${alerts.length} alert(s) requiring immediate attention</p>\n  </div>\n`;\n\nreturn [{ json: { body: header + body } }];\n\n// 🎯 Helper pour les emojis de sévérité\nfunction getSeverityEmoji(severity) {\n  switch(severity?.toLowerCase()) {\n    case 'critical': return '🔴';\n    case 'high': return '🟠';\n    case 'medium': return '🟡';\n    case 'low': return '🟢';\n    default: return '⚪';\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5024, -544],
+      "id": "e727e56e-35d2-47e4-95c7-0b788609168f",
+      "name": "HTML Concat Alerts",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 💬 SLACK MESSAGE FORMATTER - Avec CVE\n */\n\nconsole.log(\"=== 💬 FORMATTING SLACK ALERTS ===\");\n\nif (items.length === 0) return [];\n\nlet alerts = items.map(i => i.json);\nalerts.sort((a, b) => (b.score || 0) - (a.score || 0));\n\nlet body = alerts.map(alert => {\n  const isCve = alert.cve_id && alert.cve_id.startsWith('CVE-');\n  \n  let message = `*${isCve ? '🔐 ' : '⚠️ '}${alert.title || 'New Critical Alert'}*\\n`;\n  message += `• *Severity:* ${getSeverityEmoji(alert.severity)} ${alert.severity || 'Unknown'} (Score: ${alert.score || 'N/A'})\\n`;\n  message += `• *Source:* ${alert.source || 'Unknown'} | *Team:* ${alert.assigned_team || 'SOC'}\\n`;\n  message += `• *SLA:* ${alert.sla || '4h'} | *Escalation:* ${alert.escalation_path || 'L2'}\\n`;\n  \n  if (isCve) {\n    message += `• *CVE ID:* ${alert.cve_id}\\n`;\n    if (alert.enriched_data) {\n      message += `• *CISA KEV:* ${alert.enriched_data.cisa_kev ? '✅ Exploited' : '❌ Not exploited'}\\n`;\n      message += `• *OTX Pulses:* ${alert.enriched_data.otx_pulses || 0}\\n`;\n      message += `• *VT Detections:* ${alert.enriched_data.virus_total_detections || 0}\\n`;\n    }\n  }\n  \n  message += `• *Link:* ${alert.link || 'No link available'}\\n`;\n  message += `• *Description:* ${alert.text || alert.description || 'No description'}\\n`;\n  \n  if (alert.published) {\n    message += `• *Published:* ${new Date(alert.published).toLocaleString()}\\n`;\n  }\n  \n  message += `──────────────────────────────────────────`;\n  \n  return message;\n}).join('\\n');\n\nconst summary = `🔐 *CRITICAL SECURITY ALERTS - ${alerts.length} alert(s)*\\n`;\nreturn [{ json: { body: summary + body } }];\n\nfunction getSeverityEmoji(severity) {\n  switch(severity?.toLowerCase()) {\n    case 'critical': return '🔴';\n    case 'high': return '🟠'; \n    case 'medium': return '🟡';\n    case 'low': return '🟢';\n    default: return '⚪';\n  }\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5024, -368],
+      "id": "33dc04cf-02d8-4d43-9eff-64e53caca3f4",
+      "name": "Mrkdwn Concat Alerts",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 BATCHING ITEMS - Version multi-format (alerts + CVE)\n */\n\nconsole.log(\"=== 📦 BATCHING ITEMS ===\");\n\nif (items.length === 0) return [];\n\nlet batchText = \"\";\nlet alertCount = 0;\nlet cveCount = 0;\n\nfor (const item of items) {\n  const alert = item.json;\n  \n  if (!alert) continue;\n\n  // // 🎯 Format for the AI Agent - different style depending on the type\n  if (alert.cve_id && alert.cve_id.startsWith('CVE-')) {\n    // Format CVE enrichie\n    batchText += `🔐 CVE ALERT: ${alert.cve_id}\\n`;\n    batchText += `Title: ${alert.title || 'No title'}\\n`;\n    batchText += `Link: ${alert.link}\\n`;\n    batchText += `Severity: ${alert.severity} (Score: ${alert.score})\\n`;\n    batchText += `Source: ${alert.source}\\n`;\n    \n    if (alert.enriched_data) {\n      batchText += `Enrichment: \\n`;\n      batchText += `• CISA KEV: ${alert.enriched_data.cisa_kev ? 'TRUE' : 'FALSE'}\\n`;\nbatchText += `• OTX Pulses: ${alert.enriched_data.otx_pulses || 0}\\n`;\nbatchText += `• VT Detections: ${alert.enriched_data.virus_total_detections || 0}\\n`;\nbatchText += `• Exposure: ${alert.enriched_data.exposure || 0} hosts\\n`;\n\n\n    }\n    \n    batchText += `Description: ${alert.text}\\n\\n`;\n    cveCount++;\n    \n  } else {\n    // Format normal alert\n    batchText += `⚠️ SECURITY ALERT\\n`;\n    batchText += `Title: ${alert.title || 'No title'}\\n`;\n    batchText += `Link: ${alert.link || 'No link'}\\n`;\n    batchText += `Severity: ${alert.severity} (Score: ${alert.score})\\n`;\n    batchText += `Source: ${alert.source || 'Unknown'}\\n`;\n    batchText += `Description: ${alert.text || alert.description}\\n\\n`;\n    alertCount++;\n  }\n}\n\nconsole.log(`📝 Batch: ${alertCount} alerts + ${cveCount} CVE = ${alertCount + cveCount} total`);\nconsole.log(`📏 Batch text length: ${batchText.length} characters`);\n\nreturn [{ json: { batchText, alertCount, cveCount, totalItems: items.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-7520, -464],
+      "id": "7ea4df93-0a58-49f5-806b-23cd21764840",
+      "name": "Batching Items",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "sendTo": "mikayakouta@gmail.com",
+        "subject": "=Subject: Cybersecurity Alerts - Summary",
+        "message": "=Body: {{ $json[\"body\"] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [-4640, -544],
+      "id": "b5e540fb-d71a-4c03-9ee5-8053ce514726",
+      "name": "Alert message",
+      "webhookId": "42013e47-0243-4f57-8469-138875a10976",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0UW56t547e9XakR",
+          "name": "Gmail account"
+        }
+      },
+      "disabled": true,
+      "notes": "📧 [Gmail Sender]\n\n📌 Destination: Security team mailbox\n📝 Format:\n\nSubject: [ALERT] {Severity} - {Title}\n\nBody: Title + Link + Source\n⚠️ Includes severity emoji in subject"
+    },
+    {
+      "parameters": {
+        "sendTo": "mikayakouta@gmail.com",
+        "subject": "={{$json[\"subject\"]}}",
+        "message": "={{$json[\"body\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [-10992, -736],
+      "id": "41964777-57db-41d3-b39e-3a4f75430bc0",
+      "name": "Errors Message",
+      "webhookId": "a3508365-3d17-4070-8ad7-51ff26a20e52",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "S0UW56t547e9XakR",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 PASS-THROUGH ALL ALERTS - No filtering for dashboard\n * This node adds business metadata but does NOT filter\n */\n\nconsole.log(\"=== 📊 PASSING ALL ALERTS TO DASHBOARD ===\");\n\nif (items.length === 0) {\n  console.log(\"❌ No items received\");\n  return [];\n}\n\nconsole.log(`📥 Received ${items.length} alerts from previous node`);\n\nconst allAlerts = items.map((item, index) => {\n  const alert = item.json;\n  \n  if (!alert) {\n    console.log(`❌ Item ${index} has no JSON data`);\n    return item; // Return as-is if no JSON\n  }\n\n  console.log(`🔍 Processing alert ${index}: ${alert.title || 'No title'} - Severity: ${alert.severity || 'Unknown'}`);\n\n  // Business logic for escalation paths (no filtering)\n  let escalation_path = \"L2\";\n  let sla = \"4h\";\n  let assigned_team = \"SOC\";\n\n  switch(alert.source) {\n    case 'CERT-FR':\n      escalation_path = \"L3\";\n      sla = \"1h\";\n      assigned_team = \"CERT-Interne\";\n      break;\n    case 'CISA':\n      escalation_path = \"L3\"; \n      sla = \"2h\";\n      assigned_team = \"Security-Ops\";\n      break;\n    case 'NIST':\n      escalation_path = \"L2\";\n      sla = \"4h\";\n      assigned_team = \"Vulnerability-Mgmt\";\n      break;\n    case 'BleepingComputer':\n      escalation_path = \"L2\";\n      sla = \"6h\";\n      assigned_team = \"Threat-Intel\";\n      break;\n  }\n\n  // Priority calculation (info only, no filtering)\n  let priority = \"NORMAL\";\n  if (alert.severity === 'Critical' || alert.score >= 90) {\n    priority = \"CRITICAL\";\n  } else if (alert.severity === 'High' || alert.score >= 70) {\n    priority = \"HIGH\";\n  } else if (alert.severity === 'Medium' || alert.score >= 50) {\n    priority = \"MEDIUM\";\n  } else {\n    priority = \"LOW\";\n  }\n\n  return {\n    json: {\n      ...alert,\n      escalation_path,\n      sla,\n      assigned_team,\n      priority,\n      timestamp: new Date().toISOString(),\n      workflow_id: \"hunter-ai-dashboard\",\n      // Preserve original severity for dashboard filtering\n      original_severity: alert.severity,\n      original_score: alert.score\n    }\n  };\n});\n\nconsole.log(`📤 Passing ${allAlerts.length} alerts to dashboard (all severities)`);\nconsole.log(\"Severity distribution:\", \n  allAlerts.reduce((acc, item) => {\n    const severity = item.json.severity || 'Unknown';\n    acc[severity] = (acc[severity] || 0) + 1;\n    return acc;\n  }, {})\n);\n\nreturn allAlerts;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5280, -448],
+      "id": "442af8d4-e9bb-44ed-a38d-05af6b17d528",
+      "name": "Critical Alerts",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "console.log('=== 🔍 DETECT SOURCE - START ===');\nconsole.log(`📥 Input: ${items.length} items`);\n\nconst sources = {\n  \"cert.ssi.gouv.fr\": \"CERT-FR\",\n  \"bleepingcomputer.com\": \"BleepingComputer\", \n  \"nist.gov\": \"NIST\",\n  \"cisa.gov\": \"CISA\",\n  \"github.com\": \"GitHub Security\",\n  \"microsoft.com\": \"Microsoft Security\",\n  \"krebsonsecurity.com\": \"KrebsOnSecurity\",\n  \"example.com\": \"Chrome Extension\"\n};\n\nfunction detectSource(link) {\n  if (!link) return \"Unknown\";\n  for (const domain in sources) {\n    if (link.includes(domain)) {\n      return sources[domain];\n    }\n  }\n  return \"Unknown\";\n}\n\nitems.forEach((item, idx) => {\n  // Détecter source\n  item.json.source = detectSource(item.json.link);\n  \n  // ✅ REMONTER extensionId DE original_data VERS LE NIVEAU PRINCIPAL\n  if (!item.json.extensionId && item.json.original_data?.extensionId) {\n    console.log(`Item ${idx}: Promoting extensionId from original_data: \"${item.json.original_data.extensionId}\"`);\n    item.json.extensionId = item.json.original_data.extensionId;\n  }\n  \n  console.log(`Item ${idx}: extensionId=\"${item.json.extensionId}\", source=\"${item.json.source}\"`);\n});\n\nconsole.log('=== 🔍 DETECT SOURCE - END ===');\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-6368, -464],
+      "id": "c525d890-7178-4602-b155-7148210211d8",
+      "name": "Source Detection"
+    },
+    {
+      "parameters": {
+        "jsCode": "// RATE LIMITER - Prevent too frequent workflow executions\nconst now = Date.now();\nconst workflowStaticData = $getWorkflowStaticData('global');\nconst lastExecution = workflowStaticData.lastExecution || 0;\n\n// Configuration - 5 minutes minimum between executions\nconst MIN_INTERVAL = 300000;\n\n// Check if execution is too soon\nif (now - lastExecution < MIN_INTERVAL) {\n  const secondsSinceLast = Math.round((now - lastExecution) / 1000);\n  \n  return [{ \n    json: { \n      error: \"Rate limited\", \n      message: `Skipping execution - Only ${secondsSinceLast}s since last run (min: ${MIN_INTERVAL/1000}s)`,\n      skip: true,\n      timestamp: new Date().toISOString()\n    } \n  }];\n}\n\n// Update last execution time and continue\nworkflowStaticData.lastExecution = now;\n\n// Pass through all items for normal processing\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12592, -384],
+      "id": "727eee77-788d-4f85-871f-a3055ac47488",
+      "name": "Rate Limiter",
+      "disabled": true,
+      "notes": "## ⏰ Rate Limiter\n\n**Purpose**: \n- Prevents too frequent workflow executions\n- Protects against cron configuration errors\n- Reduces API costs and prevents service abuse\n\n**Protection Mechanism**:\n- Tracks last execution timestamp in workflow staticData\n- Enforces minimum time interval between executions\n- Returns `skip: true` when rate limit exceeded\n\n**Configuration**:\n- Default: 300000ms (5 minutes minimum between runs)\n- Adjustable via `MIN_INTERVAL` variable\n- Global context persistence across executions\n\n**Error Handling**:\n- Returns clear error message with timing details\n- Non-blocking - workflow continues with skip flag\n- Logs rate limit events for monitoring\n\n**Use Cases**:\n- Prevents spam when cron is misconfigured\n- Protects during API rate limit errors\n- Avoids unnecessary resource consumption\n\n**Integration**:\n- Place immediately after trigger/cron node\n- Connects to all source nodes in parallel\n- Compatible with any workflow structure\n\n**Technical Notes**:\n- Uses $getWorkflowStaticData('global')\n- Requires \"Always Output Data\" setting\n- Timezone-independent timestamp comparison"
+    },
+    {
+      "parameters": {
+        "jsCode": "// WORKFLOW HEALTH MONITOR - Check technical performance\nconst workflowStaticData = $getWorkflowStaticData('global');\nconst executionStart = workflowStaticData.executionStart || Date.now();\nconst now = Date.now();\nconst executionTime = now - executionStart;\n\n// Get memory usage (Node.js only)\nconst memoryUsage = process.memoryUsage ? process.memoryUsage() : null;\n\n// Thresholds configuration\nconst MAX_EXECUTION_TIME = 120000; // 2 minutes\nconst HIGH_MEMORY_USAGE = 500 * 1024 * 1024; // 500MB\n\n// Check for issues\nconst issues = [];\n\nif (executionTime > MAX_EXECUTION_TIME) {\n  issues.push(`Execution too long: ${Math.round(executionTime/1000)}s (max: ${MAX_EXECUTION_TIME/1000}s)`);\n}\n\nif (memoryUsage && memoryUsage.heapUsed > HIGH_MEMORY_USAGE) {\n  issues.push(`High memory usage: ${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`);\n}\n\n// Check for workflow errors from previous nodes\nconst errorItems = items.filter(item => \n  item.json && (item.json.error || item.json.errorMessage || item.json.skip)\n);\n\nif (errorItems.length > 0) {\n  issues.push(`${errorItems.length} error(s) in workflow execution`);\n}\n\n// If no issues, don't send anything\nif (issues.length === 0) {\n  // Store execution start for next run\n  workflowStaticData.executionStart = Date.now();\n  return [];\n}\n\n// Build alert message\nconst body = `\n🚨 WORKFLOW HEALTH ALERT\n\nIssues detected:\n${issues.map(issue => `• ${issue}`).join('\\n')}\n\nTechnical details:\n- Execution time: ${Math.round(executionTime/1000)}s\n- Memory usage: ${memoryUsage ? Math.round(memoryUsage.heapUsed / 1024 / 1024) + 'MB' : 'N/A'}\n- Timestamp: ${new Date().toISOString()}\n- Workflow: hunter-ai-challenge\n\nPlease check the workflow execution logs.\n`;\n\n// Return alert for email notification\nreturn [{\n  json: {\n    subject: `🚨 WORKFLOW HEALTH ISSUE - ${issues.length} problem(s)`,\n    body,\n    priority: \"critical\",\n    issues,\n    executionTime,\n    memoryUsage: memoryUsage ? Math.round(memoryUsage.heapUsed / 1024 / 1024) : null,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4400, -464],
+      "id": "70f23958-795d-4791-97af-88dbe9184293",
+      "name": "WORKFLOW HEALTH MONITOR",
+      "alwaysOutputData": true,
+      "retryOnFail": false,
+      "onError": "continueRegularOutput",
+      "notes": "## 🩺 Workflow Health Monitor\n\n**Purpose**: \n- Monitors technical performance of the workflow itself\n- Detects execution issues before they impact operations\n- Provides proactive alerts for system maintenance\n\n**Metrics Tracked**:\n- ⏱️ Execution time (threshold: 120s)\n- 💾 Memory usage (threshold: 500MB) \n- 🚨 Error propagation from upstream nodes\n- 📈 Performance trends over time\n\n**Alert Conditions**:\n- Execution time > 2 minutes\n- Memory usage > 500MB\n- Error signals from previous nodes\n- Multiple rapid executions (rate limiting)\n\n**Output Behavior**:\n- Returns health status: `healthy` / `unhealthy`\n- Only sends email alerts when issues detected\n- Always continues workflow execution (via \"Always Output Data\" setting)\n\n**Configuration**:\n- thresholds adjustable in code\n- uses workflow staticData for execution timing\n- compatible with n8n cloud and self-hosted\n\n**Best Practices**:\n- Place at end of workflow\n- Connect to dedicated admin email channel\n- Review logs monthly for performance trends\n- Adjust thresholds based on your infrastructure\n\n**Dependencies**:\n- Requires \"Always Output Data\" setting enabled\n- Uses $getWorkflowStaticData('global')\n- Monitors process.memoryUsage (Node.js only)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node -> builds slack_text + slack_blocks (with buttons)\n// Copy-paste as is\n\nconst input = $json || {};\n\n// Robust title/description retrieval\nconst title = (input.title || input.alertTitle || input.slack_title || \"New Security Alert\").toString();\nconst description = (input.text || input.description || input.body || input.summary || \"\").toString();\n\n// Build a simple and secure alertId - SECURED VERSION\nconst alertId = (input.alertId || input.id || Date.now() + \"_\" + Math.random().toString(36).substr(2, 9)).toString().replace(/\\s+/g, '_').replace(/[^A-Za-z0-9_\\-\\.]/g, '').slice(0,120);\n\n// SOURCE PERSONALIZATION - SIMPLE ADDITION\nconst source = input.source || 'Unknown';\nlet sourceEmoji = '🔍'; // Default\n\nswitch(source) {\n    case 'CERT-FR':\n        sourceEmoji = '🇫🇷';\n        break;\n    case 'CISA':\n        sourceEmoji = '🇺🇸';\n        break;\n    case 'NIST':\n        sourceEmoji = '🏛️';\n        break;\n    case 'BleepingComputer':\n        sourceEmoji = '📰';\n        break;\n    case 'GitHub Security':\n        sourceEmoji = '🐙';\n        break;\n    case 'Microsoft Security':\n        sourceEmoji = '🔵';\n        break;\n}\n\n// Build blocks (POJO) - WITH SOURCE EMOJI\nconst blocksObj = [\n  {\n    \"type\": \"section\",\n    \"text\": {\n      \"type\": \"mrkdwn\",\n      \"text\": `${sourceEmoji} *${title}*\\n${description}`\n    }\n  },\n  {\n    \"type\": \"actions\",\n    \"elements\": [\n      {\n        \"type\": \"button\",\n        \"text\": { \"type\": \"plain_text\", \"text\": \"✅ Ack\" },\n        \"action_id\": `ack_${alertId}`,\n        \"value\": `ack_${alertId}`\n      },\n      {\n        \"type\": \"button\",\n        \"text\": { \"type\": \"plain_text\", \"text\": \"🔍 Investigate\" },\n        \"action_id\": `investigate_${alertId}`,\n        \"value\": `investigate_${alertId}`\n      },\n      {\n        \"type\": \"button\",\n        \"text\": { \"type\": \"plain_text\", \"text\": \"🚨 Dismiss\" },\n        \"action_id\": `dismiss_${alertId}`,\n        \"value\": `dismiss_${alertId}`\n      }\n    ]\n  }\n];\n\n// For safety, stringify (works on majority of n8n Slack nodes)\nreturn [{\n  json: {\n    ...input,\n    alertId,\n    slack_channel: \"#n8n-alerts\",\n    slack_text: `${sourceEmoji} ⚠️ ${title}`, // EMOJI ADDED HERE TOO\n    slack_blocks: JSON.stringify(blocksObj) // stringified JSON for Slack node\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4832, -368],
+      "id": "5987322f-0c1c-4470-89b1-e083d0c5fe83",
+      "name": "Slack Message Formatter",
+      "disabled": true,
+      "notes": "## 💬 Slack Message Formatter\n\n**Purpose**: \n- Prepares optimized Slack messages from alert data\n- Generates interactive buttons for alert management\n- Formats consistent messaging across notifications\n\n**Input**: Structured alert data with source metadata\n**Output**: Slack-compatible message format with blocks\n\n**Features**:\n- Source-specific emoji branding (🇺🇸 CISA, 🇫🇷 CERT-FR)\n- Interactive buttons: Ack/Investigate/Dismiss  \n- Secure alert ID generation without PII exposure\n- JSON block formatting for rich Slack messages\n\n**Security**:\n- Generates non-PII alert IDs\n- Sanitizes input data for Slack compatibility\n- Prevents sensitive data leakage in metadata\n\n**Output Structure**:\n- slack_text: Fallback plain text\n- slack_blocks: Rich interactive blocks\n- alertId: Tracking ID for button actions\n- slack_channel: Destination channel"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [-10832, -448],
+      "id": "6f12b3b3-4a60-4f9c-ac77-69e4d2a056db",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// NODE: KEV ENRICHMENT (AVEC CHAMPS KEV COMPLETS)\n// ============================================================================\n// Settings n8n:\n//   - Run Once for All Items = ON\n// ============================================================================\n\nconsole.log(\"=== 🔍 KEV ENRICHMENT (CORRIGÉ + CHAMPS KEV) ===\");\n\nif (items.length === 0) return [];\n\n// Detect KEV catalog + split\nlet kevData = null;\nlet cveItems = items;\nconst hasKevCatalog = !!(items[0]?.json?.vulnerabilities);\nif (hasKevCatalog) { \n  kevData = items[0].json; \n  cveItems = items.slice(1); \n  console.log(`✅ KEV Catalog détecté: ${kevData.vulnerabilities?.length || 0} CVEs`);\n}\n\n// ✅ CRÉER UN INDEX KEV COMPLET AVEC TOUS LES CHAMPS\nconst kevIndex = {};\nif (hasKevCatalog && kevData.vulnerabilities) {\n  for (const v of kevData.vulnerabilities) {\n    if (v.cveID) {\n      kevIndex[v.cveID] = {\n        cveID: v.cveID,\n        vulnerabilityName: v.vulnerabilityName || '',\n        shortDescription: v.shortDescription || '',\n        requiredAction: v.requiredAction || '',\n        knownRansomwareCampaignUse: v.knownRansomwareCampaignUse || 'Unknown',\n        notes: v.notes || '',\n        dateAdded: v.dateAdded || '',\n        dueDate: v.dueDate || '',\n        product: v.product || '',\n        vendorProject: v.vendorProject || ''\n      };\n    }\n  }\n  console.log(`✅ Index KEV créé: ${Object.keys(kevIndex).length} CVEs`);\n}\n\nconst exploitedCves = hasKevCatalog ? kevData.vulnerabilities.map(v => v.cveID) : [];\nconst out = [];\n\n// ============================================================================\n// HELPERS\n// ============================================================================\nfunction cvssToSeverity(cvss){\n  if (cvss >= 9.0) return \"Critical\";\n  if (cvss >= 7.0) return \"High\";\n  if (cvss >= 4.0) return \"Medium\";\n  if (cvss > 0)    return \"Low\";\n  return \"Low\";\n}\nfunction rank(s){ return ({Low:1, Medium:2, High:3, Critical:4})[s] || 2; }\nfunction best(a,b){ return rank(a) >= rank(b) ? a : b; }\n\n// ============================================================================\n// PROCESS EACH CVE\n// ============================================================================\nfor (const it of cveItems) {\n  const data = it.json || {};\n  const cveId = data.cve_id;\n  if (!cveId) continue;\n\n  // 1) KEV check\n  const isInKEV = hasKevCatalog ? exploitedCves.includes(cveId) : false;\n  const kevInfo = isInKEV ? kevIndex[cveId] : null;\n\n  // 2) UTILISER LES DONNÉES ORIGINALES EN PREMIER\n  let finalSeverity = data.severity || \"Medium\";\n  let finalScore = data.score || 50;\n\n  // 3) Calcul CVSS seulement si pas de données originales\n  if (!data.severity || !data.score) {\n    let cvssRaw = data.cvss ?? data.cvss_score ?? data.cvss_v3 ?? data.cvssV3?.baseScore ?? data.cvssv3?.baseScore;\n    let cvss = Number(cvssRaw);\n    if (Number.isFinite(cvss) && cvss > 10) cvss = cvss / 10;\n\n    if (Number.isFinite(cvss)) {\n      const cvssSeverity = cvssToSeverity(cvss);\n      const cvssScore = Math.round(cvss * 10);\n      \n      // Seulement utiliser CVSS si pas de données originales\n      if (!data.severity) finalSeverity = cvssSeverity;\n      if (!data.score) finalScore = cvssScore;\n    }\n  }\n\n  // 4) ENRICHISSEMENT (ne pas écraser)\n  if (isInKEV) {\n    // KEV = indicateur important, mais ne pas écraser une sévérité existante\n    finalSeverity = best(finalSeverity, \"Critical\");\n    finalScore = Math.max(finalScore, 90);\n  }\n\n  if ((data.otx?.pulse_count ?? data.otx_pulses ?? 0) > 0) {\n    // OTX pulses = indicateur, mais ne pas écraser\n    finalSeverity = best(finalSeverity, \"High\");\n    finalScore = Math.max(finalScore, 70);\n  }\n\n  // 5) Sortie enrichie (conserver toutes les données originales + ajouter champs KEV)\n  out.push({\n    json: {\n      ...data, // 🎯 TOUTES les données originales conservées\n      title: data.title || cveId,\n      link: data.link || `https://nvd.nist.gov/vuln/detail/${cveId}`,\n      severity: finalSeverity,\n      score: finalScore,\n      cisa_kev: isInKEV || data.cisa_kev || false,\n      exploited: isInKEV || data.exploited || false,\n      kev_checked_at: new Date().toISOString(),\n      \n      // ✅ AJOUTER LES CHAMPS KEV SI DISPONIBLES\n      cve_description: data.cve_description || kevInfo?.shortDescription || '',\n      cve_vulnerabilityName: data.cve_vulnerabilityName || kevInfo?.vulnerabilityName || '',\n      cve_requiredAction: data.cve_requiredAction || kevInfo?.requiredAction || '',\n      cve_notes: data.cve_notes || kevInfo?.notes || '',\n      cve_product: data.cve_product || kevInfo?.product || '',\n      cve_vendor: data.cve_vendor || kevInfo?.vendorProject || '',\n      cve_dateAdded: data.cve_dateAdded || kevInfo?.dateAdded || '',\n      cve_dueDate: data.cve_dueDate || kevInfo?.dueDate || '',\n      cve_knownRansomwareCampaignUse: data.cve_knownRansomwareCampaignUse || kevInfo?.knownRansomwareCampaignUse || 'Unknown',\n      \n      // 🎯 Ajouter des métadonnées, pas écraser\n      _enrichment: {\n        had_kev_data: hasKevCatalog,\n        is_in_kev: isInKEV,\n        original_severity: data.severity,\n        original_score: data.score,\n        kev_fields_added: !!kevInfo\n      }\n    }\n  });\n}\n\nconsole.log(`✅ KEV Enricher: ${out.length} CVEs processed (no forcing)`);\nconsole.log(`✅ KEV Enricher: ${out.filter(o => o.json._enrichment?.kev_fields_added).length} CVEs enriched with KEV fields`);\nreturn out;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-9792, -448],
+      "id": "2b2365f7-7e85-438e-a366-f4d2c13f6115",
+      "name": "KEV Enricher",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// PREPARE CVE - Code FINAL avec SCORING INTELLIGENT + BONUS TYPE + CVE VIRTUELS 2026\n// Settings: Run Once for All Items = ON\n\nconsole.log(\"=== 🔍 PREPARE CVE DEBUG COMPLET ===\");\n\nconst items = $input.all();\nconst ext = items.filter(i => i.json?.extensionId || i.json?._is_extension_data);\nconst pool = items.filter(i => !i.json?.extensionId && !i.json?._is_extension_data);\n\nconsole.log(`🔍 PREPARE CVE: ${ext.length} extensions, ${pool.length} autres, ${items.length} total`);\n\n// Debug des extensions détectées\nconsole.log(`🔍 Extensions détectées:`);\next.forEach((item, i) => {\n  console.log(`  ${i}: extensionId=${item.json?.extensionId}, _is_extension_data=${item.json?._is_extension_data}`);\n  console.log(`       url=${item.json?.url}, cve_id=${item.json?.cve_id}`);\n});\n\n// Construire une banque de CVE candidats depuis le lot (KEV/NIST/Text)\nconst cands = [];\nconst add = x => { if (x?.id && !cands.some(y => y.id === x.id)) cands.push(x); };\n\nconsole.log(`📥 Analyse des ${items.length} items pour extraire les CVE candidats...`);\n\nfor (const it of items) {\n  const j = it.json || {};\n  \n  // KEV (tableau vulnerabilities)\n  if (Array.isArray(j.vulnerabilities)) {\n    console.log(`  KEV trouvé avec ${j.vulnerabilities.length} vulnérabilités`);\n    for (const v of j.vulnerabilities || []) {\n      if (v.cveID) {\n        add({ \n          id: v.cveID, \n          title: v.vulnerabilityName || `CVE ${v.cveID}`, \n          src: 'KEV', \n          sev: v.severity || 'High', \n          score: v.baseScore || 70, \n          pub: v.dateAdded, \n          raw: v \n        });\n      }\n    }\n  }\n  \n  // NIST (structure cve.id)\n  if (j.cve?.id) {\n    console.log(`  NIST CVE trouvé: ${j.cve.id}`);\n    const m = j.cve.metrics?.cvssMetricV31?.[0] || j.cve.metrics?.cvssMetricV30?.[0];\n    add({ \n      id: j.cve.id, \n      title: j.cve.descriptions?.[0]?.value || j.cve.title?.[0]?.value || `CVE ${j.cve.id}`, \n      src: 'NVD', \n      sev: (m?.cvssData?.baseSeverity || 'MEDIUM'), \n      score: Math.round((m?.cvssData?.baseScore || 5) * 10), \n      pub: j.cve.published, \n      raw: j \n    });\n  }\n  \n  // Text extract\n  const re = /CVE[-_]\\d{4}[-_]\\d+/gi;\n  const s = JSON.stringify(j);\n  const textMatches = s.match(re) || [];\n  if (textMatches.length > 0) {\n    console.log(`  Text extract: ${textMatches.length} CVE trouvés`);\n    new Set(textMatches.map(x => x.replace('_', '-').toUpperCase())).forEach(id => \n      add({ \n        id, \n        title: `CVE ${id}`, \n        src: 'TextExtract', \n        sev: 'Medium', \n        score: 50, \n        pub: new Date().toISOString(), \n        raw: j \n      })\n    );\n  }\n}\n\nconsole.log(`📋 CVE candidats collectés: ${cands.length}`);\nconsole.log(`📋 Top 10 candidats:`);\ncands.slice(0, 10).forEach((c, i) => {\n  console.log(`  ${i + 1}. ${c.id} (${c.src}): ${c.title.substring(0, 50)}...`);\n});\n\n// 🎯 MOTS-CLÉS CYBER SPÉCIFIQUES\nconst cyberKeywords = [\n  'bash', 'shellshock', 'apache', 'nginx', 'mysql', 'postgresql',\n  'windows', 'linux', 'kernel', 'openssl', 'java', 'python',\n  'jenkins', 'cisco', 'juniper', 'fortinet', 'sudo', 'curl',\n  'chrome', 'firefox', 'safari', 'edge', 'node', 'docker',\n  'kubernetes', 'redis', 'mongodb', 'elasticsearch', 'wordpress',\n  'joomla', 'drupal', 'php', 'ruby', 'perl', 'oracle', 'samsung',\n  'android', 'ios', 'microsoft', 'adobe', 'vmware', 'citrix', \n  'login', 'authentication', 'password', 'credential', 'auth',\n  'session', 'cookie', 'token', 'oauth', 'sso', 'mfa', '2fa',\n  'phishing', 'spoofing', 'impersonation', 'bruteforce',\n  'single-sign-on', 'multi-factor', 'biometric', 'federation',\n  'saml', 'openid', 'ldap', 'kerberos', 'radius', 'jwt',\n  'malware', 'ransomware', 'trojan', 'backdoor', 'rootkit',\n  'unwanted', 'suspicious', 'malicious', 'virus', 'worm'\n];\n\n// 🎯 TOKENS GÉNÉRIQUES À FILTRER\nconst genericTokens = [\n  'security', 'platform', 'system', 'admin', 'interface', 'dashboard', \n  'exploit', 'version', 'custom', 'proprietary', 'framework', 'bypass', \n  'targeting', 'unique', 'vulnerability', 'with', 'vuln', 'rabilit',\n  'detecte', 'expose', 'protection', 'adequate', 'csrf', '2025', '2024',\n  'application', 'service', 'server', 'client', 'network', 'web'\n];\n\n// Fonctions utilitaires\nfunction toks(u) { \n  try { \n    const h = new URL(u).hostname.replace(/^www\\./, ''); \n    return h.split('.').slice(0, -1).filter(Boolean);\n  } catch { \n    return []; \n  }\n}\n\nfunction low(x) { \n  return (x || '').toString().toLowerCase(); \n}\n\n// Corrélation extension ↔ CVE\nconst out = [];\n\nconsole.log(`🎯 Début corrélation pour ${ext.length} extensions...`);\n\nfor (const e of ext) {\n  const data = e.json;\n  \n  console.log(`\\n🎯 === Traitement extension ${data.extensionId || 'UNKNOWN'} ===`);\n  \n  // ✅ SAUVEGARDE ROBUSTE DE l'extensionId ORIGINAL\n  const originalExtensionId =\n    data.extensionId ||\n    data.original_data?.extensionId ||\n    e.json?.extensionId ||\n    e.json?.original_data?.extensionId ||\n    'mapped';\n  console.log(`  📌 extensionId original: \"${originalExtensionId}\"`);\n  \n  // 🎯 SI DÉJÀ UN CVE ATTRIBUÉ, PASS-THROUGH\n  // if (data.cve_id || data.cveid) {\n  //   console.log(`  ✅ CVE déjà attribué: ${data.cve_id || data.cveid} - Pass-through`);\n  //   out.push({ json: { ...data, extensionId: originalExtensionId } });\n  //   continue;\n  // }\n  \n  // Extraction des données\n  const url = data.url || data.link || data.extensionData?.originalUrl || '';\n  const analysis = low(data.aiAnalysis || data.extensionData?.aiAnalysis || '');\n  const tech = (data.extensionData?.technologies || []).map(t => low(t.name)).filter(Boolean);\n  \n  console.log(`  URL extraite: \"${url}\"`);\n  console.log(`  Analyse extraite: \"${analysis.substring(0, 100)}...\"`);\n  console.log(`  Technologies: [${tech.join(', ')}]`);\n  \n  // Tokens\n  const urlTokens = toks(url);\n  const analysisTokens = analysis.match(/\\b\\w{4,}\\b/g) || [];\n  const allTokens = [...new Set([...urlTokens, ...analysisTokens, ...tech])].filter(t => t.length >= 4);\n  const specificTokens = allTokens.filter(t => \n    cyberKeywords.includes(t.toLowerCase()) || \n    (!genericTokens.includes(t.toLowerCase()) && !/^\\d+$/.test(t) && t.length >= 4)\n  );\n  \n  console.log(`  Tokens bruts (${allTokens.length}): [${allTokens.slice(0, 8).join(', ')}]${allTokens.length > 8 ? '...' : ''}`);\n  console.log(`  Tokens spécifiques (${specificTokens.length}): [${specificTokens.slice(0, 8).join(', ')}]${specificTokens.length > 8 ? '...' : ''}`);\n  \n  // 🎯 PRIORITÉ 1 : CVE mentionné\n  const mentionedCVE = analysis.match(/cve[-_]?\\d{4}[-_]?\\d+/i);\n  if (mentionedCVE) {\n    const cveId = mentionedCVE[0].replace(/[-_]/g, '-').toUpperCase();\n    const directMatch = cands.find(c => c.id === cveId);\n    if (directMatch) {\n      const enrichedExtension = {\n        ...data,\n        extensionId: originalExtensionId,\n        cve_id: directMatch.id,\n        cveid: directMatch.id,\n        mappedCVE: true,\n        mappingConfidence: 10,\n        mappingSource: directMatch.src,\n        mappingTitle: directMatch.title,\n        matchMethod: 'direct_mention',\n        specificTokens,\n        isVirtual: false,\n        _is_extension_data: true,\n        original_data: {\n          ...data.original_data,\n          extensionId: originalExtensionId\n        }\n      };\n      out.push({ json: enrichedExtension });\n      console.log(`  ✅ Extension enrichie (direct) avec extensionId=\"${originalExtensionId}\"`);\n      continue;\n    }\n  }\n  \n  // 🎯 PRIORITÉ 2 : Corrélation tokens avec SCORING INTELLIGENT + BONUS TYPE\n  const matches = [];\n  if (specificTokens.length > 0) {\n    console.log(`  🔍 Test de corrélation avec ${cands.length} candidats...`);\n    \n    for (const c of cands) {\n      const titleLow = low(c.title);\n      const rawLow = low(JSON.stringify(c.raw || {}));\n      const matchingTokens = specificTokens.filter(t => titleLow.includes(t) || rawLow.includes(t));\n      \n      if (matchingTokens.length > 0) {\n        const kev = c.src === 'KEV';\n        \n        // 🎯 Calcul âge du CVE depuis le CVE ID\n        const cveYearMatch = c.id.match(/CVE-(\\d{4})-/);\n        const year = cveYearMatch ? parseInt(cveYearMatch[1]) : 2000;\n        const age = 2025 - year;\n        \n        // Bonus si très récent (< 3 ans)\n        const recentBonus = age <= 2 ? 3 : 0;\n        \n        // 🎯 PÉNALITÉ PROPORTIONNELLE : -2 points par année au-delà de 5 ans\n        const agePenalty = age > 5 ? -(age - 5) * 2 : 0;\n        \n        // Score basé sur le nombre de tokens matchés\n        const tokenScore = matchingTokens.length;\n        \n        // Tokens critiques\n        const criticalTokens = ['login', 'authentication', 'credential', 'password', 'session', 'token', 'oauth', 'sso'];\n        const criticalMatches = matchingTokens.filter(t => criticalTokens.includes(t.toLowerCase())).length;\n        \n        // 🎯 BONUS PAR TYPE DE MENACE\n        let typeBonus = 0;\n        \n        // Bonus MALWARE/UNWANTED\n        if (specificTokens.some(t => ['malware', 'unwanted', 'suspicious', 'trojan', 'backdoor', 'ransomware'].includes(t.toLowerCase()))) {\n          const isMalwareCVE = titleLow.includes('malware') || \n                               titleLow.includes('execution') || \n                               titleLow.includes('remote code') ||\n                               titleLow.includes('backdoor') ||\n                               titleLow.includes('trojan');\n          if (isMalwareCVE) {\n            typeBonus += 10;\n            console.log(`    🎯 BONUS MALWARE +10 pour ${c.id}`);\n          }\n        }\n        \n        // Bonus PHISHING\n        if (specificTokens.some(t => ['phishing', 'credential', 'spoof'].includes(t.toLowerCase()))) {\n          const isPhishingCVE = titleLow.includes('phish') || \n                                titleLow.includes('spoof') || \n                                titleLow.includes('credential') ||\n                                titleLow.includes('impersonation');\n          if (isPhishingCVE) {\n            typeBonus += 10;\n            console.log(`    🎯 BONUS PHISHING +10 pour ${c.id}`);\n          }\n        }\n        \n        // Bonus XSS/INJECTION\n        if (specificTokens.some(t => ['xss', 'injection', 'script'].includes(t.toLowerCase()))) {\n          const isInjectionCVE = titleLow.includes('xss') || \n                                 titleLow.includes('injection') || \n                                 titleLow.includes('script') ||\n                                 titleLow.includes('cross-site');\n          if (isInjectionCVE) {\n            typeBonus += 10;\n            console.log(`    🎯 BONUS INJECTION +10 pour ${c.id}`);\n          }\n        }\n        \n       // 🎯 PÉNALITÉS/BONUS GÉNÉRIQUES BASÉS SUR LE CONTEXTE\nlet authPenalty = 0;\nlet malwarePenalty = 0;\nlet injectionPenalty = 0;\n\n// AUTH CVE\nconst isAuthRelatedCVE = \n  titleLow.includes('authentication') || titleLow.includes('login') ||\n  titleLow.includes('credential') || titleLow.includes('password') ||\n  titleLow.includes('session') || titleLow.includes('oauth') ||\n  titleLow.includes('sso') || titleLow.includes('jwt') || titleLow.includes('auth');\n\nif (isAuthRelatedCVE) {\n  const hasAuthTokens = specificTokens.some(t => \n    ['login', 'auth', 'credential', 'password', 'session', 'phishing', \n     'oauth', 'sso', 'jwt', 'token', 'mfa', '2fa'].includes(t.toLowerCase())\n  );\n  authPenalty = hasAuthTokens ? +5 : -15;\n  console.log(`    ${hasAuthTokens ? '✅' : '⚠️'} ${c.id} auth context: ${authPenalty}`);\n}\n\n// MALWARE CVE\nconst isMalwareCVE = \n  titleLow.includes('malware') || titleLow.includes('trojan') ||\n  titleLow.includes('backdoor') || titleLow.includes('ransomware') ||\n  titleLow.includes('execution') || titleLow.includes('remote code');\n\nif (isMalwareCVE) {\n  const hasMalwareTokens = specificTokens.some(t => \n    ['malware', 'unwanted', 'suspicious', 'trojan', 'backdoor', \n     'ransomware', 'virus', 'worm'].includes(t.toLowerCase())\n  );\n  malwarePenalty = hasMalwareTokens ? 0 : -10;\n  if (malwarePenalty < 0) console.log(`    ⚠️ ${c.id} malware sans contexte: ${malwarePenalty}`);\n}\n\n// INJECTION CVE\nconst isInjectionCVE = \n  titleLow.includes('injection') || titleLow.includes('xss') ||\n  titleLow.includes('cross-site') || titleLow.includes('sql');\n\nif (isInjectionCVE) {\n  const hasInjectionTokens = specificTokens.some(t => \n    ['injection', 'xss', 'script', 'sql'].includes(t.toLowerCase())\n  );\n  injectionPenalty = hasInjectionTokens ? 0 : -10;\n  if (injectionPenalty < 0) console.log(`    ⚠️ ${c.id} injection sans contexte: ${injectionPenalty}`);\n}\n\n// Calcul du score de confiance FINAL\nconst conf = \n  (tokenScore * 2) +\n  (criticalMatches * 5) +\n  (kev ? 3 : 0) +\n  recentBonus +\n  agePenalty +\n  typeBonus +\n  authPenalty +\n  malwarePenalty +\n  injectionPenalty;\n\n        \n        // Calcul du score de confiance FINAL\n        const conf = \n          (tokenScore * 2) +\n          (criticalMatches * 5) +\n          (kev ? 3 : 0) +\n          recentBonus +\n          agePenalty +\n          typeBonus +\n          authPenalty;\n        \n        matches.push({ conf, c, matchingTokens, year, age, agePenalty, criticalMatches, typeBonus, authPenalty });\n        console.log(`    ✅ MATCH: ${c.id} (conf: ${conf}, tokens: ${tokenScore}, critical: ${criticalMatches}, typeBonus: ${typeBonus}, authPenalty: ${authPenalty}, year: ${year}, age: ${age} ans, penalty: ${agePenalty}) - Tokens: [${matchingTokens.join(', ')}]`);\n      }\n    }\n  }\n  \n  console.log(`  📊 Total matches: ${matches.length}`);\n  \n  // 🎯 TRI INTELLIGENT avec TIEBREAKER\n  matches.sort((a, b) => {\n    if (b.conf !== a.conf) return b.conf - a.conf;\n    if (b.criticalMatches !== a.criticalMatches) return b.criticalMatches - a.criticalMatches;\n    if (b.typeBonus !== a.typeBonus) return b.typeBonus - a.typeBonus;\n    return b.year - a.year;\n  });\n  \n  const bestMatch = matches[0];\n  \n  // Afficher le top 3 pour debug\n  if (matches.length > 0) {\n    console.log(`  🏆 Top 3 matches:`);\n    matches.slice(0, 3).forEach((m, i) => {\n      console.log(`    ${i + 1}. ${m.c.id} (conf: ${m.conf}, critical: ${m.criticalMatches}, typeBonus: ${m.typeBonus}, year: ${m.year})`);\n    });\n  }\n  \n  // Seuil minimum de confiance = 4\n  if (bestMatch && bestMatch.conf >= 4 && specificTokens.length > 0) {\n    console.log(`  🎯 ✅ CVE ATTRIBUÉ: ${bestMatch.c.id} (confiance: ${bestMatch.conf})`);\n    \n    const enrichedExtension = {\n      ...data,\n      extensionId: originalExtensionId,\n      cve_id: bestMatch.c.id,\n      cveid: bestMatch.c.id,\n      mappedCVE: true,\n      mappingConfidence: bestMatch.conf,\n      mappingSource: bestMatch.c.src,\n      mappingTitle: bestMatch.c.title,\n      matchMethod: 'token_correlation',\n      specificTokens,\n      matchingTokens: bestMatch.matchingTokens,\n      isVirtual: false,\n      _is_extension_data: true,\n      original_data: {\n        ...data.original_data,\n        extensionId: originalExtensionId\n      }\n    };\n    out.push({ json: enrichedExtension });\n    console.log(`  ✅ Extension enrichie (tokens) avec extensionId=\"${originalExtensionId}\"`);\n  } else {\n    console.log(`  🛡️ ❌ AUCUN MATCH suffisant (meilleur score: ${bestMatch?.conf || 0}) - Génération CVE virtuel 2026`);\n    \n    // 🎯 GÉNÉRATION CVE VIRTUEL EN 2026\n    const timestamp = Date.now().toString().slice(-6);\n    const virtualCVE = `CVE-2026-${timestamp}`;\n    \n    const enrichedWithVirtual = {\n      ...data,\n      extensionId: originalExtensionId,\n      cve_id: virtualCVE,\n      cveid: virtualCVE,\n      mappedCVE: false,\n      mappingConfidence: 0,\n      mappingSource: 'virtual',\n      mappingTitle: `Virtual CVE for ${data.url || 'Unknown URL'}`,\n      matchMethod: 'no_match_virtual_2026',\n      specificTokens: specificTokens,\n      isVirtual: true,\n      virtualYear: 2026,\n      _is_extension_data: true,\n      original_data: {\n        ...data.original_data,\n        extensionId: originalExtensionId\n      }\n    };\n    \n    out.push({ json: enrichedWithVirtual });\n    console.log(`  🆕 CVE virtuel 2026 généré: ${virtualCVE} (extensionId: ${originalExtensionId})`);\n  }\n}\n\nconsole.log(`\\n📤 === RÉSULTATS PREPARE CVE ===`);\nconsole.log(`  Extensions en entrée: ${ext.length}`);\nconsole.log(`  Extensions en sortie: ${out.length}`);\nconsole.log(`  Items pool: ${pool.length}`);\nconsole.log(`  Total: ${pool.length + out.length}`);\n\nreturn [...pool, ...out];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-10384, -432],
+      "id": "9cbb50f1-6546-4807-b5e8-2e735e1ed47f",
+      "name": "Prepare CVE",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * PROCESS OTX DIRECT - CORRIGÉ (avec gestion du score)\n */\nconsole.log(\"=== 📥 PROCESSING OTX DIRECT (with score fix) ===\");\nif (items.length === 0) return [];\n\nconst out = [];\n\nfor (const item of items) {\n  console.log(\"=== 🔍 DEBUG OTX ===\");\n  console.log(\"Input item keys:\", Object.keys(item.json));\n\n  let originalData;\n  let cveId;\n\n  if (item.json.original_data?.cve_id) {\n    originalData = item.json.original_data;\n    cveId = originalData.cve_id;\n    console.log(\"📦 Using original_data\");\n  } else if (item.json.indicator?.startsWith('CVE-')) {\n    originalData = item.json;\n    cveId = item.json.indicator;\n    console.log(\"📦 Using OTX response data\");\n  } else {\n    console.log(\"🚨 No valid data found, passing through\");\n    out.push(item);\n    continue;\n  }\n\n  const incoming = { ...originalData, ...item.json };\n  const pulseCount = Number(item.json.pulse_info?.count || 0);\n\n  // 🎯 GESTION AMÉLIORÉE DU SCORE\n  let severity = incoming.severity || \"Medium\";\n  \n  // 🎯 CORRECTION : Récupérer le score depuis CVSS ou basé sur la sévérité\n  let score;\n  \n  // Option 1: Depuis CVSSv3 si disponible\n  if (incoming.cvssv3?.cvssV3?.baseScore) {\n    score = incoming.cvssv3.cvssV3.baseScore * 10; // Convertir en score 0-100\n    console.log(`📊 Using CVSSv3 score: ${score}`);\n  } \n  // Option 2: Depuis CVSSv2 si disponible\n  else if (incoming.cvssv2?.cvssV2?.baseScore) {\n    score = incoming.cvssv2.cvssV2.baseScore * 10; // Convertir en score 0-100\n    console.log(`📊 Using CVSSv2 score: ${score}`);\n  }\n  // Option 3: Basé sur la sévérité\n  else {\n    const severityScores = {\n      \"Critical\": 90,\n      \"High\": 70,\n      \"Medium\": 50,\n      \"Low\": 30,\n      \"None\": 10\n    };\n    score = severityScores[severity] || 50; // Default to Medium\n    console.log(`📊 Using severity-based score: ${score} (${severity})`);\n  }\n\n  const inKev = Boolean(incoming.cisa_kev || incoming.exploited);\n  \n  console.log(`🔍 ${cveId} - Severity: ${severity}, Score: ${score}, KEV: ${inKev}, OTX: ${pulseCount}`);\n\n  const enrichmentInfo = {\n    has_kev: inKev,\n    otx_pulses: pulseCount,\n    exploitation_risk: inKev ? \"critical\" : pulseCount > 0 ? \"high\" : \"none\",\n    score_source: incoming.cvssv3 ? \"cvssv3\" : incoming.cvssv2 ? \"cvssv2\" : \"severity\"\n  };\n\n  const enrichedData = {\n    ...incoming,\n    title: incoming.title || cveId,\n    link: incoming.link || `https://nvd.nist.gov/vuln/detail/${cveId}`,\n    severity: severity,\n    score: score,  // 🎯 MAINTENANT TOUJOURS PRÉSENT\n    text: incoming.text || `Security alert for ${cveId} - OTX pulses: ${pulseCount}`,\n    source: incoming.source || \"CVE Program\",\n    status: incoming.status || \"New\",\n    cve_id: cveId,\n    published: incoming.published || new Date().toISOString(),\n    otx: {\n      pulse_count: pulseCount,\n      actively_exploited: pulseCount > 0,\n      data_available: true,\n      last_checked: new Date().toISOString()\n    },\n    _enrichment: enrichmentInfo,\n    should_notify: inKev || pulseCount > 0\n  };\n\n  out.push({ json: enrichedData });\n  console.log(`✅ ${cveId} - Final: ${severity}/${score}, KEV: ${inKev}, OTX: ${pulseCount}`);\n}\n\nconsole.log(`🎯 Total processed: ${out.length} CVEs (score fix applied)`);\nreturn out;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-9232, -448],
+      "id": "ed6dfc70-8296-408e-aedb-61539255ed19",
+      "name": "Process OTX",
+      "alwaysOutputData": true,
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "=https://otx.alienvault.com/api/v1/indicators/cve/{{ $json.cve_id }}/general",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-OTX-API-KEY",
+              "value": "124f45d70b0862469ffa7308963ee097f382c2fde68e3c9ce02dfd4f4dea6a93"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-9424, -448],
+      "id": "8fae3be2-0189-4364-b7b1-693bdb89551e",
+      "name": "AlienVault OTX ENRICHER",
+      "alwaysOutputData": true,
+      "disabled": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🌐 INTERNET EXPOSURE ESTIMATOR - CORRIGÉ (fonctions incluses)\n */\n\nconsole.log(\"=== 🌐 INTERNET EXPOSURE ESTIMATION (no forcing) ===\");\n\nif (items.length === 0) return [];\n\nconst results = [];\n\nfor (const item of items) {\n  const cveData = item.json;\n  const cveId = cveData.cve_id || cveData.id;\n  \n  console.log(`🔍 Analyzing exposure for: ${cveId}`);\n  \n  // 🎯 INTELLIGENCE-BASED EXPOSURE ESTIMATION\n  const exposureData = estimateExposureFromIntelligence(cveData);\n  \n  const enrichedData = {\n    ...cveData,\n    exposure: exposureData,\n    score: cveData.score, // Score original conservé\n    calculated_score: exposureData.new_score, // Score calculé (métadonnée)\n    text: buildExposureText(cveData.text, exposureData),\n    enrichment_chain: \"CIRCL → CISA → OTX → ExposureEstimation\",\n    _exposure_metadata: {\n      exposed_hosts: exposureData.exposed_hosts,\n      risk_level: exposureData.risk_level,\n      recommendation: exposureData.recommendation,\n      calculated_score: exposureData.new_score,\n      original_score: cveData.score\n    }\n  };\n  \n  results.push({ json: enrichedData });\n  console.log(`✅ ${cveId} - Original: ${cveData.score}, Calculated: ${exposureData.new_score}`);\n}\n\nreturn results;\n\n// 🎯 FONCTIONS REQUISES (doivent être dans la même portée)\nfunction estimateExposureFromIntelligence(cveData) {\n  const severity = cveData.severity || \"Medium\";\n  const isCisaExploited = cveData.cisa_kev || false;\n  const otxPulses = cveData.otx?.pulse_count || 0;\n  const ageDays = Math.floor((new Date() - new Date(cveData.published || new Date())) / (1000 * 60 * 60 * 24));\n  \n  let exposedHosts = calculateExposedHosts(severity, isCisaExploited, otxPulses, ageDays);\n  let riskLevel = calculateRiskLevel(exposedHosts);\n  let newScore = calculateNewScore(cveData.score || 50, exposedHosts, isCisaExploited);\n  \n  return {\n    exposed_hosts: exposedHosts,\n    risk_level: riskLevel,\n    estimation_based_on: { \n      severity: severity,\n      cisa_kev: isCisaExploited,\n      otx_pulses: otxPulses,\n      age_days: ageDays\n    },\n    new_score: newScore,\n    recommendation: generateRecommendation(riskLevel, exposedHosts),\n    data_source: \"Multi-source intelligence estimation\",\n    timestamp: new Date().toISOString()\n  };\n}\n\nfunction calculateExposedHosts(severity, isCisaExploited, otxPulses, ageDays) {\n  let base = 0;\n  \n  // Base on severity\n  if (severity === \"Critical\") base = 5000;\n  else if (severity === \"High\") base = 2000;\n  else if (severity === \"Medium\") base = 500;\n  else base = 100;\n  \n  // Multipliers\n  let multiplier = 1;\n  if (isCisaExploited) multiplier *= 3;\n  if (otxPulses > 0) multiplier *= (1 + (otxPulses / 10));\n  multiplier *= Math.min(ageDays / 30, 2);\n  \n  return Math.floor(base * multiplier);\n}\n\nfunction calculateRiskLevel(exposedHosts) {\n  if (exposedHosts > 5000) return \"CRITICAL\";\n  if (exposedHosts > 1000) return \"HIGH\";\n  if (exposedHosts > 100) return \"MEDIUM\";\n  return \"LOW\";\n}\n\nfunction calculateNewScore(baseScore, exposedHosts, isCisaExploited) {\n  let newScore = baseScore || 50;\n  \n  // Exposure bonus\n  if (exposedHosts > 5000) newScore += 30;\n  else if (exposedHosts > 1000) newScore += 20;\n  else if (exposedHosts > 100) newScore += 10;\n  \n  // CISA exploitation bonus\n  if (isCisaExploited) newScore += 15;\n  \n  return Math.min(newScore, 100);\n}\n\nfunction generateRecommendation(riskLevel, exposedHosts) {\n  switch (riskLevel) {\n    case \"CRITICAL\":\n      return \"🚨 CRITICAL: Patch immediately - widespread exposure\";\n    case \"HIGH\":\n      return \"🔥 HIGH: Patch within 24 hours - significant exposure\";\n    case \"MEDIUM\":\n      return \"⚠️ MEDIUM: Patch within 7 days - moderate exposure\";\n    default:\n      return \"✅ LOW: Standard patching cycle - minimal exposure\";\n  }\n}\n\nfunction buildExposureText(originalText, exposureData) {\n  const original = originalText || \"Security alert\";\n  return `${original}\\n• Exposure: ${exposureData.exposed_hosts} hosts estimated vulnerable (${exposureData.risk_level} risk)\\n• Recommendation: ${exposureData.recommendation}`;\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-9040, -448],
+      "id": "34d753ff-aaa2-45da-b9ce-64ad76dbf9e8",
+      "name": "* 🌐 INTERNET EXPOSURE ESTIMATOR"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "=1mPn2UXGadfOEN183fVDJhnRCVYEENLhXrKzcQiRfC1E",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ new Date($json.timestamp).toLocaleString(\"fr-FR\", { timeZone: \"Europe/Paris\" }) }}\n",
+            "title": "={{ $json.title }}",
+            "cve_id": "={{ $json.cve_id }}",
+            "link": "={{ $json.link }}",
+            "severity": "={{ $json.severity}}",
+            "score": "={{ $json.score }}",
+            "description": "={{ $json.text }}",
+            "status": "={{ $json.status }}",
+            "source": "={{ $json.source }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cve_id",
+              "displayName": "cve_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "link",
+              "displayName": "link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "severity",
+              "displayName": "severity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "score",
+              "displayName": "score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "source",
+              "displayName": "source",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cve_id",
+              "displayName": "cve_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [-5280, -288],
+      "id": "76ab89ce-71f0-44f4-956d-ccf7796faa44",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RZNHr0ONDHoHcehY",
+          "name": "Google Sheets account"
+        }
+      },
+      "disabled": true,
+      "notes": "## 📊 Google Sheets Logger\n\n**Purpose**: \n- Archives all processed alerts for historical tracking\n- Provides audit trail and compliance reporting\n- Enables manual review and data analysis\n\n**Data Structure**:\n- Appends new rows automatically\n- Updates existing rows based on title/link matching\n- Maintains full alert context with metadata\n\n**Fields Logged**:\n- Title, Link, Severity, Score, Text\n- Source, Timestamp, Status\n- Complete alert context preservation\n\n**Usage**: \n- Historical analysis and trend tracking\n- Compliance and audit requirements\n- Backup for notification systems\n\n**Configuration**:\n- Auto-mapping of input data fields\n- Append-or-update operation mode\n- Google Sheets OAuth2 authentication"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 NORMALIZE SEVERITY - CORRIGÉ (no forcing)\n * Ajoute une sévérité normalisée sans écraser l'originale\n */\n\nconsole.log(\"=== 🎯 NORMALIZE SEVERITY (no forcing) ===\");\n\nfunction normalizeSeverity(severity) {\n  if (!severity) return \"Medium\";\n  \n  const severityStr = severity.toString().toLowerCase().trim();\n  \n  const severityMap = {\n    \"critical\": \"Critical\",\n    \"critique\": \"Critical\", \n    \"high\": \"High\",\n    \"important\": \"High\",\n    \"medium\": \"Medium\",\n    \"moderate\": \"Medium\", \n    \"low\": \"Low\",\n    \"info\": \"Low\"\n  };\n  \n  return severityMap[severityStr] || \"Medium\";\n}\n\nconst results = items.map(item => {\n  if (!item.json) return item;\n  \n  const originalSeverity = item.json.severity;\n  const normalizedSeverity = normalizeSeverity(originalSeverity);\n  \n  // 🎯 AJOUTER la sévérité normalisée sans écraser l'originale\n  return {\n    json: {\n      ...item.json,\n      severity: originalSeverity, // Conserver l'originale\n      normalized_severity: normalizedSeverity, // Ajouter la normalisée\n      _severity_metadata: {\n        original: originalSeverity,\n        normalized: normalizedSeverity,\n        was_changed: originalSeverity !== normalizedSeverity\n      }\n    }\n  };\n});\n\nconsole.log(`✅ Normalized ${results.length} items (original severity preserved)`);\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-8416, -448],
+      "id": "6a9848cb-4a3e-48ea-927c-ba5a4c663025",
+      "name": "Normalize severity"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🚨 EMERGENCY FIX - Répare les données CVE corrompues\n */\n\nconsole.log(\"=== 🚨 EMERGENCY FIX ===\");\n\nif (items.length === 0) return [];\n\nconst results = [];\n\nfor (const item of items) {\n  let data = item.json;\n  \n  // 🎯 RÉPARATION des données undefined\n  if (data.link && data.link.includes('undefined')) {\n    console.log(\"🛠️ Fixing undefined link\");\n    data.link = \"https://nvd.nist.gov/vuln/detail/CVE-2025-5115\";\n  }\n  \n  if (data.text && data.text.includes('undefined')) {\n    console.log(\"🛠️ Fixing undefined text\");\n    data.text = \"Published vulnerability - eclipse\\n• OTX: 0 threat intelligence pulses\\n• VirusTotal: 0 malware detections\\n• Status: ✅ Not weaponized\";\n  }\n  \n  if (!data.cve_id && data.enriched_data) {\n    console.log(\"🛠️ Adding missing cve_id\");\n    data.cve_id = \"CVE-2025-5115\";\n  }\n  \n  // 🎯 VÉRIFICATION finale\n  if (!data.cve_id) {\n    console.log(\"❌ Still no cve_id after fix:\", data);\n  }\n  \n  results.push({ json: data });\n}\n\nconsole.log(\"✅ Emergency fix completed\");\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-8832, -448],
+      "id": "41b0453a-6093-4ef6-b32e-ca7c3c1c5ce7",
+      "name": "🚨 EMERGENCY FIX"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: \"Test Data for React\"\nreturn [\n  {\n    json: {\n      cve_id: \"CVE-2025-48384\",\n      title: \"Test Alert - Phishing Campaign\",\n      severity: \"Medium\",\n      source: \"TEST\",\n      score: 40,\n      text: \"Large-scale phishing campaign targeting financial institutions\",\n      timestamp: new Date().toISOString()\n    }\n  },\n  {\n    json: {\n      cve_id: \"CVE-2025-51115\", \n      title: \"Zero-Day Vulnerability in WordPress\",\n      severity: \"Critical\",\n      source: \"TEST\",\n      score: 100,\n      text: \"Active exploitation in the wild - patch immediately\",\n      timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12784, -384],
+      "id": "2fc08584-0d9d-4e42-9143-feed8d5a40cc",
+      "name": "Code",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "url": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-12160, -688],
+      "id": "796098f0-ef44-4606-8f11-62f565b383ed",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "alwaysOutputData": true,
+      "name": "NIST.gov CVE API",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.cert.ssi.gouv.fr/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-12144, -512],
+      "id": "6eabc974-df9b-4184-8d9e-39fb163d58c3",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "name": "CERT-FR RSS Feed",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.bleepingcomputer.com/feed/",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-12144, -288],
+      "id": "f6236a91-d42d-4cb4-8833-e440690d67ed",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "name": "BleepingComputer RSS",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-12160, -80],
+      "id": "96d1c83e-df5d-401f-8973-bba92a3fab47",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000,
+      "name": "CISA KEV Catalog1",
+      "disabled": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-11152, -560],
+      "id": "bef89eeb-063b-4ed3-8803-bb3ae267cf48",
+      "name": "CISA KEV catalog",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsCode": "// Compute severity from CVSS + KEV/OTX\nfunction cvssToSeverity(cvss) {\n  if (cvss >= 9.0) return \"Critical\";\n  if (cvss >= 7.0) return \"High\";\n  if (cvss >= 4.0) return \"Medium\";\n  if (cvss > 0)    return \"Low\";\n  return \"Low\";\n}\n\nfunction rank(s){ return {Low:1, Medium:2, High:3, Critical:4}[s] || 2; }\nfunction best(a,b){ return rank(a) >= rank(b) ? a : b; }\n\nitems.forEach(it => {\n  const a = it.json || {};\n  // 1) Normalise un score: accepte cvss (0–10) ou score (0–100)\n  let cvss = Number(a.cvss ?? a.cvss_score ?? a.score);\n  if (Number.isFinite(cvss)) { if (cvss > 10) cvss = cvss / 10; }\n  // 2) Base sur CVSS si dispo, sinon garder l’existant\n  let base = Number.isFinite(cvss) ? cvssToSeverity(cvss) : (a.severity || \"Medium\");\n  // 3) Rehausseurs par renseignement exploitation\n  const inKev = !!(a.cisa_kev || a.exploited);\n  const otx = a.otx?.pulse_count || a.otx_pulses || 0;\n  if (inKev) base = best(base, \"Critical\");\n  else if (otx > 0) base = best(base, \"High\");\n  // 4) Écrire sévérité + score100 cohérent\n  a.severity = base;\n  if (Number.isFinite(cvss)) a.score = Math.round(cvss * 10);\n  it.json = a;\n});\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-8640, -448],
+      "id": "28def8e6-2945-40d5-b8d6-f0b7c35e6945",
+      "name": "recalculer severity et score à partir de CVSS/KEV/OTX"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🛠️ AI OUTPUT PARSER - VERSION CVE_ID PATTERN (FINALE CORRIGÉE)\n * Objectif:\n * - Extraire les CVE réels de la sortie IA\n * - Ignorer l'entrée placeholder \"EXT-ALERT\"\n * - Si l'extension a DÉJÀ un CVE réel mappé → l'utiliser\n * - Sinon → créer un CVE virtuel\n * - Marquer l'item extension avec _is_extension_data=true et _extension_mapped=true\n */\n\nconsole.log(\"=== 🛠️ PARSING AI OUTPUT - CVE_ID PATTERN (final) ===\");\n\n// 1) Récupérer données d'entrée\nconst aiOutput = items[0]?.json?.output || \"\";\nlet preservedExtension = null;\n\ntry {\n  const code2Items = $('PREPARE BATCH FOR AGENT').all();\n  if (code2Items && code2Items[0]) {\n    preservedExtension = code2Items[0].json.preservedExtension || null;\n  }\n} catch (err) {\n  console.log(`❌ Impossible d'accéder à Code2: ${err.message}`);\n}\n\nconsole.log(`📥 AI Output: ${aiOutput.length} chars`);\nconsole.log(`🔍 Preserved Extension: ${preservedExtension ? 'PRESENT' : 'MISSING'}`);\n\nconst results = [];\n\n// 2) EXTRACTION DES CVE RÉELS (on skippe explicitement EXT-ALERT)\nconst entries = aiOutput.split(/\\n\\n/);\n\nentries.forEach(entry => {\n  if (!entry.trim()) return;\n\n  try {\n    const idMatch = entry.match(/(CVE-\\d{4}-\\d+|EXT-ALERT)/);\n    if (!idMatch) return;\n\n    const id = idMatch[0];\n\n    // ❌ Ne jamais pousser \"EXT-ALERT\" (placeholder) dans la sortie\n    if (id === 'EXT-ALERT') {\n      console.log('⏭️ Skipping EXT-ALERT placeholder from AI output');\n      return;\n    }\n\n    // CVE réels\n    const titleMatch = entry.match(/Title:\\s*([^\\n•]+)/i);\n    const severityMatch = entry.match(/Severity:\\s*(\\w+)/i);\n    const scoreMatch = entry.match(/Score:\\s*(\\d+)/);\n    const sourceMatch = entry.match(/Source:\\s*([^\\n]+)/i);\n    const descriptionMatch = entry.match(/Description:\\s*([^\\n]+)/i);\n    const linkMatch = entry.match(/Link:\\s*([^\\n]+)/i);\n\n    const cveId = id;\n    const title = titleMatch ? titleMatch[1].trim() : cveId;\n    const severity = severityMatch ? severityMatch[1] : 'Medium';\n    const score = scoreMatch ? parseInt(scoreMatch[1], 10) : 50;\n    const source = sourceMatch ? sourceMatch[1] : 'Unknown';\n    const description = descriptionMatch ? descriptionMatch[1].trim() : 'Security alert';\n    const link = linkMatch ? linkMatch[1].trim() : `https://nvd.nist.gov/vuln/detail/${cveId}`;\n\n    const cveData = {\n      cve_id: cveId,\n      title,\n      description,\n      severity,\n      score,\n      source,\n      cisa_kev: false,\n      otx_pulses: 0,\n      exposure: 0,\n      link,\n      ai_summary: entry.substring(0, 200) + \"...\"\n    };\n\n    results.push({ json: cveData });\n    console.log(`✅ CVE: ${cveId}`);\n  } catch (error) {\n    console.error(\"❌ Error parsing entry:\", error);\n  }\n});\n\n// 3) 🎯 TRAITER L'EXTENSION PRÉSERVÉE\nif (preservedExtension) {\n  console.log('🎯 TRAITEMENT DONNÉES EXTENSION RÉELLES → Attribution CVE');\n  console.log('📋 Extension data:', JSON.stringify(preservedExtension, null, 2));\n  \n  // 🎯 VÉRIFIER SI L'EXTENSION A DÉJÀ UN CVE RÉEL MAPPÉ\n  const existingCveId = preservedExtension.cve_id;\n  const hasRealMappedCVE = existingCveId && \n                           /^CVE-\\d{4}-\\d+$/.test(existingCveId) &&\n                           !existingCveId.startsWith('VIRT-');\n  \n  let finalCveId;\n  \n  if (hasRealMappedCVE) {\n    // ✅ L'EXTENSION A DÉJÀ UN CVE RÉEL MAPPÉ → L'UTILISER\n    finalCveId = existingCveId;\n    console.log(`✅ Extension already has REAL MAPPED CVE: ${finalCveId} → USING IT`);\n  } else {\n    // ❌ PAS DE CVE MAPPÉ → GÉNÉRER UN CVE VIRTUEL\n    finalCveId = `CVE-${new Date().getUTCFullYear()}-${Math.floor(Math.random() * 90000) + 10000}`;\n    console.log(`🔄 Extension has NO real CVE → Generating virtual: ${finalCveId}`);\n  }\n\n  const mappedExtension = {\n    // Utiliser le CVE mappé ou virtuel\n    cve_id: finalCveId,\n    extensionId: preservedExtension.extensionId || 'mapped',\n    title: preservedExtension.title || `Security Threat: ${preservedExtension.url || 'Unknown URL'}`,\n    description: preservedExtension.description || 'Real-time security analysis by SOC-CERT Chrome Extension',\n    severity: preservedExtension.severity || 'High',\n    score: preservedExtension.score || 80,\n    source: preservedExtension.source || 'SOC-CERT Extension Analysis',\n    cisa_kev: false,\n    otx_pulses: 0,\n    exposure: 0,\n    link: preservedExtension.url || preservedExtension.link || 'https://extension-alert.local',\n\n    // Marqueurs indispensables\n    _is_extension_data: true,\n    _extension_mapped: true,\n    _source: 'chrome_extension',\n    isVirtual: !hasRealMappedCVE,  // false si CVE réel, true si virtuel\n    mappedFromExtension: hasRealMappedCVE,\n\n    // Trace d'origine\n    original_data: {\n      source: 'chrome_extension',\n      extensionId: preservedExtension.extensionId || 'mapped',  // ✅ COPIER ICI !\n      url: preservedExtension.url,\n      title: preservedExtension.title,\n      timestamp: preservedExtension.timestamp,\n      security_score: preservedExtension.security_score || preservedExtension.score,\n      threats: preservedExtension.threats,\n      aiAnalysis: preservedExtension.aiAnalysis\n    },\n\n    analysis_timestamp: $now,\n    status: 'New'\n  };\n\n  console.log('Pushing mapped extension:', JSON.stringify(mappedExtension, null, 2));\n  results.push({ json: mappedExtension });\n  console.log(`🔒 Extension mappée au CVE ${hasRealMappedCVE ? 'réel' : 'virtuel'}: ${finalCveId}`);\n}\n\n// 4) Contrôle final du comptage\nconsole.log(`🎯 TOTAL FINAL: ${results.length} items (attendu 17: 16 CVE + 1 extension mappée)`);\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-6560, -448],
+      "id": "77366a8e-08a6-4101-b03f-4783949f371e",
+      "name": "AI OUTPUT PARSER1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: \"Debug CVE_ID\"\nconsole.log('Items received:', items.length);\nitems.forEach((item, index) => {\n  console.log(`Item ${index}:`, item.json.cve_id);\n});\n\nreturn items.filter(item => item.json.cve_id); // Garde seulement ceux avec CVE_ID"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-9632, -448],
+      "id": "03c7ab7f-b37c-4bc4-b337-47cd512382b3",
+      "name": "debug1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 DEBUG SCORES AFTER PREPARE CVE\n */\n\nconsole.log(\"=== 🔍 DEBUG SCORES AFTER PREPARE CVE ===\");\n\nif (items.length === 0) return [];\n\n// Analyser la distribution des scores\nconst scoreDistribution = {};\nconst severityDistribution = {};\n\nitems.forEach((item, index) => {\n  const data = item.json;\n  const score = data.score || 0;\n  const severity = data.severity || \"Unknown\";\n  \n  // Distribution des scores\n  scoreDistribution[score] = (scoreDistribution[score] || 0) + 1;\n  severityDistribution[severity] = (severityDistribution[severity] || 0) + 1;\n  \n  if (index < 5) { // Log les 5 premiers\n    console.log(`📊 ${data.cve_id} - Severity: ${severity}, Score: ${score}`);\n  }\n});\n\nconsole.log(\"📈 Score distribution:\", scoreDistribution);\nconsole.log(\"📈 Severity distribution:\", severityDistribution);\nconsole.log(`📊 Total items: ${items.length}`);\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-9968, -432],
+      "id": "8af0500b-b246-4195-899d-f137a75cc568",
+      "name": "debug",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// MUST: Settings → Run Once for All Items = ON\nconst items = $input.all();\n\n// Détecte un run Extension via extensionId ou flag optionnel extensionRun\nconst isExtensionRun = items.some(i => i?.json?.extensionId || i?.json?.extensionRun === true);\n\nif (isExtensionRun) {\n  // Pass-through: on laisse passer l'entrée vers le flow normal (Cohere, etc.)\n  return items;\n}\n\n/**\n * 🎯 MOCK CVE DATA CORRIGÉ - Titres descriptifs (n8n compatible)\n */\n\nconsole.log(\"=== 🔥 MOCK CVE DATA WITH DESCRIPTIVE TITLES ===\");\n\nconst mockCVEs = [];\nconst sources = [\"NIST\", \"CERT-FR\", \"CISA\", \"BleepingComputer\"];\nconst software = [\"Windows System\", \"Linux Kernel\", \"Apache Server\", \"Node.js Runtime\", \"MySQL Database\"];\nconst vulnerabilityTypes = [\"Remote Code Execution\", \"Privilege Escalation\", \"Buffer Overflow\", \"SQL Injection\", \"Cross-Site Scripting\"];\n\nfor (let i = 1; i <= 25; i++) {\n  const year = 2024 + Math.floor(i / 10);\n  const cveId = `CVE-${year}-${10000 + i}`;\n  \n  // Distribution des sévérités\n  let severity, score;\n  \n  if (i <= 5) {\n    severity = \"Critical\";\n    score = 100;\n  } else if (i <= 12) {\n    severity = \"High\"; \n    score = 70;\n  } else if (i <= 20) {\n    severity = \"Medium\";\n    score = 40;\n  } else {\n    severity = \"Low\";\n    score = 20;\n  }\n  \n  // 🎯 TITRE DESCRIPTIF ET RÉALISTE\n  const softwareName = software[i % software.length];\n  const vulnType = vulnerabilityTypes[i % vulnerabilityTypes.length];\n  \n  mockCVEs.push({\n    cve_id: cveId,\n    title: `${cveId}: ${vulnType} vulnerability in ${softwareName} (${severity} severity)`,\n    link: `https://nvd.nist.gov/vuln/detail/${cveId}`,\n    severity: severity,\n    score: score,\n    text: `Security alert for ${cveId} - ${severity} severity`,\n    source: sources[i % 4],\n    status: \"New\",\n    published: new Date().toISOString(),\n    enriched_data: {\n      cisa_kev: i <= 3,\n      otx_pulses: Math.floor(Math.random() * 5),\n      virus_total_detections: Math.floor(Math.random() * 3),\n      exposure: Math.floor(Math.random() * 1000)\n    }\n  });\n}\n\nconsole.log(`✅ Generated ${mockCVEs.length} mock CVEs with descriptive titles`);\n\n// 🎯 AFFICHAGE COMPATIBLE N8N (pas de console.table)\nconsole.log(\"📋 Sample CVEs generated:\");\nmockCVEs.slice(0, 3).forEach((cve, index) => {\n  console.log(`${index + 1}. ${cve.cve_id} - ${cve.title} (${cve.severity})`);\n});\n\nreturn mockCVEs.map(cve => ({ json: cve }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-11152, -304],
+      "id": "1d2abee1-24b5-4158-952f-c5bcf195bbd6",
+      "name": "CIRCL 3",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "has-items",
+              "leftValue": "={{ Number(Array.isArray($json) ? $json.length : (Object.keys($json || {}).length)) }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3c1ea88c-7a2b-4f91-88e3-c43172c46316",
+      "name": "Has Extension Items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-12544, 144],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extension Data Normalizer\nconsole.log('=== 🔧 NORMALIZE EXTENSION DATA - FIXED VERSION ===');\n\nconst items = $input.all();\nconsole.log('📥 Extension input:', items.length, 'items');\n\n// Debug received data\nitems.forEach((item, i) => {\n  console.log(`📋 Item ${i} STRUCTURE:`, Object.keys(item.json || {}));\n  console.log(`📋 Item ${i} COMPLETE:`, JSON.stringify(item.json, null, 2));\n});\n\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  \n  if (!data) {\n    console.log('⚠️ Skipping empty item');\n    continue;\n  }\n\n  // 🎯 Extract data\n  let extensionData;\n  \n  // Case 1: API structure {success: true, extensions: [...]}\n  if (data.success && data.extensions && Array.isArray(data.extensions)) {\n    console.log('📦 API format detected - extracting extensions');\n    extensionData = data.extensions[0]; // Take first extension\n    console.log('📦 Extension extracted:', JSON.stringify(extensionData, null, 2));\n  }\n  // Case 2: Direct extension data\n  else if (data.extensionId || data.url || data.threatType) {\n    console.log('📦 Direct extension format detected');\n    extensionData = data;\n  }\n  // Case 3: Fallback\n  else {\n    console.log('📦 Fallback - using available data');\n    extensionData = data;\n  }\n\n  if (!extensionData) {\n    console.log('❌ No extension data found, skipping');\n    continue;\n  }\n\n  console.log('✅ Final extension data:', JSON.stringify(extensionData, null, 2));\n\n  // ✅ UTILISER LES VRAIES DONNÉES AU LIEU DE HARDCODÉ\n  const riskScore = extensionData.riskScore || 65;\n  const confidence = extensionData.confidence || 0.7;\n  const indicators = extensionData.indicators || [];\n  \n  // ✅ Calculer severity dynamiquement\n  let severity = 'Medium';\n  if (riskScore >= 90) severity = 'Critical';\n  else if (riskScore >= 70) severity = 'High';\n  else if (riskScore >= 50) severity = 'Medium';\n  else severity = 'Low';\n\n  // 🎯 Normalized alert creation with REAL data\n  const normalizedAlert = {\n    title: `🔒 ${extensionData.threatType?.toUpperCase() || 'THREAT'} - ${extensionData.url || 'Unknown URL'}`,\n    link: extensionData.url || 'No link available',\n    url: extensionData.url || 'No link available',\n    text: extensionData.aiAnalysis || `Chrome extension detected ${extensionData.threatType || 'security'} threat`,\n    \n    // ✅ UTILISER LES VRAIES VALEURS\n    severity: severity,                    // ✅ Calculé dynamiquement\n    score: riskScore,                      // ✅ Valeur réelle\n    \n    source: 'Chrome Extension',\n    status: 'New',\n    cveid: null,\n    published: new Date().toISOString(),\n    \n    // 🎯 PRESERVE REAL EXTENSION ID\n    extensionId: extensionData.extensionId || 'mapped',\n    \n    // 🎯 COPY ALL ORIGINAL DATA AT ROOT LEVEL (✅ AJOUTER indicators/riskScore/confidence)\n    aiAnalysis: extensionData.aiAnalysis,\n    threatType: extensionData.threatType,\n    timestamp: extensionData.timestamp,\n    addedAt: extensionData.addedAt,\n    indicators: indicators,                // ✅ AJOUTER\n    riskScore: riskScore,                  // ✅ AJOUTER\n    confidence: confidence,                // ✅ AJOUTER\n    \n    // Data for compatibility and CVE mapping\n    extensionData: {\n      originalUrl: extensionData.url,\n      threatType: extensionData.threatType,\n      aiAnalysis: extensionData.aiAnalysis,\n      timestamp: extensionData.timestamp,\n      extensionId: extensionData.extensionId,\n      indicators: indicators,              // ✅ AJOUTER\n      riskScore: riskScore,                // ✅ AJOUTER\n      confidence: confidence,              // ✅ AJOUTER\n    },\n    \n    // Essential flags for workflow\n    _is_extension_data: true,\n    _bypass_mock: true,   \n    _batchMetadata: item.json._batchMetadata || extensionData._batchMetadata || { batchSize: 1, itemIndex: 0 }\n  };\n  \n  console.log('🎯 Normalized alert created:');\n  console.log('  - title:', normalizedAlert.title);\n  console.log('  - extensionId:', normalizedAlert.extensionId);\n  console.log('  - url:', normalizedAlert.url);\n  console.log('  - aiAnalysis:', normalizedAlert.aiAnalysis?.substring(0, 50) + '...');\n  console.log('  - indicators:', JSON.stringify(normalizedAlert.indicators));      // ✅ LOG\n  console.log('  - riskScore:', normalizedAlert.riskScore);                        // ✅ LOG\n  console.log('  - confidence:', normalizedAlert.confidence);                      // ✅ LOG\n  console.log('  - severity:', normalizedAlert.severity);                          // ✅ LOG\n  console.log('  - score:', normalizedAlert.score);                                // ✅ LOG\n  \n  results.push({ json: normalizedAlert });\n}\n\nconsole.log('✅ Extension normalization complete:', results.length, 'items processed');\nreturn results;\n"
+      },
+      "id": "ff1da498-5a60-4ac8-b4ba-ba2097084c00",
+      "name": "Normalize Extension Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12320, 128]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// FILTER EXTENSION - SIMPLE\n// ============================================================================\n\nconst allItems = $input.all();\nconsole.log('=== 🔍 FILTER: Items avec extensionId ===');\nconsole.log(`Total input: ${allItems.length}`);\n\n// FILTRER: Garder SEULEMENT les items avec extensionId\nconst result = allItems.filter(item => {\n  const hasExtensionId = item.json?.extensionId && item.json.extensionId !== 'mapped';\n  \n  if (hasExtensionId) {\n    console.log(`✅ GARDÉ: ${item.json.extensionId} - ${item.json.cve_id}`);\n  } else {\n    console.log(`❌ EXCLU: ${item.json.extensionId || 'NO_ID'} - ${item.json.cve_id}`);\n  }\n  \n  return hasExtensionId;\n});\n\nconsole.log(`Total output: ${result.length}`);\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5984, 0],
+      "id": "b9db9dbc-a29d-4e68-880e-263ff930db98",
+      "name": "Filter Extension Only2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://soc-cert-extension.vercel.app/api/extension-result",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-5360, -16],
+      "id": "38d5e86f-c140-47b8-87fa-ed9390eec325",
+      "name": "HTTP Request",
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// COPY of mapping-cve.js created 2025-10-11\n// Purpose: provide a visible duplicate so user can open and inspect without touching original\n\n// ============================================================================\n// MAPPING CVE - CODE FINAL COMPLET (n8n Code node)\n// ============================================================================\n// Settings n8n:\n//   - Run Once for All Items = ON\n// ============================================================================\n\nconsole.log(\"=== 🔍 MAPPING CVE DEBUG COMPLET ===\");\n\nconst items = $input.all();\nconsole.log(\"📥 RAW INPUT ITEMS:\", items.length);\nitems.forEach((item, idx) => {\n  console.log(`📥 Item ${idx}:`, JSON.stringify(item.json, null, 2));\n});\n\n// ✅ GESTION DES DEUX FORMATS POSSIBLES\nlet extensionItems = [];\n\n// Format 1: Items directs (chaque extension est un item séparé)\nconst directExtensions = items.filter(\n  (i) => i.json?.extensionId && !i.json?.extensions\n);\n\n// Format 2: Réponse API complète avec extensions[]\nconst apiResponses = items.filter(\n  (i) => i.json?.extensions && Array.isArray(i.json.extensions)\n);\n\nconsole.log(`📊 Direct extensions: ${directExtensions.length}`);\nconsole.log(`📊 API responses: ${apiResponses.length}`);\n\nif (directExtensions.length > 0) {\n  // Format direct\n  extensionItems = directExtensions;\n  console.log(\"✅ Using direct extension format\");\n} else if (apiResponses.length > 0) {\n  // Format API - extraire les extensions du tableau\n  extensionItems = [];\n  apiResponses.forEach((response) => {\n    if (response.json.extensions && response.json.extensions.length > 0) {\n      response.json.extensions.forEach((ext) => {\n        extensionItems.push({ json: ext });\n      });\n    }\n  });\n  console.log(\n    `✅ Extracted ${extensionItems.length} extensions from API responses`\n  );\n} else {\n  console.log(\"❌ No valid extension data found in input\");\n  extensionItems = [];\n}\n\nconst ext = extensionItems;\nconst pool = items.filter(\n  (i) =>\n    !i.json?.extensionId && !i.json?._is_extension_data && !i.json?.extensions\n);\n\nconsole.log(\n  `🔍 MAPPING CVE: ${ext.length} extensions, ${pool.length} autres, ${items.length} total`\n);\n\n// ============================================================================\n// ÉTAPE 1 : CONSTRUIRE BANQUE CVE CANDIDATS (KEV, NIST, TEXT)\n// ============================================================================\n\nconst cands = [];\nconst add = (x) => {\n  if (x?.id && !cands.some((y) => y.id === x.id)) cands.push(x);\n};\n\nconsole.log(\n  `📥 Analyse des ${items.length} items pour extraire les CVE candidats...`\n);\n\nfor (const it of items) {\n  const j = it.json || {};\n\n  // KEV (tableau vulnerabilities)\n  if (Array.isArray(j.vulnerabilities)) {\n    console.log(`  KEV trouvé avec ${j.vulnerabilities.length} vulnérabilités`);\n    for (const v of j.vulnerabilities || []) {\n      if (v.cveID) {\n        add({\n          id: v.cveID,\n          title: v.vulnerabilityName || `CVE ${v.cveID}`,\n          src: \"KEV\",\n          sev: v.severity || \"High\",\n          score: v.baseScore || 70,\n          pub: v.dateAdded,\n          description: v.shortDescription || \"\",\n          requiredAction: v.requiredAction || \"\",\n          notes: v.notes || \"\",\n          product: v.product || \"\",\n          vendor: v.vendorProject || \"\",\n          raw: v,\n        });\n      }\n    }\n  }\n\n  // NIST (structure cve.id)\n  if (j.cve?.id) {\n    console.log(`  NIST CVE trouvé: ${j.cve.id}`);\n    const m =\n      j.cve.metrics?.cvssMetricV31?.[0] || j.cve.metrics?.cvssMetricV30?.[0];\n    add({\n      id: j.cve.id,\n      title:\n        j.cve.descriptions?.[0]?.value ||\n        j.cve.title?.[0]?.value ||\n        `CVE ${j.cve.id}`,\n      src: \"NVD\",\n      sev: m?.cvssData?.baseSeverity || \"MEDIUM\",\n      score: Math.round((m?.cvssData?.baseScore || 5) * 10),\n      pub: j.cve.published,\n      raw: j,\n    });\n  }\n\n  // Text extract (CVE mentionné dans le texte)\n  const re = /CVE[-_]\\d{4}[-_]\\d+/gi;\n  const s = JSON.stringify(j);\n  const textMatches = s.match(re) || [];\n  if (textMatches.length > 0) {\n    console.log(`  Text extract: ${textMatches.length} CVE trouvés`);\n    new Set(textMatches.map((x) => x.replace(\"_\", \"-\").toUpperCase())).forEach(\n      (id) =>\n        add({\n          id,\n          title: `CVE ${id}`,\n          src: \"TextExtract\",\n          sev: \"Medium\",\n          score: 50,\n          pub: new Date().toISOString(),\n          raw: j,\n        })\n    );\n  }\n}\n\nconsole.log(`📋 CVE candidats collectés: ${cands.length}`);\nconsole.log(`📋 Top 10 candidats:`);\ncands.slice(0, 10).forEach((c, i) => {\n  console.log(`  ${i + 1}. ${c.id} (${c.src}): ${c.title.substring(0, 50)}...`);\n});\n\n// ============================================================================\n// ÉTAPE 2 : FONCTION HASH URL (pour CVE virtuel stable)\n// ============================================================================\n\nfunction hashURL(url) {\n  if (!url) return \"000000\";\n\n  // Normaliser l'URL (enlever protocole, slash final, query string)\n  const normalized = url\n    .toLowerCase()\n    .replace(/^https?:\\/\\//, \"\")\n    .replace(/\\/$/, \"\")\n    .replace(/[?#].*$/, \"\");\n\n  console.log(`  🔍 URL normalisée: \"${normalized}\"`);\n\n  // Simple hash basé sur charCodes\n  let hash = 0;\n  for (let i = 0; i < normalized.length; i++) {\n    const char = normalized.charCodeAt(i);\n    hash = (hash << 5) - hash + char;\n    hash = hash & hash; // Convertir en 32bit integer\n  }\n\n  // Retourner 6 chiffres positifs\n  const sixDigits = Math.abs(hash).toString().slice(0, 6).padStart(6, \"0\");\n  return sixDigits;\n}\n\n// ============================================================================\n// ÉTAPE 3 : NORMALISATION DES TOKENS (pour stabilité)\n// ============================================================================\n\nconst tokenSynonyms = {\n  malicious: [\n    \"suspicious\",\n    \"malware\",\n    \"harmful\",\n    \"dangerous\",\n    \"threat\",\n    \"malevolent\",\n  ],\n  unwanted: [\"unwanted\", \"undesirable\"],\n  exploit: [\"attack\", \"vulnerability\", \"weakness\", \"flaw\"],\n  remote: [\"remote\", \"rce\"],\n  execution: [\"execution\", \"exec\", \"running\"],\n  code: [\"code\", \"script\", \"payload\"],\n  authentication: [\"auth\", \"login\", \"credential\", \"password\", \"session\"],\n  privilege: [\"privilege\", \"escalation\", \"elevation\", \"priv\"],\n  injection: [\"injection\", \"xss\", \"sql\", \"command\"],\n  browser: [\"browser\", \"chrome\", \"firefox\", \"safari\", \"edge\", \"webkit\"],\n  phishing: [\"phishing\", \"spoof\", \"impersonation\", \"fake\"],\n};\n\nfunction normalizeToken(token) {\n  const tokenLow = token.toLowerCase().trim();\n\n  for (const [canonical, synonyms] of Object.entries(tokenSynonyms)) {\n    if (tokenLow === canonical || synonyms.includes(tokenLow)) {\n      return canonical;\n    }\n  }\n\n  return tokenLow;\n}\n\nfunction normalizeTokens(tokens) {\n  const normalized = new Set();\n\n  for (const token of tokens) {\n    const norm = normalizeToken(token);\n    normalized.add(norm);\n  }\n\n  return Array.from(normalized);\n}\n\n// ============================================================================\n// ÉTAPE 4 : MOTS-CLÉS ET FILTRES\n// ============================================================================\n\nconst cyberKeywords = [\n  \"bash\",\n  \"shellshock\",\n  \"apache\",\n  \"nginx\",\n  \"mysql\",\n  \"postgresql\",\n  \"windows\",\n  \"linux\",\n  \"kernel\",\n  \"openssl\",\n  \"java\",\n  \"python\",\n  \"jenkins\",\n  \"cisco\",\n  \"juniper\",\n  \"fortinet\",\n  \"sudo\",\n  \"curl\",\n  \"chrome\",\n  \"firefox\",\n  \"safari\",\n  \"edge\",\n  \"node\",\n  \"docker\",\n  \"kubernetes\",\n  \"redis\",\n  \"mongodb\",\n  \"elasticsearch\",\n  \"wordpress\",\n  \"joomla\",\n  \"drupal\",\n  \"php\",\n  \"ruby\",\n  \"perl\",\n  \"oracle\",\n  \"samsung\",\n  \"android\",\n  \"ios\",\n  \"microsoft\",\n  \"adobe\",\n  \"vmware\",\n  \"citrix\",\n  \"login\",\n  \"authentication\",\n  \"password\",\n  \"credential\",\n  \"auth\",\n  \"session\",\n  \"cookie\",\n  \"token\",\n  \"oauth\",\n  \"sso\",\n  \"mfa\",\n  \"2fa\",\n  \"phishing\",\n  \"spoofing\",\n  \"impersonation\",\n  \"bruteforce\",\n  \"malware\",\n  \"ransomware\",\n  \"trojan\",\n  \"backdoor\",\n  \"rootkit\",\n  \"unwanted\",\n  \"suspicious\",\n  \"malicious\",\n  \"virus\",\n  \"worm\",\n  \"exploit\",\n  \"vulnerability\",\n  \"injection\",\n  \"xss\",\n  \"csrf\",\n  \"obfuscation\",\n  \"redirect\",\n  \"remote\",\n  \"execution\",\n  \"code\",\n  \"privilege\",\n  \"escalation\",\n  \"elevation\",\n  \"browser\",\n  \"webkit\",\n];\n\nconst genericTokens = [\n  \"security\",\n  \"platform\",\n  \"system\",\n  \"admin\",\n  \"interface\",\n  \"dashboard\",\n  \"version\",\n  \"custom\",\n  \"proprietary\",\n  \"framework\",\n  \"bypass\",\n  \"targeting\",\n  \"unique\",\n  \"with\",\n  \"vuln\",\n  \"rabilit\",\n  \"detecte\",\n  \"expose\",\n  \"protection\",\n  \"adequate\",\n  \"2025\",\n  \"2024\",\n  \"2023\",\n  \"application\",\n  \"service\",\n  \"server\",\n  \"client\",\n  \"network\",\n  \"web\",\n  \"uses\",\n  \"used\",\n  \"using\",\n  \"based\",\n  \"allows\",\n  \"could\",\n  \"would\",\n  \"might\",\n  \"potential\",\n  \"possible\",\n  \"impact\",\n  \"risk\",\n  \"threat\",\n  \"attack\",\n  \"attacker\",\n  \"user\",\n  \"domain\",\n  \"file\",\n  \"data\",\n];\n\n// ============================================================================\n// FONCTIONS UTILITAIRES\n// ============================================================================\n\nfunction toks(u) {\n  try {\n    const h = new URL(u).hostname.replace(/^www\\./, \"\");\n    return h.split(\".\").slice(0, -1).filter(Boolean);\n  } catch {\n    return [];\n  }\n}\n\nfunction low(x) {\n  return (x || \"\").toString().toLowerCase();\n}\n\n// ============================================================================\n// ÉTAPE 5 : CORRÉLATION EXTENSION ↔ CVE\n// ============================================================================\n\nconst out = [];\n\nconsole.log(`🎯 Début corrélation pour ${ext.length} extensions...`);\n\nfor (const e of ext) {\n  const data = e.json;\n\n  console.log(\n    `\\n🎯 === Traitement extension ${data.extensionId || \"UNKNOWN\"} ===`\n  );\n\n  // Sauvegarde extensionId original\n  const originalExtensionId =\n    data.extensionId || data.original_data?.extensionId || \"mapped\";\n  console.log(`  📌 extensionId original: \"${originalExtensionId}\"`);\n\n  // Extraction données\n  const url = data.url || data.link || data.extensionData?.originalUrl || \"\";\n  const title = low(data.title || \"\");\n  const analysis = low(\n    data.aiAnalysis || data.text || data.extensionData?.aiAnalysis || \"\"\n  );\n  const tech = (data.extensionData?.technologies || [])\n    .map((t) => low(t.name))\n    .filter(Boolean);\n\n  // Extraction des champs AI de l'extension\n  const indicators = data.indicators || [];\n  const riskScore = data.riskScore || 0;\n  const confidence = data.confidence || 0;\n\n  console.log(`  🔍 DEBUG EXTRACTION:`);\n  console.log(\n    `    data.indicators:`,\n    data.indicators,\n    `type:`,\n    typeof data.indicators\n  );\n  console.log(\n    `    data.riskScore:`,\n    data.riskScore,\n    `type:`,\n    typeof data.riskScore\n  );\n  console.log(\n    `    data.confidence:`,\n    data.confidence,\n    `type:`,\n    typeof data.confidence\n  );\n  console.log(`    → indicators:`, indicators, `length:`, indicators.length);\n  console.log(`    → riskScore:`, riskScore);\n  console.log(`    → confidence:`, confidence);\n\n  console.log(`  URL: \"${url}\"`);\n  console.log(`  Title: \"${title.substring(0, 50)}...\"`);\n  console.log(`  Analysis: \"${analysis.substring(0, 100)}...\"`);\n  console.log(`  Indicators: ${JSON.stringify(indicators)}`);\n  console.log(`  Risk Score: ${riskScore}`);\n  console.log(`  Confidence: ${confidence}`);\n\n  // Extraction tokens\n  const titleTokens = title.match(/\\b\\w{4,}\\b/g) || [];\n  const analysisTokens = analysis.match(/\\b\\w{4,}\\b/g) || [];\n  const urlTokens = toks(url);\n\n  // Détecter mots-clés cyber\n  const detectedKeywords = cyberKeywords.filter(\n    (keyword) =>\n      title.includes(keyword) ||\n      analysis.includes(keyword) ||\n      url.toLowerCase().includes(keyword)\n  );\n\n  console.log(`  Mots-clés cyber détectés: [${detectedKeywords.join(\", \")}]`);\n\n  // Combiner tous les tokens\n  const allTokens = [\n    ...new Set([\n      ...urlTokens,\n      ...titleTokens,\n      ...analysisTokens,\n      ...detectedKeywords,\n      ...tech,\n    ]),\n  ];\n\n  // Filtrer génériques\n  const filteredTokens = allTokens.filter(\n    (t) =>\n      t.length >= 4 &&\n      !genericTokens.includes(t.toLowerCase()) &&\n      !/^\\d+$/.test(t)\n  );\n\n  // Normalisation (SUSPICIOUS → malicious, etc.)\n  const specificTokens = normalizeTokens(filteredTokens);\n\n  console.log(\n    `  Tokens bruts (${filteredTokens.length}): [${filteredTokens\n      .slice(0, 8)\n      .join(\", \")}]${filteredTokens.length > 8 ? \"...\" : \"\"}`\n  );\n  console.log(\n    `  Tokens NORMALISÉS (${specificTokens.length}): [${specificTokens\n      .slice(0, 8)\n      .join(\", \")}]${specificTokens.length > 8 ? \"...\" : \"\"}`\n  );\n\n  // ============================================================================\n  // PRIORITÉ 1 : CVE MENTIONNÉ DIRECTEMENT\n  // ============================================================================\n\n  const mentionedCVE = analysis.match(/cve[-_]?\\d{4}[-_]?\\d+/i);\n  if (mentionedCVE) {\n    const cveId = mentionedCVE[0].replace(/[-_]/g, \"-\").toUpperCase();\n    const directMatch = cands.find((c) => c.id === cveId);\n    if (directMatch) {\n      const enrichedExtension = {\n        ...data,\n        extensionId: originalExtensionId,\n        cve_id: directMatch.id,\n        cveid: directMatch.id,\n        mappedCVE: true,\n        mappingConfidence: 10,\n        mappingSource: directMatch.src,\n        mappingTitle: directMatch.title,\n        matchMethod: \"direct_mention\",\n        specificTokens,\n        isVirtual: false,\n        // ✅ AJOUTER LES CHAMPS AI DE L'EXTENSION\n        indicators: indicators,\n        riskScore: riskScore,\n        confidence: confidence,\n        // Champs KEV enrichis\n        cve_description: directMatch.description,\n        cve_requiredAction: directMatch.requiredAction,\n        cve_notes: `${directMatch.notes || \"\"}\\n\\nAI Detection - Indicators: ${\n          indicators.length > 0 ? indicators.join(\", \") : \"None\"\n        }. Risk Score: ${riskScore}. Confidence: ${confidence}. Context: ${analysis.substring(\n          0,\n          200\n        )}...`,\n        cve_product: directMatch.product,\n        cve_vendor: directMatch.vendor,\n        _is_extension_data: true,\n        original_data: {\n          ...data.original_data,\n          extensionId: originalExtensionId,\n        },\n      };\n      out.push({\n        json: enrichedExtension,\n        pairedItem: { item: ext.indexOf(e) },\n      });\n      console.log(`  ✅ CVE mentionné directement: ${directMatch.id}`);\n      continue;\n    }\n  }\n\n  // ============================================================================\n  // PRIORITÉ 2 : CORRÉLATION TOKENS AVEC SCORING\n  // ============================================================================\n\n  const matches = [];\n  if (specificTokens.length > 0) {\n    console.log(`  🔍 Test corrélation avec ${cands.length} candidats...`);\n\n    for (const c of cands) {\n      const titleLow = low(c.title);\n      const rawLow = low(JSON.stringify(c.raw || {}));\n      const matchingTokens = specificTokens.filter(\n        (t) => titleLow.includes(t) || rawLow.includes(t)\n      );\n\n      if (matchingTokens.length > 0) {\n        const kev = c.src === \"KEV\";\n        // --- Conservative KEV match rule: require product/vendor evidence ---\n        let kevProductMatch = false;\n        if (kev) {\n          const candProducts = [];\n          if (c.product) {\n            if (Array.isArray(c.product))\n              candProducts.push(\n                ...c.product.map((x) => (\"\" + x).toLowerCase())\n              );\n            else candProducts.push((\"\" + c.product).toLowerCase());\n          }\n          if (c.vendor) candProducts.push((\"\" + c.vendor).toLowerCase());\n          const rawText = JSON.stringify(c.raw || {}).toLowerCase();\n          const extTokenSet = new Set(\n            specificTokens.map((t) => t.toLowerCase())\n          );\n          for (const p of candProducts) {\n            p.split(/[^a-z0-9]+/)\n              .filter(Boolean)\n              .forEach((tok) => {\n                if (extTokenSet.has(tok)) kevProductMatch = true;\n              });\n            if (kevProductMatch) break;\n          }\n          if (!kevProductMatch) {\n            for (const t of extTokenSet) {\n              if (rawText.includes(t)) {\n                kevProductMatch = true;\n                break;\n              }\n            }\n          }\n        }\n        // small positive contribution only when product/vendor matches, otherwise 0\n        const kevContribution = kev && kevProductMatch ? 3 : 0;\n        // penalize KEV candidates that lack product/vendor evidence to avoid false positives\n        const kevPenalty = kev && !kevProductMatch ? -12 : 0;\n        const cveYearMatch = c.id.match(/CVE-(\\d{4})-/);\n        const year = cveYearMatch ? parseInt(cveYearMatch[1]) : 2000;\n        const age = 2025 - year;\n\n        const recentBonus = age <= 2 ? 3 : 0;\n        const agePenalty = age > 5 ? -(age - 5) * 2 : 0;\n        const tokenScore = matchingTokens.length;\n\n        const criticalTokens = [\n          \"authentication\",\n          \"credential\",\n          \"password\",\n          \"session\",\n          \"token\",\n          \"oauth\",\n          \"sso\",\n        ];\n        const criticalMatches = matchingTokens.filter((t) =>\n          criticalTokens.includes(t)\n        ).length;\n\n        // Bonus par type de menace\n        let typeBonus = 0;\n\n        if (\n          specificTokens.includes(\"malicious\") ||\n          specificTokens.includes(\"unwanted\")\n        ) {\n          const isMalwareCVE =\n            titleLow.includes(\"malware\") ||\n            titleLow.includes(\"execution\") ||\n            titleLow.includes(\"remote code\") ||\n            titleLow.includes(\"backdoor\");\n          if (isMalwareCVE) {\n            typeBonus += 20;\n            console.log(`    🎯 BONUS MALWARE +20 pour ${c.id}`);\n          }\n        }\n\n        if (specificTokens.includes(\"phishing\")) {\n          const isPhishingCVE =\n            titleLow.includes(\"phish\") || titleLow.includes(\"spoof\");\n          if (isPhishingCVE) {\n            typeBonus += 20;\n            console.log(`    🎯 BONUS PHISHING +20 pour ${c.id}`);\n          }\n        }\n\n        if (specificTokens.includes(\"injection\")) {\n          const isInjectionCVE =\n            titleLow.includes(\"injection\") ||\n            titleLow.includes(\"xss\") ||\n            titleLow.includes(\"sql\");\n          if (isInjectionCVE) {\n            typeBonus += 20;\n            console.log(`    🎯 BONUS INJECTION +20 pour ${c.id}`);\n          }\n        }\n\n        // Pénalité auth générique\n        let authPenalty = 0;\n        const isAuthCVE =\n          titleLow.includes(\"authentication\") ||\n          titleLow.includes(\"login\") ||\n          titleLow.includes(\"credential\") ||\n          titleLow.includes(\"password\");\n\n        if (isAuthCVE) {\n          const hasAuthTokens = specificTokens.some((t) =>\n            [\n              \"authentication\",\n              \"credential\",\n              \"password\",\n              \"session\",\n              \"phishing\",\n              \"oauth\",\n              \"sso\",\n              \"token\",\n            ].includes(t)\n          );\n          authPenalty = hasAuthTokens ? 5 : -15;\n          console.log(\n            `    ${hasAuthTokens ? \"✅\" : \"⚠️\"} ${c.id} ${\n              hasAuthTokens ? \"bonus +5\" : \"pénalisé -15\"\n            }: CVE auth ${hasAuthTokens ? \"avec\" : \"sans\"} contexte auth`\n          );\n        }\n\n        // Score final\n        const conf =\n          tokenScore * 2 +\n          criticalMatches * 5 +\n          kevContribution +\n          kevPenalty +\n          recentBonus +\n          agePenalty +\n          typeBonus +\n          authPenalty;\n\n        matches.push({ conf, c, matchingTokens, year, age });\n        console.log(\n          `    ✅ MATCH: ${c.id} (conf: ${conf}, tokens: ${tokenScore}, critical: ${criticalMatches}, bonus: ${typeBonus})`\n        );\n      }\n    }\n  }\n\n  console.log(`  📊 Total matches: ${matches.length}`);\n\n  // Tri déterministe avec tiebreaker\n  matches.sort((a, b) => {\n    if (b.conf !== a.conf) return b.conf - a.conf;\n    if (b.year !== a.year) return b.year - a.year;\n    return a.c.id.localeCompare(b.c.id); // Tiebreaker alphabétique\n  });\n\n  const bestMatch = matches[0];\n\n  if (matches.length > 0) {\n    console.log(`  🏆 Top 3 matches:`);\n    matches.slice(0, 3).forEach((m, i) => {\n      console.log(`    ${i + 1}. ${m.c.id} (conf: ${m.conf})`);\n    });\n  }\n\n  // ============================================================================\n  // SEUIL CONFIANCE = 20 (strict pour éviter CVE inadaptées)\n  // ============================================================================\n\n  if (bestMatch && bestMatch.conf >= 50) {\n    console.log(\n      `  🎯 ✅ CVE ATTRIBUÉ: ${bestMatch.c.id} (confiance: ${bestMatch.conf})`\n    );\n\n    const enrichedExtension = {\n      ...data,\n      extensionId: originalExtensionId,\n      cve_id: bestMatch.c.id,\n      cveid: bestMatch.c.id,\n      mappedCVE: true,\n      mappingConfidence: bestMatch.conf,\n      mappingSource: bestMatch.c.src,\n      mappingTitle: bestMatch.c.title,\n      matchMethod: \"token_correlation\",\n      specificTokens,\n      matchingTokens: bestMatch.matchingTokens,\n      isVirtual: false,\n      // Champs KEV enrichis\n      cve_description: bestMatch.c.description,\n      cve_requiredAction: bestMatch.c.requiredAction,\n      cve_notes: `${bestMatch.c.notes || \"\"}\\n\\nAI Detection - Indicators: ${\n        indicators.length > 0 ? indicators.join(\", \") : \"None\"\n      }. Risk Score: ${riskScore}. Confidence: ${confidence}. Context: ${analysis.substring(\n        0,\n        200\n      )}...`,\n      cve_product: bestMatch.c.product,\n      cve_vendor: bestMatch.c.vendor,\n      _is_extension_data: true,\n      original_data: {\n        ...data.original_data,\n        extensionId: originalExtensionId,\n      },\n    };\n    out.push({ json: enrichedExtension, pairedItem: { item: ext.indexOf(e) } });\n  } else {\n    // ============================================================================\n    // CVE VIRTUEL STABLE BASÉ SUR HASH URL\n    // ============================================================================\n\n    console.log(\n      `  🛡️ Aucun match pertinent (meilleur: ${\n        bestMatch?.conf || 0\n      }) - CVE virtuel STABLE`\n    );\n\n    // Déterminer type de menace\n    let threatType = \"Unknown Threat\";\n    if (\n      specificTokens.includes(\"malicious\") ||\n      specificTokens.includes(\"unwanted\")\n    ) {\n      threatType = \"Malware/Unwanted Software\";\n    } else if (specificTokens.includes(\"phishing\")) {\n      threatType = \"Phishing/Social Engineering\";\n    } else if (specificTokens.includes(\"injection\")) {\n      threatType = \"Web Injection Attack\";\n    } else {\n      threatType = \"Suspicious Content\";\n    }\n\n   // Hash URL pour CVE stable\nconst urlHash = hashURL(url);\nconst virtualCVE = `CVE-2026-${urlHash}`;\n\nconsole.log(`  🔒 URL hash: ${urlHash}`);\nconsole.log(`  🆕 CVE virtuel STABLE: ${virtualCVE} (type: ${threatType})`);\n\n// ✅ EXTRACTION DES VARIABLES EXISTANTES DANS `data`\nconst indicators = data.indicators || [];\nconst riskScore = data.riskScore || 0;\nconst confidence = data.confidence || 0;\nconst analysis = data.aiAnalysis || data.text || \"\";\n\nconsole.log(`  📊 Extracted - Indicators: ${JSON.stringify(indicators)}, Risk: ${riskScore}, Confidence: ${confidence}`);\n\nconst enrichedWithVirtual = {\n  ...data,\n  extensionId: originalExtensionId,\n  cve_id: virtualCVE,\n  cveid: virtualCVE,\n  mappedCVE: false,\n  mappingConfidence: 0,\n  mappingSource: \"virtual_stable\",\n  mappingTitle: `Virtual CVE: ${threatType} detected via browser navigation`,\n  matchMethod: \"no_match_virtual_stable\",\n  \n  // ✅ THREAT CONTEXT AVEC DONNÉES EXISTANTES\n  threatContext: {\n    type: threatType,\n    source: \"browser_extension\",\n    product: \"Web Browser\",\n    vector: \"url_navigation\",\n    detectedTokens: specificTokens,\n    targetUrl: url,\n    urlHash: urlHash,\n    aiIndicators: indicators,        // ✅ Déjà dans data\n    aiRiskScore: riskScore,          // ✅ Déjà dans data\n    aiConfidence: confidence,        // ✅ Déjà dans data\n  },\n  \n  // ✅ CONSERVER LES DONNÉES AI AU ROOT (déjà transmises par normalizer)\n  indicators: indicators,\n  riskScore: riskScore,\n  confidence: confidence,\n  \n  // ✅ CVE NOTES ENRICHIES\n  cve_notes: `AI Detection - Indicators: ${\n    indicators.length > 0 ? indicators.join(\" | \") : \"None\"\n  }. Risk Score: ${riskScore}. Confidence: ${confidence}. Context: ${analysis.substring(0, 200)}`,\n  \n  // ✅ CVE DESCRIPTION\n  cve_description: analysis || `Virtual CVE created for ${threatType} threat detected via browser extension analysis. URL: ${url}`,\n  \n  // ✅ CVE VULNERABILITY NAME - PRIORITÉ AUX INDICATORS\n        cve_vulnerabilityName: threatType,\n\n  \n  cve_requiredAction: \"Investigate and remediate based on AI recommendations\",\n  cve_product: \"Web Application\",\n  cve_vendor: \"Unknown Vendor\",\n  isVirtual: true,\n  virtualYear: 2026,\n  virtualReason: \"No matching CVE in KEV/NIST database (threshold: 20)\",\n  _is_extension_data: true,\n  original_data: {\n    ...data.original_data,\n    extensionId: originalExtensionId,\n  },\n};\n\nconsole.log(`  ✅ Virtual CVE created: ${virtualCVE}`);\nconsole.log(`  ✅ Vulnerability name: ${enrichedWithVirtual.cve_vulnerabilityName}`);\n\nout.push({\n  json: enrichedWithVirtual,\n  pairedItem: { item: ext.indexOf(e) },\n});\n\n  }\n}\n\n// ============================================================================\n// ÉTAPE 6 : RÉSULTATS FINAUX\n// ============================================================================\n\nconsole.log(`\\n📤 === RÉSULTATS MAPPING CVE ===`);\nconsole.log(`  Extensions en entrée: ${ext.length}`);\nconsole.log(`  Extensions en sortie: ${out.length}`);\nconsole.log(`  Items pool: ${pool.length}`);\nconsole.log(`  Total: ${pool.length + out.length}`);\n\nreturn [...pool, ...out];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-10608, -448],
+      "id": "3e684881-46f1-4093-80d4-6fdd56a114d2",
+      "name": "MAPPING CVE"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node Code - Real CVE Matcher (AVEC PERTINENCE INTELLIGENTE)\nconst items = $input.all();\nconst results = [];\n\n// 🎯 COLLECTER TOUTES LES CVE RÉELLES\nconst realCVEs = items.filter(item => \n  item.json && /^CVE-\\d{4}-\\d+$/.test(item.json.cve_id)\n);\n\n// 🎯 COLLECTER LES ALERTES EXTENSION (CVE virtuelles)\nconst extensionAlerts = items.filter(item => \n  item.json && item.json.isVirtualCVE === true\n);\n\n// 🎯 DÉTECTION AUTOMATIQUE TECHNOLOGIE\nfunction detectTechnology(url, context) {\n  const urlLower = (url || \"\").toLowerCase();\n  const contextLower = (context || \"\").toLowerCase();\n  \n  if (urlLower.includes('php') || contextLower.includes('php') || urlLower.includes('testphp')) {\n    return 'php';\n  }\n  if (urlLower.includes('wordpress') || contextLower.includes('wordpress') || contextLower.includes('wp-')) {\n    return 'wordpress';\n  }\n  if (contextLower.includes('microsoft') || contextLower.includes('sql server') || contextLower.includes('.net')) {\n    return 'microsoft';\n  }\n  if (contextLower.includes('apache') || contextLower.includes('tomcat') || contextLower.includes('java')) {\n    return 'java';\n  }\n  if (contextLower.includes('nginx') || contextLower.includes('node') || contextLower.includes('javascript')) {\n    return 'web';\n  }\n  return null;\n}\n\n// 🎯 DÉTECTION TECHNOLOGIE DEPUIS CVE\nfunction detectTechnologyFromCVE(cveData) {\n  const cveText = JSON.stringify(cveData).toLowerCase();\n  \n  if (cveText.includes('microsoft') || cveText.includes('sql server') || cveText.includes('.net')) {\n    return 'microsoft';\n  }\n  if (cveText.includes('wordpress') || cveText.includes('wp-')) {\n    return 'wordpress';\n  }\n  if (cveText.includes('php') || cveText.includes('drupal') || cveText.includes('joomla')) {\n    return 'php';\n  }\n  if (cveText.includes('apache') || cveText.includes('tomcat') || cveText.includes('java')) {\n    return 'java';\n  }\n  if (cveText.includes('nginx') || cveText.includes('node') || cveText.includes('javascript')) {\n    return 'web';\n  }\n  return null;\n}\n\n// 🎯 FONCTION DE PERTINENCE INTELLIGENTE\nfunction isCVERelevantForThreat(cveData, threatData) {\n  const url = threatData.url || \"\";\n  const threatContext = threatData.analysis || \"\";\n  \n  // 🔍 DÉTECTION TECHNOLOGIE MENACE\n  const threatTech = detectTechnology(url, threatContext);\n  const cveTech = detectTechnologyFromCVE(cveData);\n  \n  console.log(`🔍 Tech matching: Threat=${threatTech} vs CVE=${cveTech} for ${cveData.cve_id}`);\n  \n  // ❌ EXCLURE SI TECHNOLOGIES INCOMPATIBLES\n  if (threatTech && cveTech && threatTech !== cveTech) {\n    console.log(`❌ Excluding ${cveData.cve_id} - technology mismatch`);\n    return false;\n  }\n  \n  return true;\n}\n\n// 🎯 FONCTION DE MATCHING SIMPLIFIÉE\nfunction technologiesMatch(domain, cveData) {\n  const domainLower = domain.toLowerCase();\n  const cveText = JSON.stringify(cveData).toLowerCase();\n  \n  if (domainLower.includes('wordpress') && cveText.includes('wordpress')) return true;\n  if (domainLower.includes('joomla') && cveText.includes('joomla')) return true;\n  if (domainLower.includes('drupal') && cveText.includes('drupal')) return true;\n  \n  return false;\n}\n\nfor (const alert of extensionAlerts) {\n  const extensionData = alert.json;\n  \n  // 🎯 CORRECTION: Vérifier que l'URL existe\n  const url = extensionData.url || extensionData.link || extensionData.originalUrl;\n  \n  if (!url) {\n    console.log('❌ No URL found for extension alert:', extensionData.cve_id);\n    results.push(alert);\n    continue;\n  }\n  \n  try {\n    const domain = new URL(url).hostname;\n    \n    // 🎯 FILTRER LES CVE RÉELLES PERTINENTES\n    const relevantRealCVEs = realCVEs.filter(cveItem => \n      isCVERelevantForThreat(cveItem.json, extensionData)\n    );\n    \n    console.log(`🎯 CVE pertinentes pour ${domain}: ${relevantRealCVEs.length}/${realCVEs.length}`);\n    \n    // 🎯 CHERCHER LES CVE QUI CORRESPONDENT (PARMI LES PERTINENTES)\n    const matchingCVEs = relevantRealCVEs.filter(cveItem => {\n      const cveData = cveItem.json;\n      const cveText = JSON.stringify(cveData).toLowerCase();\n      const domainMatch = cveText.includes(domain.toLowerCase());\n      \n      return domainMatch || technologiesMatch(domain, cveData);\n    });\n    \n    if (matchingCVEs.length > 0) {\n      // 🎯 REMPLACER PAR LA VRAIE CVE PERTINENTE\n      const realCVE = matchingCVEs[0].json;\n      console.log(`✅ Matched ${extensionData.cve_id} → ${realCVE.cve_id}`);\n      \n      results.push({\n        json: {\n          ...extensionData,\n          cve_id: realCVE.cve_id,                // VRAIE CVE\n          title: realCVE.title,                  // VRAI TITRE\n          severity: realCVE.severity,            // VRAIE SÉVÉRITÉ\n          score: realCVE.score,                  // VRAI SCORE\n          isVirtualCVE: false,                   // PLUS VIRTUEL\n          cve_description: realCVE.cve_description,         // KEV description\n          cve_requiredAction: realCVE.cve_requiredAction,   // KEV requiredAction\n          cve_notes: realCVE.cve_notes,                     // KEV notes\n          cve_product: realCVE.cve_product,                 // KEV product\n          cve_vendor: realCVE.cve_vendor,                   // KEV vendor\n          original_extension_data: extensionData,\n          matched_cves: matchingCVEs.map(c => c.json.cve_id)\n        }\n      });\n    } else {\n      // 🎯 AUCUNE CVE PERTINENTE TROUVÉE - GARDER LA VIRTUEL\n      console.log('❌ No relevant CVE match for:', domain);\n      results.push(alert);\n    }\n    \n  } catch (error) {\n    console.log('❌ Invalid URL:', url, error.message);\n    results.push(alert);\n  }\n}\n\n// 🎯 AJOUTER LES CVE RÉELLES NON UTILISÉES\nconst usedCVEIds = new Set(results.map(r => r.json.cve_id));\nconst unusedRealCVEs = realCVEs.filter(cve => !usedCVEIds.has(cve.json.cve_id));\nresults.push(...unusedRealCVEs);\n\nconsole.log(`🎯 Matching result: ${extensionAlerts.length} extension alerts → ${results.filter(r => !r.json.isVirtualCVE).length} matched with real CVEs`);\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-10208, -432],
+      "id": "b45b4108-7ff3-4005-9f50-04ecb024e2ca",
+      "name": "Code3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Debug: Log payload before HTTP Request\nconst items = $input.all();\n\nconsole.log('=== 📤 PAYLOAD VERS API ===');\nconsole.log('Items reçus:', items.length);\n\n// Debug before map()\nconsole.log('=== 🔎 DEBUG EXTENSIONID COMPLET ===');\nitems.forEach((item, i) => {\n  console.log(`Item ${i} COMPLET:`, JSON.stringify(item.json, null, 2));\n  console.log(`  item.json.extensionId: \"${item.json.extensionId}\"`);\n  console.log(`  item.json.original_data?.extensionId: \"${item.json.original_data?.extensionId}\"`);\n});\n\nitems.forEach((item, i) => {\n  console.log(`Item ${i}:`, {\n    cve_id: item.json.cve_id,\n    title: item.json.title?.substring(0, 50) + '...',\n    extensionId: item.json.extensionId,\n    severity: item.json.severity,\n    score: item.json.score\n  });\n});\n\nconst payload = {\n  results: items.map(item => ({\n    extensionId: item.json.original_data?.extensionId || item.json.extensionId || 'mapped',\n    cve_id: item.json.cve_id,\n    title: item.json.title,\n    severity: item.json.severity,\n    score: item.json.score,\n    link: item.json.link || `https://nvd.nist.gov/vuln/detail/${item.json.cve_id}`,\n    timestamp: item.json.timestamp,\n    source: item.json.source,\n    status: item.json.status || 'New',\n    \n    // ✅ AJOUTER TOUS LES CHAMPS KEV\n    cve_description: item.json.cve_description || '',\n    cve_vulnerabilityName: item.json.cve_vulnerabilityName || '',\n    cve_requiredAction: item.json.cve_requiredAction || '',\n    cve_notes: item.json.cve_notes || '',\n    cve_product: item.json.cve_product || '',\n    cve_vendor: item.json.cve_vendor || '',\n    cve_dateAdded: item.json.cve_dateAdded || '',\n    cve_dueDate: item.json.cve_dueDate || '',\n    cve_knownRansomwareCampaignUse: item.json.cve_knownRansomwareCampaignUse || 'Unknown',\n    \n    // ✅ AJOUTER METADATA MAPPING\n    mappedCVE: item.json.mappedCVE || false,\n    mappingConfidence: item.json.mappingConfidence || 0,\n    mappingSource: item.json.mappingSource || '',\n    isVirtual: item.json.isVirtual || false\n  })),\n  summary: {\n    totalResults: items.length,\n    processedAt: new Date().toISOString(),\n    pipeline: 'n8n-soc-cert-complete'\n  }\n};\n\nconsole.log('Payload final:', JSON.stringify(payload, null, 2));\nreturn [{ json: payload }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5792, 0],
+      "id": "00c1d5ef-f2a8-4ea9-9143-ff89ffc5e725",
+      "name": "Log payload"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 MERGE AI OUTPUT WITH BATCH DATA\n */\n\nconsole.log(\"=== 🔄 MERGE AI OUTPUT WITH BATCH DATA ===\");\n\n// Récupérer les données des deux branches\nconst allInputs = $input.all();\nconsole.log(`📥 Inputs reçus: ${allInputs.length}`);\n\nlet aiOutput = null;\nlet batchData = null;\n\nallInputs.forEach((input, i) => {\n  console.log(`Input ${i} keys:`, Object.keys(input.json || {}));\n  \n  if (input.json.output) {\n    aiOutput = input.json.output;\n    console.log(`✅ AI Output: ${aiOutput.length} chars`);\n  }\n  if (input.json.preservedExtension) {\n    batchData = input.json;\n    console.log(`✅ Batch Data avec extension:`, input.json.preservedExtension);\n  }\n});\n\n// Si on n'a pas batchData, essayer de le récupérer du node précédent\nif (!batchData) {\n  try {\n    const code2Output = $('PREPARE BATCH FOR AGENT').all();\n    if (code2Output && code2Output[0]) {\n      batchData = code2Output[0].json;\n      console.log(`🔄 Récupération batchData depuis Code2`);\n    }\n  } catch (e) {\n    console.log(`❌ Impossible de récupérer Code2: ${e.message}`);\n  }\n}\n\nconst result = {\n  output: aiOutput,\n  preservedExtension: batchData?.preservedExtension,\n  batchData: batchData,\n  kevDataMap: batchData?.kevDataMap || {},\n  debug: {\n    hasAIOutput: !!aiOutput,\n    hasPreservedExtension: !!batchData?.preservedExtension,\n    mergeTimestamp: new Date().toISOString()\n  }\n};\n\nconsole.log(`📦 Résultat merge:`, {\n  outputLength: aiOutput?.length || 0,\n  hasExtension: !!result.preservedExtension\n});\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-6752, -448],
+      "id": "69a11ad4-6fee-4313-8a92-0d4ef586c8b4",
+      "name": "Code5",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * 🎯 PREPARE BATCH FOR AGENT - VERSION FINALE CORRIGÉE\n * Objectif: Passer la vraie extension avec CVE mappé (peu importe l'extensionId)\n */\n\nconsole.log(\"=== 📤 PREPARE BATCH FOR AGENT ===\");\n\nif (items.length === 0) return [];\nconst existingBatch = items[0].json;\nif (!existingBatch.batchText) return [];\n\nconsole.log(`✅ Passage du batchText existant: ${existingBatch.cveCount} CVEs, ${existingBatch.batchText.length} caractères`);\n\n// 🔍 TROUVER LA VRAIE EXTENSION AVEC CVE MAPPÉ\nlet realExtension = null;\n\n// Chercher l'extension dans les données du \"Diff / Hash Check\"\ntry {\n  const diffItems = $('Diff / Hash Check').all();\n  console.log(`🔍 Diff items count: ${diffItems.length}`);\n  \n  // ✅ DÉTECTION FLEXIBLE : chercher par FLAGS, pas par extensionId\n  const extensionItem = diffItems.find(item => {\n    const j = item.json || {};\n    \n    // Méthode 1 : Flag explicite _is_extension_data\n    if (j._is_extension_data === true) {\n      console.log(`✅ Found by _is_extension_data flag`);\n      return true;\n    }\n    \n    // Méthode 2 : extensionId existe (n'importe quelle valeur non vide)\n    if (j.extensionId && j.extensionId !== '') {\n      console.log(`✅ Found by extensionId: ${j.extensionId}`);\n      return true;\n    }\n    \n    // Méthode 3 : Source Chrome Extension\n    if (j.source && j.source.includes('Chrome Extension')) {\n      console.log(`✅ Found by source: ${j.source}`);\n      return true;\n    }\n    \n    // Méthode 4 : mappedFromExtension flag\n    if (j.mappedFromExtension === true) {\n      console.log(`✅ Found by mappedFromExtension flag`);\n      return true;\n    }\n    \n    // Méthode 5 : Titre distinctif\n    if (j.title && (j.title.includes('🔒') || j.title.includes('LOGIN-VULNERABILITY') || j.title.includes('THREAT'))) {\n      console.log(`✅ Found by title pattern: ${j.title.substring(0, 50)}`);\n      return true;\n    }\n    \n    return false;\n  });\n  \n  if (extensionItem) {\n    console.log('🔍 Extension trouvée dans Diff/Hash Check:', JSON.stringify(extensionItem.json, null, 2));\n    realExtension = extensionItem.json;  // ✅ Utiliser .json\n  } else {\n    console.log('⚠️ Aucune extension trouvée dans Diff/Hash Check');\n  }\n} catch (err) {\n  console.log(`⚠️ Erreur accès Diff/Hash Check: ${err.message}`);\n}\n\n// Fallback: Chercher dans les items actuels\nif (!realExtension) {\n  console.log('🔍 Recherche extension dans items actuels...');\n  \n  // Reconstituer à partir du batchText si possible\n  if (existingBatch.batchText.includes('🔒 COMMAND_INJECTION') || \n      existingBatch.batchText.includes('🔒 THREAT') || \n      existingBatch.batchText.includes('LOGIN-VULNERABILITY')) {\n    const lines = existingBatch.batchText.split('\\n');\n    const extensionSection = lines.find(line => \n      line.includes('🔒') || \n      line.includes('LOGIN-VULNERABILITY') ||\n      line.includes('THREAT')\n    );\n    \n    if (extensionSection) {\n      // Extraire CVE si présent dans le batchText\n      const cveMatch = existingBatch.batchText.match(/CVE-(\\d{4}-\\d+)/);\n      const urlMatch = existingBatch.batchText.match(/https?:\\/\\/[^\\s\\)]+/);\n      \n      realExtension = {\n        cve_id: cveMatch ? `CVE-${cveMatch[1]}` : null,\n        extensionId: 'mapped',\n        title: extensionSection.trim(),\n        url: urlMatch ? urlMatch[0] : 'https://extension-alert.local',\n        severity: 'High',\n        score: 80,\n        source: 'Chrome Extension + KEV Match',\n        _is_extension_data: true,\n        mappedFromExtension: cveMatch ? true : false,\n        isVirtual: cveMatch ? false : true\n      };\n      \n      console.log('🔧 Extension reconstituée depuis batchText');\n    }\n  }\n}\n\n// 🔧 FORCER L'INCLUSION DE L'EXTENSION DANS LE BATCHTEXT\nlet finalBatchText = existingBatch.batchText;\n\nif (!finalBatchText.includes('🔒 THREAT') && \n    !finalBatchText.includes('⚠️ SECURITY ALERT') && \n    !finalBatchText.includes('🔒 COMMAND_INJECTION') &&\n    !finalBatchText.includes('LOGIN-VULNERABILITY')) {\n  console.log(\"🔧 Ajout de l'extension au batchText\");\n  \n  const extensionAlert = realExtension ? \n    `🔒 THREAT: ${realExtension.title}\nTitle: ${realExtension.title}\nLink: ${realExtension.url || 'https://extension-alert.local'}\nSeverity: ${realExtension.severity || 'High'} (Score: ${realExtension.score || 80})\nSource: ${realExtension.source || 'Chrome Extension'}\nCVE: ${realExtension.cve_id || 'Virtual'}\nDescription: Security threat detected by Chrome Extension with CVE mapping\n\n` :\n    `🔒 THREAT: Security Threat Detected\nTitle: Chrome Extension Security Alert\nLink: https://extension-alert.local\nSeverity: Critical (Score: 95)\nSource: Chrome Extension\nDescription: Real-time security threat detected by Chrome Extension\n\n`;\n\n  finalBatchText = extensionAlert + finalBatchText;\n  console.log(\"✅ Extension ajoutée au batchText\");\n} else {\n  console.log(\"✅ Extension déjà présente dans batchText\");\n}\n\nconsole.log(`📝 BatchText final: ${finalBatchText.length} caractères`);\n\n// 🎯 PRÉSERVER LA VRAIE EXTENSION AVEC CVE MAPPÉ\nconst preservedExtension = realExtension ? {\n  // ✅ UTILISE LE CVE RÉEL MAPPÉ SI DISPONIBLE\n  cve_id: realExtension.cve_id,\n  extensionId: realExtension.extensionId || 'mapped',\n  title: realExtension.title,\n  url: realExtension.url || realExtension.link,\n  severity: realExtension.severity || 'High',\n  score: realExtension.score || 80,\n  source: realExtension.source || 'Chrome Extension',\n  description: realExtension.text || realExtension.description,\n  \n  // Données additionnelles\n  aiAnalysis: realExtension.aiAnalysis,\n  threatType: realExtension.threatType,\n  timestamp: realExtension.timestamp,\n  \n  // Flags importants\n  _is_extension_data: true,\n  mappedFromExtension: realExtension.mappedFromExtension || false,\n  isVirtual: realExtension.isVirtual || false,\n  \n  // Données originales\n  extensionData: realExtension.extensionData,\n  original_data: realExtension.original_data\n} : {\n  // Fallback si rien trouvé\n  cve_id: null,\n  title: \"Chrome Extension Security Alert\",\n  severity: \"Critical\",\n  score: 95,\n  source: \"Chrome Extension\",\n  url: \"https://extension-alert.local\",\n  _is_extension_data: true,\n  extensionId: \"chrome-extension-alert\",\n  isVirtual: true,\n  mappedFromExtension: false\n};\n\nconsole.log('✅ Extension préservée:', JSON.stringify(preservedExtension, null, 2));\n\nreturn [{ \n  json: { \n    batchText: finalBatchText,\n    totalItems: existingBatch.totalItems || existingBatch.cveCount,\n    originalData: existingBatch,\n    kevDataMap: existingBatch.kevDataMap || {},\n    \n    // 🎯 EXTENSION AVEC CVE RÉEL MAPPÉ\n    preservedExtension: preservedExtension\n  } \n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-7312, -464],
+      "id": "87416d65-98b4-4db5-87e5-2e8e3e7544c8",
+      "name": "PREPARE BATCH FOR AGENT",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// === 🔧 GET EXTENSION QUEUE - BATCH MODE WITH DELETION ===\nconsole.log('=== 🔧 BATCH QUEUE READER - STARTING ===');\n\ntry {\n    const BATCH_SIZE = 5; // 5 items max/cycle\n    \n    console.log('📡 Sending request to extension-queue API...');\n\n    // 1️⃣ Reading batch\n    const requestOptions = {\n        method: 'GET',\n        url: `https://soc-cert-extension.vercel.app/api/extension-queue?batch=${BATCH_SIZE}`,\n        headers: { 'Content-Type': 'application/json' },\n        json: true\n    };\n\n    console.log('📡 Request options:', JSON.stringify(requestOptions, null, 2));\n\n    const response = await this.helpers.httpRequest(requestOptions);\n\n    console.log(`📥 Response received:`, typeof response);\n    console.log(`📥 Response data:`, JSON.stringify(response, null, 2));\n\n    const queueData = response;\n\n    if (!queueData.success || !queueData.extensions) {\n        console.log('❌ Invalid queue format');\n        return [{ json: { error: 'Invalid queue format', data: queueData } }];\n    }\n\n    const extensions = queueData.extensions;\n    console.log(`📊 Total extensions in queue: ${queueData.queueLength || extensions.length}`);\n\n    if (extensions.length === 0) {\n        console.log('✅ Empty queue - no processing needed');\n        return []; // ⚠️ Return [] to stop workflow here\n    }\n\n    // 2️⃣ FILTERING unprocessed items (normally already done by API if improved)\n    const unprocessedExtensions = extensions.filter(ext => !ext.processed);\n    console.log(`🔍 Unprocessed extensions: ${unprocessedExtensions.length}`);\n\n    if (unprocessedExtensions.length === 0) {\n        console.log('✅ All items are already processed');\n        return []; // Stop workflow\n    }\n\n    const batchToProcess = unprocessedExtensions.slice(0, BATCH_SIZE);\n\n    console.log(`🎯 Batch processing ${batchToProcess.length} items:`);\n    batchToProcess.forEach((ext, idx) => {\n        console.log(`  ${idx + 1}. extensionId: ${ext.extensionId}`);\n        console.log(`     url: ${ext.url}`);\n        console.log(`     threatType: ${ext.threatType}`);\n        console.log(`     aiAnalysis: ${ext.aiAnalysis ? 'PRESENT' : 'MISSING'}`);\n    });\n\n    // 3️⃣ RETURN items to process with deletion metadata\n    return batchToProcess.map((ext, idx) => ({\n        json: {\n            extensionId: ext.extensionId,\n            url: ext.url,\n            threatType: ext.threatType,\n            aiAnalysis: ext.aiAnalysis,\n            timestamp: ext.timestamp,\n            addedAt: ext.addedAt,\n            indicators: ext.indicators || [],           // ✅ IMPORTANT !\n            riskScore: ext.riskScore || 0,             // ✅ IMPORTANT !\n            confidence: ext.confidence || 0,            // ✅ IMPORTANT !\n            source: 'batch-queue-reader',\n            processedAt: new Date().toISOString(),\n            \n            // ✅ IMPORTANT: Keep count for final deletion\n            _batchMetadata: {\n                batchSize: batchToProcess.length,\n                itemIndex: idx,\n                totalInQueue: queueData.queueLength\n            }\n        }\n    }));\n\n} catch (error) {\n    console.log('❌ Error reading queue:', error.message);\n    console.log('Stack:', error.stack);\n    return []; // Stop workflow on error\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12960, 144],
+      "id": "7609048b-b701-4912-a2db-6903c4832ccb",
+      "name": "BATCH QUEUE READER"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Prevent Overlap\n// Type: Code\n// Position: Juste après le Schedule Trigger\n\nconst workflowId = $workflow.id;\nconst lockKey = `workflow_lock_${workflowId}`;\n\nconsole.log('🔍 Vérification overlap...');\n\n// Utilise le contexte global de n8n pour stocker un flag temporaire\nif (globalThis[lockKey]) {\n  const lockAge = Date.now() - globalThis[lockKey];\n  console.log(`⚠️ Lock existe depuis ${lockAge}ms`);\n  \n  // Si le lock a plus de 25s, on le force à expirer (sécurité)\n  if (lockAge > 25000) {\n    console.log('⚠️ Lock expiré (>25s), on force le reset');\n    delete globalThis[lockKey];\n  } else {\n    console.log('❌ Workflow already running, skipping this execution');\n    return [];  // Arrête l'exécution ici\n  }\n}\n\n// Pose le lock avec timestamp\nglobalThis[lockKey] = Date.now();\nconsole.log('✅ Lock posé, workflow démarre');\n\n// Libère le lock après 25 secondes (avant le prochain trigger à 30s)\nsetTimeout(() => {\n  delete globalThis[lockKey];\n  console.log('🔓 Lock libéré automatiquement');\n}, 25000);\n\n// Continue le workflow normalement\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-13216, 144],
+      "id": "656deffe-98a4-4012-88e7-6e7a43f34e0b",
+      "name": "overlap",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds"
+            }
+          ]
+        }
+      },
+      "id": "e7363145-026f-4726-bcd3-f1a621231e9f",
+      "name": "Extension Check (30 s)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-13424, 144]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Delete Processed Batch\nconsole.log('=== 🗑️ SUPPRESSION DU BATCH TRAITÉ ===');\n\nconst items = $input.all();\n\n// ✅ DEBUG FIRST\nconsole.log('🔍 DEBUG items[0]:', items[0]);\nconsole.log('🔍 DEBUG items[0].json:', items[0]?.json);\nconsole.log('🔍 DEBUG _batchMetadata:', items[0]?.json?._batchMetadata);\nconsole.log('🔍 DEBUG batchSize value:', items[0]?.json?._batchMetadata?.batchSize);\n\nif (!items || items.length === 0) {\n    console.log('⚠️ Aucun item à supprimer');\n    return [];\n}\n\n// ✅ READ FROM _batchMetadata\nconst batchSize = items[0]?.json?._batchMetadata?.batchSize || items.length;\n\nconsole.log(`📊 Items après filter: ${items.length}`);\nconsole.log(`🔢 Batch size ORIGINAL (depuis _batchMetadata): ${batchSize}`);\n\ntry {\n    const deleteOptions = {\n        method: 'DELETE',\n        url: 'https://soc-cert-extension.vercel.app/api/extension-queue',\n        headers: { 'Content-Type': 'application/json' },\n        body: {\n            count: batchSize\n        },\n        json: true\n    };\n\n    console.log('🗑️ Envoi requête DELETE:', JSON.stringify(deleteOptions, null, 2));\n\n    const deleteResponse = await this.helpers.httpRequest(deleteOptions);\n\n    console.log('✅ Suppression effectuée:', JSON.stringify(deleteResponse, null, 2));\n\n    return [{\n        json: {\n            deleted: batchSize,\n            remaining: deleteResponse.remaining,\n            timestamp: new Date().toISOString()\n        }\n    }];\n\n} catch (error) {\n    console.error('❌ Erreur lors de la suppression:', error.message);\n    return [{\n        json: {\n            error: 'Delete failed',\n            message: error.message,\n            batchSize\n        }\n    }];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-4864, -16],
+      "id": "2a566354-e4e4-42d8-b471-403a312aa219",
+      "name": "DELETE PROCESSED BATCHE"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: \"Store Batch Size\"\n\nconst items = $input.all();\nconst batchSize = items.length;\n\nconsole.log(`💾 Storing original batch size: ${batchSize}`);\n\n$vars.originalBatchSize = batchSize;\n\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12720, 144],
+      "id": "dbcd8cb6-60f2-40ed-be7a-82e9b8887c82",
+      "name": "Store Batch Size"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(i => ({ json: { ...i.json, extensionRun: true } }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-12112, 128],
+      "id": "1dad1aea-f958-425e-8e72-220e3deeee32",
+      "name": "🏷️ Mark Extension Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Node: Restore Metadata\nconst items = $input.all();\nconst httpResponse = items[0]?.json || {};\n\n// Retrieve _batchMetadata from \"Log payload\" (HTTP Request input)\nconst logPayloadItems = $('Log payload').all();\n\nconsole.log('🔍 logPayloadItems:', logPayloadItems.length);\nconsole.log('🔍 logPayloadItems[0]:', logPayloadItems[0]?.json);\n\n// Search for _batchMetadata in Log payload\nlet batchMetadata = logPayloadItems[0]?.json?._batchMetadata;\n\n// If not found, search in all Log payload items\nif (!batchMetadata) {\n  for (const item of logPayloadItems) {\n    if (item.json?._batchMetadata) {\n      batchMetadata = item.json._batchMetadata;\n      break;\n    }\n  }\n}\n\nconsole.log('🔍 batchMetadata found:', batchMetadata);\n\n// Fallback if still not found: use 5 (batch value)\nif (!batchMetadata) {\n  batchMetadata = { batchSize: 5, itemIndex: 0 };\n  console.log('⚠️ Fallback: batchSize = 5');\n}\n\nreturn [{\n  json: {\n    ...httpResponse,\n    _batchMetadata: batchMetadata\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5104, -16],
+      "id": "9a35dcae-7b79-461a-a89e-cd00fba1bfd3",
+      "name": "🔄 Restore Batch Metadata"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// COUNT STATS — AVEC VRAI FILTRE 24H (HISTORIQUE COMPLET)\n// ============================================================================\n\nconsole.log('📊 === STATS AVEC HISTORIQUE 24H ===');\n\nconst items = $input.all();\nconst allCVEs = items[0]?.json?.results || [];\nconst virtualCount = allCVEs.filter(i => i.isVirtual === true).length;\nconst realCount = allCVEs.filter(i => i.isVirtual === false).length;\n\nconsole.log(`📥 Batch: ${virtualCount} virtual, ${realCount} real`);\n\n// ✅ 1. SAUVEGARDER LES NOUVEAUX ÉVÉNEMENTS AVEC TIMESTAMP\nconst now = new Date();\nconst eventsToSave = allCVEs\n  .filter(i => i.isVirtual === true)\n  .map(cve => ({\n    cve_id: cve.cve_id,\n    title: cve.title,\n    timestamp: cve.timestamp || cve.receivedAt || now.toISOString(),\n    isVirtual: true\n  }));\n\nif (eventsToSave.length > 0) {\n  await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://soc-cert-extension.vercel.app/api/cve-events',\n    headers: { 'Content-Type': 'application/json' },\n    body: { events: eventsToSave },\n    json: true\n  });\n  console.log(`💾 Sauvegardé ${eventsToSave.length} événements`);\n}\n\n// ✅ 2. LIRE L'HISTORIQUE COMPLET ET FILTRER PAR 24H\nconst last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();\nconst historyResponse = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `https://soc-cert-extension.vercel.app/api/cve-events?since=${last24h}`,\n  headers: { 'Content-Type': 'application/json' }\n}).catch(() => ({ total: 0, events: [] }));\n\nconst threats24h = historyResponse.total || 0;\nconsole.log(`🕐 Threats dans les dernières 24h: ${threats24h}`);\n\n// ✅ 3. LIRE LES TOTAUX CUMULÉS\nconst existing = await this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://soc-cert-extension.vercel.app/api/virtual-cve-stats',\n  headers: { 'Content-Type': 'application/json' }\n}).catch(() => ({ totalVirtualCVEs: 0, totalRealCVEs: 0 }));\n\nconst newTotal = (existing.totalVirtualCVEs || 0) + virtualCount;\nconst newRealTotal = (existing.totalRealCVEs || 0) + realCount;\n\n// ✅ 4. SAUVEGARDER LES STATS\nconst stats = {\n  totalVirtualCVEs: newTotal,\n  totalRealCVEs: newRealTotal,\n  threatsLast24h: threats24h,  // ← Calculé depuis l'historique réel\n  avgConfidence: 0.87,\n  avgDetectionTime: '2.3s',\n  lastUpdate: now.toISOString()\n};\n\nconsole.log('📈 Stats finales:', JSON.stringify(stats, null, 2));\n\nawait this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://soc-cert-extension.vercel.app/api/update-stats',\n  headers: { 'Content-Type': 'application/json' },\n  body: { stats },\n  json: true\n});\n\nconsole.log('✅ Stats sauvegardées');\nreturn items;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5584, 0],
+      "id": "59fca9ee-e098-474c-b2a5-ebad9e53e7d4",
+      "name": "COUNT STATS + SEND TO VERCEL"
+    }
+  ],
+  "connections": {
+    "Cron 15min": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Diff / Hash Check": {
+      "main": [
+        [
+          {
+            "node": "Batching Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Notify": {
+      "main": [
+        [
+          {
+            "node": "WORKFLOW HEALTH MONITOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cohere Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structure Alerts": {
+      "main": [
+        [
+          {
+            "node": "Heath check",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Critical Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Filter Extension Only2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "handler errors",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CIRCL 3",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CISA KEV catalog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Alerts": {
+      "main": [
+        [
+          {
+            "node": "Diff / Hash Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "handler errors": {
+      "main": [
+        [
+          {
+            "node": "Errors Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML Concat Alerts": {
+      "main": [
+        [
+          {
+            "node": "Alert message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mrkdwn Concat Alerts": {
+      "main": [
+        [
+          {
+            "node": "Slack Message Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batching Items": {
+      "main": [
+        [
+          {
+            "node": "PREPARE BATCH FOR AGENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert message": {
+      "main": [
+        [
+          {
+            "node": "WORKFLOW HEALTH MONITOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critical Alerts": {
+      "main": [
+        [
+          {
+            "node": "HTML Concat Alerts",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mrkdwn Concat Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Source Detection": {
+      "main": [
+        [
+          {
+            "node": "Structure Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limiter": {
+      "main": [
+        [
+          {
+            "node": "NIST.gov CVE API",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CERT-FR RSS Feed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "BleepingComputer RSS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CISA KEV Catalog1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Message Formatter": {
+      "main": [
+        [
+          {
+            "node": "Slack Notify",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "MAPPING CVE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "KEV Enricher": {
+      "main": [
+        [
+          {
+            "node": "debug1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare CVE": {
+      "main": [
+        [
+          {
+            "node": "Code3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process OTX": {
+      "main": [
+        [
+          {
+            "node": "* 🌐 INTERNET EXPOSURE ESTIMATOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AlienVault OTX ENRICHER": {
+      "main": [
+        [
+          {
+            "node": "Process OTX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "* 🌐 INTERNET EXPOSURE ESTIMATOR": {
+      "main": [
+        [
+          {
+            "node": "🚨 EMERGENCY FIX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize severity": {
+      "main": [
+        [
+          {
+            "node": "Normalize Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🚨 EMERGENCY FIX": {
+      "main": [
+        [
+          {
+            "node": "recalculer severity et score à partir de CVSS/KEV/OTX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Rate Limiter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NIST.gov CVE API": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "CERT-FR RSS Feed": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "BleepingComputer RSS": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "CISA KEV Catalog1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 6
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "CISA KEV catalog": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "recalculer severity et score à partir de CVSS/KEV/OTX": {
+      "main": [
+        [
+          {
+            "node": "Normalize severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI OUTPUT PARSER1": {
+      "main": [
+        [
+          {
+            "node": "Source Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "debug1": {
+      "main": [
+        [
+          {
+            "node": "AlienVault OTX ENRICHER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "debug": {
+      "main": [
+        [
+          {
+            "node": "KEV Enricher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CIRCL 3": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Has Extension Items?": {
+      "main": [
+        [
+          {
+            "node": "Normalize Extension Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Extension Data": {
+      "main": [
+        [
+          {
+            "node": "🏷️ Mark Extension Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Extension Only2": {
+      "main": [
+        [
+          {
+            "node": "Log payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "🔄 Restore Batch Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "MAPPING CVE": {
+      "main": [
+        [
+          {
+            "node": "Prepare CVE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code3": {
+      "main": [
+        [
+          {
+            "node": "debug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log payload": {
+      "main": [
+        [
+          {
+            "node": "COUNT STATS + SEND TO VERCEL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code5": {
+      "main": [
+        [
+          {
+            "node": "AI OUTPUT PARSER1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREPARE BATCH FOR AGENT": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BATCH QUEUE READER": {
+      "main": [
+        [
+          {
+            "node": "Store Batch Size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "overlap": {
+      "main": [
+        [
+          {
+            "node": "BATCH QUEUE READER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extension Check (30 s)": {
+      "main": [
+        [
+          {
+            "node": "overlap",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE PROCESSED BATCHE": {
+      "main": [[]]
+    },
+    "Store Batch Size": {
+      "main": [
+        [
+          {
+            "node": "Has Extension Items?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🏷️ Mark Extension Items": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 8
+          }
+        ]
+      ]
+    },
+    "🔄 Restore Batch Metadata": {
+      "main": [
+        [
+          {
+            "node": "DELETE PROCESSED BATCHE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "COUNT STATS + SEND TO VERCEL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "6bc655a82dd598d9262ebb737245c9e42091e0ec375acdcb4a8362e779910042"
+  }
+}

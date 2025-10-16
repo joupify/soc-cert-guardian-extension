@@ -3,28 +3,28 @@ class AIHelper {
     this.hasNativeAI = false;
     this.nativeAI = null;
     this.needsDownload = false;
-    this.aiSession = null; // Session AI pré-warmée
-    this.isAIReady = false; // Flag pour savoir si AI est prêt
-    this.aiWarmupAttempts = 0; // Compteur de tentatives de warm-up
+    this.aiSession = null; // Pre-warmed AI session
+    this.isAIReady = false; // Flag to know if AI is ready
+    this.aiWarmupAttempts = 0; // Counter for warm-up attempts
 
-    // ✅ Récupérer l'ID persistant unique depuis chrome.storage.local
+    // ✅ Get persistent unique ID from chrome.storage.local
     chrome.storage.local.get(["extensionId"], (result) => {
       this.extensionId = result.extensionId;
       if (!this.extensionId) {
-        console.warn("extensionId absent, vérifie l'initialisation !");
+        console.warn("extensionId missing, check initialization!");
       } else {
-        console.log(`✅ Extension ID récupéré: ${this.extensionId}`);
+        console.log(`✅ Extension ID retrieved: ${this.extensionId}`);
       }
     });
 
-    // N'appellons pas initialize() dans le constructeur
-    // pour éviter les problèmes avec async
+    // Do not call initialize() in constructor
+    // to avoid problems with async
   }
 
   async initialize() {
     console.log("🚀 SOC-CERT AI initializing...");
 
-    // Test de détection ultra-robuste
+    // Ultra-robust detection test
     if (typeof window !== "undefined") {
       console.log("🔍 Checking AI availability...");
       console.log("  window.ai:", !!window.ai);
@@ -34,18 +34,18 @@ class AIHelper {
         !!(window.chrome && window.chrome.ai)
       );
 
-      // 🎆 Utiliser uniquement ce qui fonctionne: window.LanguageModel
+      // 🎆 Use only what works: window.LanguageModel
       if (window.LanguageModel) {
         this.nativeAI = { languageModel: window.LanguageModel };
         console.log("✅ Chrome Built-in AI detected via window.LanguageModel");
         await this.testAIAvailability();
 
-        // ✅ WARM-UP AU DÉMARRAGE pour éviter les analyses fausses
+        // ✅ WARM-UP AT STARTUP to avoid false analyses
         await this.warmupGeminiNano();
       } else {
-        console.log("❌ Aucune API Chrome AI détectée");
+        console.log("❌ No Chrome AI API detected");
         console.log("🔧 Using mock system only");
-        console.log("💡 Vérifiez les flags Chrome et redémarrez le navigateur");
+        console.log("💡 Check Chrome flags and restart browser");
       }
     }
   }
@@ -69,7 +69,7 @@ class AIHelper {
         // 🆕 Attendre que window.ai soit disponible
         await this.waitForWindowAI();
 
-        // Tester les APIs spécialisées maintenant
+        // Test specialized APIs now
         await this.testSpecializedAPIs();
       } else if (availability === "downloadable") {
         console.log("📥 Gemini Nano downloadable - user interaction required");
@@ -87,7 +87,7 @@ class AIHelper {
     }
   }
 
-  // � Recherche des APIs spécialisées directement sur window
+  // 🔍 Search for specialized APIs directly on window
   async searchSpecializedAPIs() {
     console.log("🔍 Recherche des APIs spécialisées...");
 
@@ -166,7 +166,7 @@ class AIHelper {
   async testSpecializedAPIs() {
     console.log("🔍 Test des APIs spécialisées...");
 
-    // Utiliser searchSpecializedAPIs déjà implémentée
+    // Use already implemented searchSpecializedAPIs
     return await this.searchSpecializedAPIs();
   }
 
@@ -182,7 +182,7 @@ class AIHelper {
       // 🆕 Tentative de forcer l'activation de window.ai
       if (!window.ai && window.LanguageModel) {
         try {
-          // Créer une session temporaire peut déclencher window.ai
+          // Creating a temporary session may trigger window.ai
           const tempSession = await window.LanguageModel.create({
             systemPrompt: "Test activation",
             outputLanguage: "en",
@@ -199,7 +199,7 @@ class AIHelper {
 
     if (window.ai) {
       console.log("✅ window.ai disponible !");
-      // Vérifier les APIs disponibles dans window.ai
+      // Check available APIs in window.ai
       console.log(
         "🔍 window.ai properties:",
         Object.getOwnPropertyNames(window.ai)
@@ -211,11 +211,11 @@ class AIHelper {
     }
   }
 
-  // 🆕 Approche alternative pour accéder aux APIs
+  // 🆕 Alternative approach to access APIs
   async tryAlternativeAPIAccess() {
     console.log("🔄 Tentative d'accès alternatif aux APIs...");
 
-    // Vérifier si les APIs existent directement sur window
+    // Check if APIs exist directly on window
     const alternativeAPIs = [];
 
     if (window.Summarizer) {
@@ -248,13 +248,13 @@ class AIHelper {
     try {
       console.log("🚀 Tentative de téléchargement Gemini Nano...");
 
-      // 🛡️ Protection contre téléchargements multiples
+      // 🛡️ Protection against multiple downloads
       if (this.hasNativeAI) {
         console.log("✅ Gemini Nano déjà prêt !");
         return true;
       }
 
-      // Vérifier l'activation utilisateur
+      // Check user activation
       if (!navigator.userActivation.isActive) {
         console.log("❌ Interaction utilisateur requise");
         return false;
@@ -291,11 +291,11 @@ class AIHelper {
     }
   }
 
-  // 🆕 Téléchargement automatique des APIs spécialisées
+  // 🆕 Automatic download of specialized APIs
   async downloadSpecializedAPIs() {
     console.log("📥 Téléchargement des APIs spécialisées...");
 
-    // Télécharger Summarizer si disponible
+    // Download Summarizer if available
     if (window.ai && window.ai.summarizer) {
       try {
         const summarizerAvailability =
@@ -307,7 +307,7 @@ class AIHelper {
             format: "markdown",
             length: "medium",
           });
-          summarizer.destroy(); // Nettoyer après test
+          summarizer.destroy(); // Clean up after test
           console.log("✅ Summarizer prêt !");
         }
       } catch (error) {
@@ -315,7 +315,7 @@ class AIHelper {
       }
     }
 
-    // Télécharger Writer si disponible
+    // Download Writer if available
     if (window.ai && window.ai.writer) {
       try {
         const writerAvailability = await window.ai.writer.availability();
@@ -326,7 +326,7 @@ class AIHelper {
             format: "plain-text",
             length: "medium",
           });
-          writer.destroy(); // Nettoyer après test
+          writer.destroy(); // Clean up after test
           console.log("✅ Writer prêt !");
         }
       } catch (error) {
@@ -334,7 +334,7 @@ class AIHelper {
       }
     }
 
-    // Translator est généralement déjà disponible (modèle expert)
+    // Translator is usually already available (expert model)
     if (window.ai && window.ai.translator) {
       try {
         const translatorAvailability =
@@ -357,7 +357,7 @@ class AIHelper {
     console.log("📋 Available Chrome AI APIs:", available);
   }
 
-  // 🆕 PRIORITÉ MAXIMUM - SUMMARIZER API
+  // 🆕 MAXIMUM PRIORITY - SUMMARIZER API
   async createSummarizer(options = {}) {
     try {
       if (window.ai && window.ai.summarizer) {
@@ -412,28 +412,29 @@ class AIHelper {
     }
   }
 
-  // 🆕 Analyse de sécurité
+  // 🆕 Security analysis
   async analyzeThreat(url, context = "") {
-    const prompt = `Analysez cette URL pour les risques de sécurité et répondez en JSON strict:
+    const prompt = `Analyze this URL for security risks and respond in strict JSON:
 
 URL: ${url}
-Contexte: ${context}
+Context: ${context}
 
-Répondez UNIQUEMENT avec ce format JSON exact:
+Respond ONLY with this exact JSON format:
 {
-  "riskScore": [nombre 0-100],
+  "riskScore": [number 0-100],
   "threatType": "safe|suspicious|phishing|malicious", 
-  "indicators": ["indicateur1", "indicateur2"],
-  "confidence": [nombre 0-1],
-  "recommendations": ["recommandation1", "recommandation2", "recommandation3"],
-  "analysis": "description courte"
+  "indicators": ["indicator1", "indicator2"],
+  "confidence": [number 0-1],
+  "recommendations": ["recommendation1", "recommendation2", "recommendation3"],
+  "analysis": "short description"
 }`;
 
     try {
       if (this.hasNativeAI && window.LanguageModel) {
         console.log("🤖 Using Gemini Nano for threat analysis");
+        console.log("Starting threat analysis for:", url);
 
-        // Utiliser la session pré-warmée si disponible, sinon créer une nouvelle
+        // Use pre-warmed session if available, otherwise create new one
         let session;
         if (this.aiSession && this.isAIReady) {
           console.log("🔥 Using pre-warmed AI session");
@@ -445,23 +446,29 @@ Répondez UNIQUEMENT avec ce format JSON exact:
               "You are a cybersecurity expert. Analyze URLs for threats and respond ONLY in valid JSON format.",
             outputLanguage: "en",
           });
+          console.log("Session created");
         }
 
         const result = await session.prompt(prompt);
+        console.log(
+          "Prompt executed, result length:",
+          result ? result.length : 0
+        );
 
-        // Nettoyer la session seulement si elle n'est pas la session pré-warmée
+        // Clean up session only if it's not the pre-warmed session
         if (session !== this.aiSession && session && session.destroy) {
           session.destroy();
         }
 
         console.log("✅ Analyse IA terminée");
         const parsedResult = this.parseAIResponse(result);
+        console.log("Parsed result riskScore:", parsedResult.riskScore);
 
-        // 🎯 ÉTAPE 2: UTILISATION DES APIS SPÉCIALISÉES
+        // 🎯 STEP 2: USING SPECIALIZED APIs
         console.log("🚀 ÉTAPE 2: Génération contenu avec APIs spécialisées...");
 
         try {
-          // Vérifier la disponibilité des APIs
+          // Check API availability
           const hasSpecializedAPIs =
             window.Summarizer || window.Writer || window.Translator;
 
@@ -472,7 +479,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
             const enhancementPromises = [];
 
-            // 📝 SUMMARIZER: Résumé de l'analyse
+            // 📝 SUMMARIZER: Analysis summary
             if (window.Summarizer) {
               const summarizerPromise = window.Summarizer.create({
                 type: "key-points",
@@ -504,7 +511,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
               enhancementPromises.push(summarizerPromise);
             }
 
-            // ✍️ WRITER: Recommandations détaillées
+            // ✍️ WRITER: Detailed recommendations
             if (window.Writer) {
               const writerPromise = window.Writer.create({
                 tone: "formal",
@@ -561,7 +568,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
               enhancementPromises.push(translatorPromise);
             }
 
-            // 📝 PROOFREADER: Amélioration de la qualité du texte d'analyse
+            // 📝 PROOFREADER: Improve analysis text quality
             if (window.Proofreader) {
               const proofreaderPromise = window.Proofreader.create({
                 type: "grammar-and-clarity",
@@ -590,7 +597,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             // Attendre tous les enrichissements
             const enhancements = await Promise.all(enhancementPromises);
 
-            // Intégrer les enrichissements dans le résultat
+            // Integrate enrichments into result
             enhancements.forEach((enhancement) => {
               if (enhancement.content) {
                 switch (enhancement.type) {
@@ -653,11 +660,11 @@ Répondez UNIQUEMENT avec ce format JSON exact:
     console.log("🚨 === DÉMARRAGE ANALYSE COMPLÈTE ===");
 
     try {
-      // ÉTAPE 1: Première analyse rapide avec Gemini Nano
+      // STEP 1: First quick analysis with Gemini Nano
       console.log("⚡ ÉTAPE 1: Analyse rapide locale...");
       const quickAnalysis = await this.analyzeThreat(url, context);
 
-      // Retourner immédiatement pour l'affichage
+      // Return immediately for display
       const progressiveResult = {
         ...quickAnalysis,
         isProgressive: true,
@@ -670,14 +677,14 @@ Répondez UNIQUEMENT avec ce format JSON exact:
         },
       };
 
-      // ÉTAPE 2: Deep analysis via n8n (en arrière-plan)
+      // STEP 2: Deep analysis via n8n (in background)
       console.log("🔄 ÉTAPE 2: Deep analysis via n8n...");
       console.log("📡 Démarrage triggerDeepAnalysis avec:", {
         url,
         quickAnalysis,
       });
 
-      // 🎯 NE PAS ATTENDRE - Lancer en arrière-plan
+      // 🎯 DO NOT WAIT - Launch in background
       setTimeout(async () => {
         try {
           console.log("🚀 Lancement triggerDeepAnalysis en arrière-plan...");
@@ -708,10 +715,10 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       console.log(
         "🎯 ULTRA-SIMPLE MODE: No nested objects, only flat properties"
       );
-      // 🎯 PAYLOAD CORRIGÉ AVEC INDICATORS
+      // 🎯 CORRECTED PAYLOAD WITH INDICATORS
       console.log("🎯 SENDING COMPLETE PAYLOAD with indicators");
 
-      // 🔍 DEBUG: Vérifier le contenu de quickAnalysis
+      // 🔍 DEBUG: Check quickAnalysis content
       console.log("🔍 DEBUG quickAnalysis content:");
       console.log("  - threatType:", quickAnalysis.threatType);
       console.log("  - analysis:", quickAnalysis.analysis);
@@ -733,7 +740,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
         timestamp: new Date().toISOString(),
       };
 
-      // 🚨 DÉCLENCHEMENT MANUEL ADDITIF
+      // 🚨 ADDITIONAL MANUAL TRIGGER
       console.log("🚨 Tentative de déclenchement manuel du workflow...");
 
       // Essayer aussi l'endpoint direct du workflow n8n
@@ -792,7 +799,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
         const result = await response.json();
         console.log("✅ Real extension data sent to n8n:", result);
         console.log("🔄 Démarrage polling avec l'ID réel...");
-        // Démarrer le polling avec l'ID réel
+        // Start polling with real ID
         this.pollForDeepResults(url, quickAnalysis);
       } else {
         const errorText = await response.text();
@@ -816,7 +823,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
     }
   }
 
-  // 🧪 POLLING SPÉCIAL POUR TEST AVEC ID MOCK
+  // 🧪 SPECIAL POLLING FOR TEST WITH MOCK ID
   async pollForTestResults(url, quickAnalysis, maxAttempts = 20) {
     console.log("🧪 TEST POLLING avec ID mock...");
     console.log(`✅ Test Extension ID: test-login-token`);
@@ -826,7 +833,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Attendre 3s avant la tentative (sauf la première)
+        // Wait 3s before attempt (except first)
         if (attempt > 1) {
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
@@ -852,7 +859,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             continue; // Essayer la tentative suivante
           }
 
-          // 🔍 DEBUG DÉTAILLÉ de la réponse n8n TEST
+          // 🔍 DETAILED DEBUG of n8n TEST response
           console.log(`🧪 TEST DEBUG n8n Response:`);
           console.log(`  - success: ${data.success}`);
           console.log(
@@ -901,7 +908,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             console.log("🎉 TEST: Données trouvées:", resultData);
             console.log("✅ TEST RÉUSSI: Le format mock fonctionne!");
 
-            // Émettre un événement pour mettre à jour l'UI
+            // Emit event to update UI
             window.dispatchEvent(
               new CustomEvent("deepAnalysisUpdate", {
                 detail: {
@@ -937,7 +944,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
     return null;
   }
 
-  // 🆕 POLLING POUR RÉSULTATS DEEP ANALYSIS
+  // 🆕 POLLING FOR DEEP ANALYSIS RESULTS
   async pollForDeepResults(url, quickAnalysis, maxAttempts = 30) {
     console.log("🔄 Polling pour résultats deep analysis...");
     console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
@@ -952,7 +959,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        // Attendre 3s avant la tentative (sauf la première)
+        // Wait 3s before attempt (except first)
         if (attempt > 1) {
           await new Promise((resolve) => setTimeout(resolve, 7000));
         }
@@ -980,7 +987,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             continue; // Essayer la tentative suivante
           }
 
-          // 🔍 DEBUG DÉTAILLÉ de la réponse n8n
+          // 🔍 DETAILED DEBUG of n8n response
           console.log(`🔍 DEBUG n8n Response:`);
           console.log(`  - success: ${data.success}`);
           console.log(
@@ -1017,23 +1024,25 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           console.log("  - URL length:", url?.length);
           console.log("  - Link length:", data.results?.[0]?.link?.length);
 
-          // Filtrer les résultats par URL actuelle
-          // Filtrer par URL visitée (normalisée) — seul critère demandé par l'utilisateur.
+          // Filter results by current URL
+          // Filter by visited URL (normalized) — only criteria requested by user.
           // Ne pas appliquer de priorisation real/virtual ici : afficher simplement la CVE
-          // qui correspond à l'URL analysée. Si plusieurs résultats existent pour la même URL,
-          // on prend le plus récent (receivedAt > timestamp) — cela reflète ce que le backend
-          // (n8n) a retourné en dernier pour cette URL.
+          // that matches the analyzed URL. If multiple results exist for the same URL,
+          // we take the most recent (receivedAt > timestamp) — this reflects what the backend
+          // (n8n) returned last for this URL.
           const normalizeUrl = (u) => {
             if (!u) return "";
             try {
-              const o = new URL(u);
+              // Encode the URL to handle special characters consistently
+              const encoded = encodeURI(u);
+              const o = new URL(encoded);
               // garder hostname + pathname + query (search) pour correspondance stricte
               return (o.hostname + o.pathname + (o.search || "")).replace(
                 /\/$/,
                 ""
               );
             } catch (err) {
-              // fallback simple pour chaînes non-URL
+              // simple fallback for non-URL strings
               return String(u)
                 .replace(/^https?:\/\//, "")
                 .split("?")[0]
@@ -1081,9 +1090,9 @@ Répondez UNIQUEMENT avec ce format JSON exact:
             selectedResult && selectedResult.cve_id
           );
 
-          // ///////////////////////// ✅ FILTRER PAR URL DU SITE CONSULTÉ + TRIER PAR SEVERITY/SCORE
+          // ///////////////////////// ✅ FILTER BY VISITED SITE URL + SORT BY SEVERITY/SCORE
 
-          // // ✅ FILTRER PAR URL DU SITE CONSULTÉ + TRIER PAR SEVERITY/SCORE
+          // // ✅ FILTER BY VISITED SITE URL + SORT BY SEVERITY/SCORE
           // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           //   const currentUrl = tabs[0]?.url;
           //   console.log(`🌐 Current tab URL: ${currentUrl}`);
@@ -1143,16 +1152,16 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           //       return aSeverity - bSeverity; // ✅ Plus critique en premier
           //     }
 
-          //     // 2️⃣ Si même severity, comparer par SCORE (90 > 80 > 70...)
+          //     // 2️⃣ If same severity, compare by SCORE (90 > 80 > 70...)
           //     const aScore = a.score || 0;
           //     const bScore = b.score || 0;
 
           //     if (aScore !== bScore) {
           //       console.log(`📊 Sort by score: ${aScore} vs ${bScore}`);
-          //       return bScore - aScore; // ✅ Score plus élevé en premier
+          //       return bScore - aScore; // ✅ Higher score first
           //     }
 
-          //     // 3️⃣ Si même severity ET même score, ALORS privilégier CVE réel
+          //     // 3️⃣ If same severity AND same score, THEN prioritize real CVE
           //     const aIsReal = !a.cve_id?.startsWith("CVE-2026");
           //     const bIsReal = !b.cve_id?.startsWith("CVE-2026");
 
@@ -1162,20 +1171,20 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           //       }) vs ${b.cve_id} (${bIsReal ? "REAL" : "VIRTUAL"})`
           //     );
 
-          //     if (aIsReal && !bIsReal) return -1; // ✅ CVE réel en premier (à égalité)
-          //     if (!aIsReal && bIsReal) return 1; // ✅ CVE virtuel en dernier (à égalité)
+          //     if (aIsReal && !bIsReal) return -1; // ✅ Real CVE first (at equality)
+          //     if (!aIsReal && bIsReal) return 1; // ✅ Virtual CVE last (at equality)
 
-          //     // 4️⃣ Si tout est égal, trier par date (plus récent en premier)
+          //     // 4️⃣ If everything is equal, sort by date (most recent first)
           //     const aDate = new Date(a.timestamp || 0);
           //     const bDate = new Date(b.timestamp || 0);
-          //     return bDate - aDate; // ✅ Plus récent en premier
+          //     return bDate - aDate; // ✅ Most recent first
           //   });
 
           //   console.log(
           //     `✅ After sort: ${urlFilteredResults[0]?.cve_id} (severity: ${urlFilteredResults[0]?.severity}, score: ${urlFilteredResults[0]?.score})`
           //   );
 
-          //   // 3️⃣ Afficher les résultats
+          //   // 3️⃣ Display the results
           //   this.displayResults(urlFilteredResults);
           // });
 
@@ -1206,7 +1215,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
           if (hasResults && resultData) {
             console.log("🎉 Données trouvées:", resultData);
 
-            // Émettre un événement pour mettre à jour l'UI
+            // Emit event to update UI
             window.dispatchEvent(
               new CustomEvent("deepAnalysisUpdate", {
                 detail: {
@@ -1236,13 +1245,13 @@ Répondez UNIQUEMENT avec ce format JSON exact:
 
     console.log("⏱️ Timeout deep analysis - Génération fallback cohérent");
 
-    // 🎯 FALLBACK COHÉRENT avec l'analyse Gemini (maintenant async)
+    // 🎯 CONSISTENT FALLBACK with Gemini analysis (now async)
     const coherentFallback = await this.generateCoherentFallback(
       quickAnalysis,
       url
     );
 
-    // Émettre l'événement avec fallback cohérent
+    // Emit event with consistent fallback
     window.dispatchEvent(
       new CustomEvent("deepAnalysisUpdate", {
         detail: {
@@ -1257,18 +1266,18 @@ Répondez UNIQUEMENT avec ce format JSON exact:
     return coherentFallback;
   }
 
-  // 🎯 GÉNÉRATION FALLBACK COHÉRENT avec analyse Gemini
+  // 🎯 CONSISTENT GENERATION FALLBACK with Gemini analysis
   async generateCoherentFallback(quickAnalysis, url) {
     console.log("🎯 Génération fallback cohérent pour:", quickAnalysis);
 
-    // 🔍 EXTRACTION DES DONNÉES RÉELLES DE L'ANALYSE
+    // 🔍 EXTRACTION OF REAL DATA FROM ANALYSIS
     const riskScore = quickAnalysis.riskScore || 50;
     const threatType = quickAnalysis.threatType || "unknown";
     const indicators = quickAnalysis.indicators || [];
     const analysisText = quickAnalysis.analysis || "";
     const threats = quickAnalysis.threats || [];
 
-    // 🎯 GÉNÉRATION DYNAMIQUE DE LA SÉVÉRITÉ
+    // 🎯 DYNAMIC SEVERITY GENERATION
     let coherentSeverity, coherentConfidence;
     if (riskScore >= 70) {
       coherentSeverity = "High";
@@ -1281,12 +1290,12 @@ Répondez UNIQUEMENT avec ce format JSON exact:
       coherentConfidence = 0.65 + Math.random() * 0.15;
     }
 
-    // 🎯 CVE DYNAMIQUE BASÉ SUR L'ANALYSE
+    // 🎯 DYNAMIC CVE BASED ON ANALYSIS
     const cveId = `CVE-${new Date().getFullYear()}-${
       Math.floor(Math.random() * 90000) + 10000
     }`;
 
-    // 🎯 TITRE DYNAMIQUE BASÉ SUR LE TYPE DE MENACE
+    // 🎯 DYNAMIC TITLE BASED ON THREAT TYPE
     const generateTitle = () => {
       const domain = url
         ? new URL(url).hostname.replace("www.", "")
@@ -1329,7 +1338,7 @@ Répondez UNIQUEMENT avec ce format JSON exact:
         baseRecommendations.push("✅ Continue standard monitoring");
       }
 
-      // 🤖 GÉNÉRATION INTELLIGENTE AVEC GEMINI
+      // 🤖 INTELLIGENT GENERATION WITH GEMINI
       let generationMethod = "rule-based";
       try {
         console.log("🤖 Requesting recommendations from Gemini...");
@@ -1351,7 +1360,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
 
           console.log("🤖 Raw Gemini response:", geminiResponse);
 
-          // Parser la réponse Gemini
+          // Parse Gemini response
           const geminiRecs = geminiResponse
             .split("\n")
             .filter((line) => line.trim())
@@ -1364,7 +1373,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
           if (geminiRecs.length > 0) {
             generationMethod = "gemini-ai";
             console.log("✅ Using Gemini recommendations");
-            // Préfixer avec des icônes IA pour indiquer la source
+            // Prefix with AI icons to indicate source
             const aiRecommendations = geminiRecs.map((rec) => `🤖 ${rec}`);
             return [...baseRecommendations.slice(0, 1), ...aiRecommendations];
           }
@@ -1373,7 +1382,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         console.log("⚠️ Gemini error, falling back to rules:", error);
       }
 
-      // Fallback: Recommandations basées sur les indicateurs
+      // Fallback: Recommendations based on indicators
       indicators.forEach((indicator) => {
         const lowerIndicator = indicator.toLowerCase();
         if (lowerIndicator.includes("extension")) {
@@ -1393,7 +1402,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         }
       });
 
-      // Ajouter une recommandation générale si peu d'indicateurs
+      // Add general recommendation if few indicators
       if (baseRecommendations.length < 3) {
         baseRecommendations.push("Update security configurations");
         baseRecommendations.push("Enable enhanced monitoring");
@@ -1414,12 +1423,12 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         coherentConfidence * 100
       )}% confidence in assessment.`;
 
-    // Générer les recommandations (maintenant async)
+    // Generate recommendations (now async)
     const recResult = await generateRecommendations();
     const recommendations = recResult.recommendations;
     const recMethod = recResult.generationMethod;
 
-    // 🎯 GÉNÉRATION DES RÉSULTATS DES IA SPÉCIALISÉES POUR DEEP ANALYSIS
+    // 🎯 GENERATION OF SPECIALIZED AI RESULTS FOR DEEP ANALYSIS
     let specializedResults = {};
 
     try {
@@ -1431,7 +1440,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         proofreader: !!window.Proofreader,
       });
 
-      // Pour des résultats immédiats, on va forcer des résultats de test si les APIs ne sont pas prêtes
+      // For immediate results, we will force test results if APIs are not ready
       console.log("🎯 Checking API readiness...");
       const summarizerReady =
         window.ai && window.ai.summarizer
@@ -1495,7 +1504,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
           console.log("📝 window.ai.summarizer not available");
         }
 
-        // ✍️ WRITER pour recommandations améliorées
+        // ✍️ WRITER for improved recommendations
         if (window.ai && window.ai.writer) {
           console.log("✍️ Testing Writer availability...");
           const writerAvailability = await window.ai.writer.availability();
@@ -1554,7 +1563,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
           console.log("🌐 Translator not available or not needed");
         }
 
-        // 📝 PROOFREADER pour améliorer la qualité
+        // 📝 PROOFREADER to improve quality
         if (window.Proofreader) {
           console.log("📝 Testing Proofreader availability...");
           const proofreader = await window.Proofreader.create({
@@ -1574,7 +1583,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       console.log("🎯 Final specialized results:", specializedResults);
     } catch (error) {
       console.log("⚠️ Specialized AI error in deep analysis:", error.message);
-      // Fallback en cas d'erreur - FORCER la génération des résultats
+      // Fallback in case of error - FORCE result generation
       console.log("🎯 FORCING fallback specialized results due to error");
       specializedResults = {
         aiSummary: `Security analysis summary: ${threatType} threat detected with ${riskScore}% risk level. Behavioral patterns indicate ${coherentSeverity.toLowerCase()} severity threat.`,
@@ -1591,7 +1600,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       console.log("🎯 FORCED fallback results:", specializedResults);
     }
 
-    // S'assurer qu'on a au minimum des résultats mock
+    // Ensure we have at least mock results
     if (
       !specializedResults.aiSummary &&
       !specializedResults.enhancedRecommendations
@@ -1612,7 +1621,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
 
     return {
       aiAnalysis: enhancedAnalysis,
-      ...specializedResults, // Ajouter les résultats des IA spécialisées
+      ...specializedResults, // Add specialized AI results
       cveResults: [
         {
           id: cveId,
@@ -1681,7 +1690,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
   }
 
-  // 🆕 Détecter langue (version corrigée)
+  // 🆕 Detect language (corrected version)
   async detectLanguage(text) {
     try {
       if (this.hasNativeAI && this.nativeAI && this.nativeAI.languageDetector) {
@@ -1700,7 +1709,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
   }
 
-  // 🆕 Générer recommandations SOC (version corrigée)
+  // 🆕 Generate SOC recommendations (corrected version)
   async generateSOCRecommendations(threatContext) {
     const prompt = `
     Generate SOC response recommendations:
@@ -1825,13 +1834,13 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
   }
 
-  // Helper pour parser les réponses AI
+  // Helper to parse AI responses
   parseAIResponse(response) {
     try {
-      // Nettoyer la réponse (enlever markdown, espaces, etc.)
+      // Clean response (remove markdown, spaces, etc.)
       let cleanResponse = response.trim();
 
-      // Chercher du JSON dans la réponse
+      // Look for JSON in response
       const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         cleanResponse = jsonMatch[0];
@@ -1859,7 +1868,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         "⚠️ JSON parsing failed, using AI text directly:",
         error.message
       );
-      // Créer une analyse basée sur le texte brut
+      // Create analysis based on raw text
       const text = response.toLowerCase();
       let riskScore = 25;
       let threatType = "safe";
@@ -1902,7 +1911,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     };
   }
 
-  // Méthodes principales CORRIGÉES
+  // Main methods CORRECTED
   async summarize(text, options = {}) {
     try {
       if (this.hasNativeAI && this.nativeAI && this.nativeAI.summarizer) {
@@ -1955,7 +1964,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     }
   }
 
-  // 🆕 MÉTHODES MOCK POUR FALLBACK
+  // 🆕 MOCK METHODS FOR FALLBACK
   mockSummarize(text, options = {}) {
     const maxLength =
       options.length === "short" ? 100 : options.length === "long" ? 300 : 200;
@@ -1994,7 +2003,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
     );
   }
 
-  // 🆕 Déterminer le type de menace pour l'API webhook
+  // 🆕 Determine threat type for webhook API
   determineThreatType(analysis) {
     if (!analysis || !analysis.indicators) return "unknown";
 
@@ -2002,7 +2011,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
       ? analysis.indicators
       : [analysis.indicators];
 
-    // Analyser les indicateurs pour déterminer le type de menace
+    // Analyze indicators to determine threat type
     if (indicators.some((i) => i.includes("malware") || i.includes("virus"))) {
       return "malware";
     }
@@ -2147,7 +2156,7 @@ Format: Short, actionable phrases (max 50 chars each). Focus on immediate action
         lmSource
       );
 
-      // 🔥 Priorité à la session pré-warmée
+      // 🔥 Priority to pre-warmed session
       if (this.aiSession && this.isAIReady) {
         console.log("🔥 Using pre-warmed AI session for enhanced analysis");
         session = this.aiSession;
@@ -2277,7 +2286,7 @@ Use these icons:
       console.log("📨 Sending prompt to languageModel (chars):", prompt.length);
       const response = await session.prompt(prompt);
       console.log("📥 Raw languageModel response:", response);
-      // Cleanup session if API exposes destroy (mais pas la session pré-warmée)
+      // Cleanup session if API exposes destroy (but not pre-warmed session)
       if (session !== this.aiSession) {
         session.destroy?.();
       }
@@ -2421,12 +2430,12 @@ Use these icons:
     }
   }
 
-  // ✅ NOUVELLE FONCTION : Warm-up Gemini Nano pour éviter les analyses fausses
+  // ✅ NEW FUNCTION: Warm-up Gemini Nano to avoid false analyses
   async warmupGeminiNano() {
     console.log("🔥 Warming up Gemini Nano AI...");
 
     try {
-      // Créer la session si elle n'existe pas
+      // Create session if it doesn't exist
       if (!this.aiSession && window.ai?.languageModel) {
         this.aiSession = await window.ai.languageModel.create({
           temperature: 0.7,
@@ -2451,7 +2460,7 @@ Use these icons:
     } catch (error) {
       console.error("❌ Gemini Nano warmup failed:", error);
 
-      // Retry jusqu'à 3 fois
+      // Retry up to 3 times
       if (this.aiWarmupAttempts < 3) {
         console.log(
           `🔄 Retrying warmup (attempt ${this.aiWarmupAttempts + 1}/3)...`
@@ -2468,5 +2477,5 @@ Use these icons:
 const aiHelper = new AIHelper();
 window.socAI = aiHelper;
 
-// Initialisation async différée pour éviter CSP
+// Deferred async initialization to avoid CSP
 console.log("🔧 AI Helper loaded - initialization deferred");

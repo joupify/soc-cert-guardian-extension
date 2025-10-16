@@ -1,14 +1,14 @@
-// content-script.js - Analyse les pages web pour SOC-CERT
+// content-script.js - Analyzes web pages for SOC-CERT
 console.log("🔍 SOC-CERT Content Script loaded on:", window.location.href);
 
-// État de l'analyse
+// Analysis state
 let pageAnalysis = null;
 let aiAnalysisTriggered = false;
 
-// 🆕 CONNEXION AU SYSTÈME AI
+// 🆕 CONNECTION TO AI SYSTEM
 async function initializeAIConnection() {
   try {
-    // Attendre que ai-helper soit chargé
+    // Wait for ai-helper to be loaded
     let attempts = 0;
     while (!window.socAI && attempts < 20) {
       await new Promise((resolve) => setTimeout(resolve, 100));
@@ -19,7 +19,7 @@ async function initializeAIConnection() {
       console.log("✅ AI Helper connected to content script");
       await window.socAI.initialize();
 
-      // 🎯 DÉCLENCHEMENT AUTOMATIQUE DE L'ANALYSE
+      // 🎯 AUTOMATIC ANALYSIS TRIGGER
       if (!aiAnalysisTriggered && shouldAnalyzePage()) {
         console.log("🚀 Auto-triggering page analysis...");
         aiAnalysisTriggered = true;
@@ -33,16 +33,16 @@ async function initializeAIConnection() {
   }
 }
 
-// 🆕 VÉRIFIER SI LA PAGE DOIT ÊTRE ANALYSÉE
+// 🆕 CHECK IF PAGE SHOULD BE ANALYZED
 function shouldAnalyzePage() {
   const url = window.location.href;
 
-  // Ne pas analyser les pages d'extension ou système
+  // Do not analyze extension or system pages
   if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) {
     return false;
   }
 
-  // Ne pas analyser les pages locales de développement
+  // Do not analyze local development pages
   if (url.includes("localhost") || url.includes("127.0.0.1")) {
     return false;
   }
@@ -51,20 +51,20 @@ function shouldAnalyzePage() {
   return url.startsWith("https://");
 }
 
-// 🆕 DÉCLENCHEMENT AUTOMATIQUE DE L'ANALYSE RÉELLE
+// 🆕 AUTOMATIC REAL ANALYSIS TRIGGER
 async function triggerAutoAnalysis() {
   try {
     const url = window.location.href;
 
     console.log("🚨 Starting REAL security alert detection for:", url);
 
-    // 🎯 DÉTECTER LES VRAIES ALERTES DE SÉCURITÉ
+    // 🎯 DETECT REAL SECURITY ALERTS
     const realSecurityAlerts = detectRealSecurityAlerts();
 
     if (realSecurityAlerts.length > 0) {
       console.log("🚨 SECURITY ALERTS DETECTED:", realSecurityAlerts);
 
-      // 🎯 ENVOYER DIRECTEMENT LES ALERTES RÉELLES À N8N
+      // 🎯 SEND REAL ALERTS DIRECTLY TO N8N
       await sendRealAlertsToN8N(url, realSecurityAlerts);
     } else {
       console.log("✅ No security alerts detected on this page");
@@ -74,11 +74,11 @@ async function triggerAutoAnalysis() {
   }
 }
 
-// 🚨 DÉTECTER LES VRAIES ALERTES DE SÉCURITÉ SUR LA PAGE
+// 🚨 DETECT REAL SECURITY ALERTS ON PAGE
 function detectRealSecurityAlerts() {
   const alerts = [];
 
-  // 🔍 1. DÉTECTION DE FORMULAIRES NON SÉCURISÉS
+  // 🔍 1. DETECTION OF UNSECURE FORMS
   const unsecureFormElements = document.querySelectorAll(
     'form:not([action^="https://"])'
   );
@@ -96,7 +96,7 @@ function detectRealSecurityAlerts() {
     });
   }
 
-  // 🔍 2. DÉTECTION DE SCRIPTS EXTERNES SUSPECTS
+  // 🔍 2. DETECTION OF SUSPICIOUS EXTERNAL SCRIPTS
   const externalScripts = document.querySelectorAll("script[src]");
   const suspiciousScripts = Array.from(externalScripts).filter((script) => {
     const src = script.src.toLowerCase();
@@ -119,7 +119,7 @@ function detectRealSecurityAlerts() {
     });
   }
 
-  // 🔍 3. DÉTECTION DE CONTENU MIXTE (HTTP sur HTTPS)
+  // 🔍 3. DETECTION OF MIXED CONTENT (HTTP on HTTPS)
   if (window.location.protocol === "https:") {
     const mixedContent = document.querySelectorAll(
       'img[src^="http:"], iframe[src^="http:"], script[src^="http:"]'
@@ -137,7 +137,7 @@ function detectRealSecurityAlerts() {
     }
   }
 
-  // 🔍 4. DÉTECTION D'IFRAMES SUSPECTS
+  // 🔍 4. DETECTION OF SUSPICIOUS JAVASCRIPT
   const iframes = document.querySelectorAll("iframe");
   const suspiciousIframes = Array.from(iframes).filter((iframe) => {
     const src = iframe.src.toLowerCase();
@@ -161,7 +161,7 @@ function detectRealSecurityAlerts() {
     });
   }
 
-  // 🔍 5. DÉTECTION DE REDIRECTIONS AUTOMATIQUES SUSPECTES
+  // 🔍 5. DETECTION OF SUSPICIOUS FORMS
   const metaRefresh = document.querySelector('meta[http-equiv="refresh"]');
   if (metaRefresh) {
     const content = metaRefresh.getAttribute("content");
@@ -177,7 +177,7 @@ function detectRealSecurityAlerts() {
     }
   }
 
-  // 🔍 6. DÉTECTION DE TENTATIVES DE PHISHING
+  // 🔍 6. DETECTION OF SUSPICIOUS LINKS
   const phishingIndicators = [
     "enter your password",
     "verify your account",
@@ -313,6 +313,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       handleContentExtraction(request, sendResponse);
       return true;
 
+    case "quick_gemini_analysis":
+      (async () => {
+        try {
+          const url = request.url || window.location.href;
+          console.log("🔎 quick_gemini_analysis requested for:", url);
+
+          if (window.socAI && window.socAI.analyzeThreat) {
+            // Prefer quick analyze (fast path)
+            const analysis = await window.socAI.analyzeThreat(url);
+            sendResponse({ success: true, analysis });
+          } else if (window.socAI && window.socAI.analyzeCompleteFlow) {
+            // Fallback to progressive flow if quick analyze not available
+            const progressive = await window.socAI.analyzeCompleteFlow(url);
+            sendResponse({ success: true, analysis: progressive });
+          } else {
+            console.log(
+              "⚠️ No AI helper available in page to run quick analysis"
+            );
+            sendResponse({ success: false, error: "ai_helper_unavailable" });
+          }
+        } catch (error) {
+          console.error("❌ quick_gemini_analysis failed:", error);
+          sendResponse({
+            success: false,
+            error: error.message || String(error),
+          });
+        }
+      })();
+
+      return true; // keep channel open for async response
+
     default:
       console.log("Unknown action in content script:", request.action);
   }
@@ -374,7 +405,7 @@ async function performComprehensiveAnalysis() {
       form_count: document.forms.length,
     },
 
-    // Détection de technologies
+    // Technology detection
     technologies: detectTechnologies(),
 
     // Menaces détectées
@@ -417,7 +448,7 @@ function countThirdPartyScripts() {
   }).length;
 }
 
-// Détection de contenu mixte
+// Mixed content detection
 function detectMixedContent() {
   const elements = [...document.images, ...document.scripts, ...document.links];
   const currentOrigin = window.location.origin;
@@ -444,17 +475,17 @@ async function checkSecurityHeaders() {
   };
 }
 
-// Détection des technologies utilisées
+// Detection of technologies used
 function detectTechnologies() {
   const technologies = [];
 
-  // Détection basique
+  // Basic detection
   if (window.jQuery) technologies.push("jQuery");
   if (window.React) technologies.push("React");
   if (window.angular) technologies.push("Angular");
   if (window.Vue) technologies.push("Vue");
 
-  // Détection par classes/meta
+  // Detection by classes/meta
   if (document.querySelector(".wp-")) technologies.push("WordPress");
   if (document.querySelector("[data-reactroot]")) technologies.push("React");
   if (document.querySelector("[ng-]")) technologies.push("Angular");
@@ -462,13 +493,13 @@ function detectTechnologies() {
   return technologies;
 }
 
-// Détection des menaces de sécurité
+// Detection of security threats
 async function detectSecurityThreats(content) {
   const threats = [];
   const url = window.location.href;
   const domain = window.location.hostname.toLowerCase();
 
-  // Détection de phishing/tysquatting
+  // Detection of phishing/typosquatting
   if (isSuspiciousDomain(domain)) {
     threats.push({
       type: "suspicious_domain",
@@ -502,7 +533,7 @@ async function detectSecurityThreats(content) {
   return threats;
 }
 
-// Détection de domaines suspects
+// Detection of suspicious domains
 function isSuspiciousDomain(domain) {
   const suspiciousPatterns = [
     /paypa1/,
@@ -521,7 +552,7 @@ function isSuspiciousDomain(domain) {
   return suspiciousPatterns.some((pattern) => pattern.test(domain));
 }
 
-// Détection de scripts suspects
+// Detection of suspicious scripts
 function detectSuspiciousScripts() {
   const scripts = Array.from(document.scripts);
   const suspiciousKeywords = [
@@ -694,7 +725,7 @@ function displayCVEAlert(cve) {
     });
 }
 
-// ✅ CORRIGÉ : Détection simplifiée sans auto-polling
+// ✅ FIXED: Simplified detection without auto-polling
 async function checkForThreatsAndAlert() {
   const threats = await detectSecurityThreats(extractPageContent());
 

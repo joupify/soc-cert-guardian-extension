@@ -34,7 +34,7 @@ async function loadVirtualCVEStats() {
 
     console.log("✅ Stats loaded:", stats);
 
-    // Mettre à jour l'UI
+    // Update the UI
     document.getElementById("total-virtual-cves").textContent =
       stats.totalVirtualCVEs || 0;
     document.getElementById("threats-24h").textContent =
@@ -66,7 +66,7 @@ async function loadVirtualCVEStats() {
 // // ✅ AJOUT : Auto-refresh toutes les 10 secondes
 // setInterval(loadVirtualCVEStats, 10000);
 
-// ✅ Charger immédiatement au démarrage
+// ✅ Load immediately at startup
 loadVirtualCVEStats();
 
 // Animation de compteur
@@ -263,7 +263,7 @@ class SecurityResourcesGenerator {
       },
     };
 
-    // Default resources si aucun type n'est détecté
+    // Default resources if no type is detected
     this.defaultResources = {
       cwe: "Unknown",
       cweUrl: "https://cwe.mitre.org/",
@@ -290,7 +290,7 @@ class SecurityResourcesGenerator {
     };
   }
 
-  // Détecter le type de vulnérabilité depuis les indicators
+  // Detect vulnerability type from indicators
   detectVulnerabilityType(indicators) {
     if (!indicators || indicators.length === 0) return null;
 
@@ -309,7 +309,7 @@ class SecurityResourcesGenerator {
     return null;
   }
 
-  // Générer le HTML complet des ressources
+  // Generate complete HTML for resources
   generateResourcesHTML(indicators) {
     const detected = this.detectVulnerabilityType(indicators);
     const resources = detected || {
@@ -397,7 +397,7 @@ class SecurityResourcesGenerator {
   }
 }
 
-// ✅ Initialiser le générateur
+// ✅ Initialize the generator
 const resourcesGenerator = new SecurityResourcesGenerator();
 
 // Helper to show/hide a deep analysis spinner inside #analysis-content
@@ -621,22 +621,22 @@ function renderRecommendationsInline(items) {
   return escapeHTML(String(items));
 }
 
-// == AJOUTER CES FONCTIONS APRÈS initializePopup() ==
+// == ADD THESE FUNCTIONS AFTER initializePopup() ==
 
 function showRealTimeAnalysis(tab) {
   console.log("🚀 Starting real-time analysis UI");
 
-  // Afficher la section d'analyse en temps réel
+  // Display real-time analysis section
   document.getElementById("analysis-status").style.display = "block";
   document.getElementById("status").style.display = "none";
   document.getElementById("analysis-content").style.display = "none";
 
-  // Mettre à jour l'URL
+  // Update the URL
   const displayUrl =
     tab.url.length > 45 ? tab.url.substring(0, 45) + "..." : tab.url;
   document.getElementById("analyzing-url").textContent = displayUrl;
 
-  // Démarrer l'animation des APIs
+  // Start API animation
   startAPIAnalysisAnimation();
 
   // Retourner une promesse pour savoir quand l'animation est finie
@@ -672,7 +672,7 @@ function startAPIAnalysisAnimation() {
         element.classList.remove("active");
         element.classList.add("completed");
 
-        // ✨ SIMPLIFIÉ : Checkmark simple
+        // ✨ SIMPLIFIED: Simple checkmark
         statusElement.textContent = "Completed ✅";
 
         console.log(`✅ ${api.name} analysis completed`);
@@ -1051,7 +1051,7 @@ async function testTranslator() {
 }
 
 // Debug version of analyzeCurrentPage
-// Debug version of analyzeCurrentPage - AVEC INTERFACE TEMPS RÉEL
+// Debug version of analyzeCurrentPage - WITH REAL-TIME INTERFACE
 async function analyzeCurrentPage() {
   try {
     console.log(
@@ -1076,16 +1076,16 @@ async function analyzeCurrentPage() {
         new Date().toISOString()
       );
 
-      // 1. AFFICHER L'INTERFACE TEMPS RÉEL
+      // 1. DISPLAY REAL-TIME INTERFACE
       await showRealTimeAnalysis(tab);
       console.log("📌 After showRealTimeAnalysis", new Date().toISOString());
 
-      // 2. Pause pour la démo (optionnel - pour bien voir l'animation)
+      // 2. Pause for demo (optional - to see animation clearly)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       console.log("📊 Showing analysis results");
 
-      // 3. Cacher l'analyse en temps réel et montrer les résultats
+      // 3. Hide real-time analysis and show results
       document.getElementById("analysis-status").style.display = "none";
       document.getElementById("analysis-content").style.display = "block";
 
@@ -1226,7 +1226,7 @@ async function updateWithDeepResults(deepData) {
   ];
 
   try {
-    // Vérifie si la fonction existe ET si currentAnalysis est défini
+    // Check if function exists AND if currentAnalysis is defined
     if (
       aiHelper &&
       typeof aiHelper.generateEnhancedAnalysis === "function" &&
@@ -1234,7 +1234,7 @@ async function updateWithDeepResults(deepData) {
     ) {
       console.log("✅ AI: generateEnhancedAnalysis will be called");
 
-      // Appelle la fonction de génération enrichie (Gemini)
+      // Call the enriched generation function (Gemini)
       enhancedRecommendations = await aiHelper.generateEnhancedAnalysis(
         window.currentAnalysis,
         deepData.deepResults
@@ -1325,8 +1325,9 @@ async function updateWithDeepResults(deepData) {
               <span class="tooltip-label">✨ <strong>Our advantage:</strong></span>
               <span class="tooltip-description">
                 Instant detection of emerging threats by SOC-CERT<br/>
-                not yet listed in the official NVD database.
-                Official NVD CVEs are published with a delay of several weeks or months. This early detection allows you to take action before public disclosure.
+                not yet listed in the official NVD database.<br/
+                Official NVD CVEs are published with a delay of several weeks or months.<br/
+                This early detection allows you to take action before public disclosure.
               </span>
             </div>
       <span class="tooltip-arrow"></span>
@@ -1810,7 +1811,7 @@ function displayThreatAnalysis(analysis, siteUrl) {
         <span class="tooltip-icon">🎯</span>
         <div>
           <strong class="tooltip-title">Threat Indicators</strong>
-          <span class="tooltip-subtitle">Types de vulnérabilités détectées</span>
+          <span class="tooltip-subtitle">Types of Threats detected</span>
         </div>
       </div>
       <div class="tooltip-divider">

@@ -685,6 +685,31 @@ BAD EXAMPLES (don't use decoded):
   }
 
   // 🆕 FLOW COMPLET D'ANALYSE PROGRESSIVE
+  // Fonction utilitaire pour détecter les sites de vulnérabilités de sécurité
+  isSecurityVulnerabilitySite(url) {
+    const securityDomains = [
+      'exploit-db.com',
+      'nvd.nist.gov',
+      'cve.mitre.org',
+      'rapid7.com',
+      'packetstormsecurity.com',
+      'vuldb.com',
+      'cvedetails.com',
+      'securityfocus.com'
+    ];
+    
+    try {
+      const urlObj = new URL(url);
+      return securityDomains.some(domain => 
+        urlObj.hostname === domain || 
+        urlObj.hostname.endsWith('.' + domain)
+      );
+    } catch (e) {
+      console.warn('URL parsing failed:', e);
+      return false;
+    }
+  }
+
   async analyzeCompleteFlow(url, context = "") {
     console.log("🚨 === DÉMARRAGE ANALYSE COMPLÈTE ===");
 

@@ -39,6 +39,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: true });
       break;
 
+    case "EXT_WEBHOOK_SEND":
+      console.log("📤 EXT_WEBHOOK_SEND received from content script");
+      handleWebhookSend(request.payload, sendResponse);
+      return true; // Asynchronous response
+
     case "showExtensionOnCurrentPage":
       console.log(
         "📋 showExtensionOnCurrentPage received - opening popup on current page"
@@ -749,6 +754,38 @@ function requestQuickAnalysisFromTab(tabId, url, timeoutMs = 8000) {
       }
     }, timeoutMs);
   });
+}
+
+// 🆕 Handle webhook send requests from content script
+async function handleWebhookSend(payload, sendResponse) {
+  try {
+    console.log("📤 Sending CVE payload to webhook:", payload);
+
+    const response = await fetch(
+      "https://soc-cert-extension.vercel.app/api/extension-webhook",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    if (response.ok) {
+      console.log("✅ CVEs sent successfully via background script");
+      sendResponse({ success: true });
+    } else {
+      console.warn(
+        "⚠️ Background webhook failed with status:",
+        response.status
+      );
+      sendResponse({ success: false, error: `HTTP ${response.status}` });
+    }
+  } catch (error) {
+    console.error("❌ Background webhook error:", error);
+    sendResponse({ success: false, error: error.message });
+  }
 }
 
 console.log("🔒 SOC-CERT Background Service Worker ready");

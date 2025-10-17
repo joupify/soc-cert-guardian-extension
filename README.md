@@ -1486,3 +1486,18 @@ SOC-CERT demonstrates **innovation in threat intelligence** through:
 3. Not required for judging - core features work without it
 
 The extension is designed to work perfectly in both scenarios.
+
+# 🚀 SOC-CERT Chrome Extension
+
+## 🧪 Quick Testing
+
+**Test our AI threat detection with these official Google Safe Browsing URLs:**
+
+| Threat Type          | Test URL                                                        |
+| -------------------- | --------------------------------------------------------------- |
+| 🦠 Malware           | `https://testsafebrowsing.appspot.com/s/malware_in_iframe.html` |
+| 📦 Unwanted Software | `https://testsafebrowsing.appspot.com/s/unwanted.html`          |
+| 🎣 Phishing          | `https://testsafebrowsing.appspot.com/s/phishing.html`          |
+| 🔓 SQL Injection     | `http://testphp.vulnweb.com/artists.php?artist=1%27`            |
+
+**Installation:** See [INSTALL.md](INSTALL.md) for setup instructions.

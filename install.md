@@ -69,6 +69,36 @@ What to Look For:
 
 ✅ 5 Chrome AI APIs working together
 
+## 🧪 Comprehensive Test Suite
+
+### Malware Detection
+
+```bash
+# Test URL: https://testsafebrowsing.appspot.com/s/malware_in_iframe.html
+# Expected: Malware patterns, iframe analysis, 70-80% risk
+```
+
+### Phishing Detection
+
+```bash
+# Test URL: https://testsafebrowsing.appspot.com/s/phishing.html
+# Expected: Phishing techniques, social engineering, 70-80% risk
+```
+
+### Unwanted Software
+
+```bash
+# Test URL: https://testsafebrowsing.appspot.com/s/unwanted.html
+# Expected: PUP detection, bundleware patterns, 65-75% risk
+```
+
+### SQL Injection
+
+```bash
+# Test URL: http://testphp.vulnweb.com/artists.php?artist=1%27
+# Expected: SQL injection, parameter manipulation, 85-95% risk
+```
+
 ⚙️ Enhanced Testing (Optional)
 Enable Chrome AI Features:
 bash
@@ -261,123 +291,6 @@ This extension leverages multiple Chrome built-in AI APIs powered by Gemini Nano
 - Robust error handling ensures extension stability
 
 This multi-API approach demonstrates advanced integration of Chrome's AI capabilities for comprehensive cybersecurity analysis.
-
-## 🎯 Project Purpose & Innovation
-
-### 🚨 The Critical Problem: CVE Response Time Gap
-
-**Traditional Cybersecurity Challenge**:
-
-- Official CVE assignments by NVD take **3+ months** on average
-- Emerging threats remain untracked during this critical window
-- Organizations are vulnerable to zero-day exploits and novel attack vectors
-- Security teams lack actionable intelligence for immediate response
-
-### ⚡ Our Revolutionary Solution: Real-Time Virtual CVE Generation
-
-**SOC-CERT Extension Innovation**:
-
-- **Instant Threat Intelligence**: Generates virtual CVEs within seconds of threat detection
-- **AI-Powered Analysis**: Uses Gemini Nano to analyze and classify emerging threats
-- **Immediate Actionability**: Provides CVE-like structured data for security teams
-- **Continuous Monitoring**: Tracks threat evolution in real-time
-
-### 📊 Impact & Benefits
-
-**For Security Teams**:
-
-- **Zero-Day Protection**: Respond to threats before official CVE assignment
-- **Rapid Response**: Implement mitigations immediately, not months later
-- **Intelligence Advantage**: Stay ahead of threat actors with live threat tracking
-- **Operational Efficiency**: Reduce mean time to respond (MTTR) from months to minutes
-
-**For Organizations**:
-
-- **Proactive Defense**: Prevent breaches before they happen
-- **Cost Reduction**: Avoid expensive incident response by early detection
-- **Compliance Edge**: Demonstrate proactive security posture
-- **Competitive Advantage**: Lead in cybersecurity innovation
-
-### 🔬 Technical Innovation
-
-**Virtual CVE Structure**:
-
-```
-CVE-2025-{timestamp}-{unique_id}
-├── Threat Analysis (Gemini Nano)
-├── Risk Scoring (0-100)
-├── Attack Vectors Identified
-├── Mitigation Recommendations
-└── Real-time Tracking Updates
-```
-
-**vs. Traditional NVD Process**:
-
-- **NVD**: Manual analysis → Committee review → 90+ days → Publication
-- **SOC-CERT**: AI analysis → Instant generation → Immediate distribution → Continuous updates
-
-This approach transforms reactive cybersecurity into **proactive threat intelligence**, giving users unprecedented visibility into emerging cyber threats.
-
-## 💬 Development Feedback on Chrome AI APIs
-
-As part of our development process with Chrome's built-in AI APIs, here are our key insights and feedback:
-
-### ✅ Strengths of Chrome AI APIs
-
-**LanguageModel API (Prompt API)**:
-
-- **Reliability**: Extremely stable and consistently available across different Chrome versions
-- **Performance**: Fast response times for threat analysis (typically <2 seconds)
-- **Flexibility**: Excellent for structured JSON output and security analysis tasks
-- **Integration**: Seamless integration with existing JavaScript code
-
-**Specialized APIs (Summarizer, Writer, Translator, Proofreader)**:
-
-- **Potential**: When available, provide significant value for enhanced analysis
-- **Availability**: Currently in experimental phase, may not be enabled by default
-- **Fallback Importance**: Critical to have robust fallback systems for production use
-
-### 🔄 Challenges Encountered
-
-**API Availability Detection**:
-
-- Complex initialization process requiring proper Chrome flags
-- Need for user activation in some cases
-- Different availability states (available/downloadable/downloading)
-
-**Error Handling**:
-
-- APIs may fail silently or throw unexpected errors
-- Need comprehensive try-catch blocks and fallback mechanisms
-- Graceful degradation is essential for user experience
-
-**Performance Optimization**:
-
-- Background processing requires careful timeout management
-- Balance between analysis depth and response time
-- Memory management for long-running sessions
-
-### 🎯 Recommendations for Future Development
-
-**For Chrome Team**:
-
-- More predictable API availability detection
-- Better documentation for experimental features
-- Clearer error messages and status reporting
-
-**For Developers**:
-
-- Always implement fallback systems
-- Test extensively across different Chrome versions
-- Plan for progressive enhancement rather than hard dependencies
-
-**For Production Applications**:
-
-- Robust error handling is non-negotiable
-- User education about Chrome flags when APIs are unavailable
-- Regular testing of API availability in different environments
-
-This feedback is based on our experience building a production-ready Chrome extension using these cutting-edge AI capabilities.
 
 ## 🎯 Project Purpose & Innovation
 

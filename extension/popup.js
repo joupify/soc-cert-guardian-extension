@@ -1233,6 +1233,12 @@ async function analyzeCurrentPage() {
         );
         showDeepSpinner();
 
+        // Safety timeout: hide spinner after 30 seconds if no update received
+        setTimeout(() => {
+          console.log("⏰ Safety timeout: hiding deep analysis spinner");
+          hideDeepSpinner();
+        }, 30000);
+
         window.addEventListener("deepAnalysisUpdate", (event) => {
           console.log(
             "🔍 Deep analysis update received:",
@@ -1265,6 +1271,8 @@ async function analyzeCurrentPage() {
     }
   } catch (error) {
     console.error("❌ Analysis error:", error);
+    // Hide spinner on error
+    hideDeepSpinner();
     document.getElementById("analysis-content").innerHTML = `
             <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 10px;">
                 <h3>Analysis Error</h3>
@@ -1391,6 +1399,8 @@ async function updateWithDeepResults(deepData) {
     }
   } catch (error) {
     console.log("⚠️ Enhanced analysis skipped:", error.message);
+    // Hide spinner on error
+    hideDeepSpinner();
   }
   // Compute relevance score if provided by aiHelper
   const relevanceScore = aiHelper?.lastEnhancedValidation?.score ?? null;

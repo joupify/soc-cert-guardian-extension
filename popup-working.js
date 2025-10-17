@@ -6,101 +6,6 @@ document.addEventListener("DOMContentLoaded", function () {
   setTimeout(initializePopup, 100);
 });
 
-// ============================================
-// VIRTUAL CVE STATISTICS
-// ============================================
-
-async function loadVirtualCVEStats() {
-  const API_BASE_URL = "https://soc-cert-extension.vercel.app";
-  console.log("📊 Loading Virtual CVE stats...");
-
-  try {
-    // ✅ AJOUT : Cache-busting avec timestamp
-    const response = await fetch(
-      `${API_BASE_URL}/api/virtual-cve-stats?t=${Date.now()}`,
-      {
-        cache: "no-cache", // ✅ Force refresh
-        headers: {
-          "Cache-Control": "no-cache",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const stats = await response.json();
-
-    console.log("✅ Stats loaded:", stats);
-
-    // Update the UI
-    document.getElementById("total-virtual-cves").textContent =
-      stats.totalVirtualCVEs || 0;
-    document.getElementById("threats-24h").textContent =
-      stats.threatsLast24h || 0;
-    document.getElementById("avg-confidence").textContent = stats.avgConfidence
-      ? `${Math.round(stats.avgConfidence * 100)}%`
-      : "-";
-
-    // Optionnel : Ajouter une animation de compteur
-    if (typeof animateCounter === "function") {
-      animateCounter(
-        "total-virtual-cves",
-        0,
-        stats.totalVirtualCVEs || 0,
-        1000
-      );
-      animateCounter("threats-24h", 0, stats.threatsLast24h || 0, 800);
-    }
-  } catch (error) {
-    console.error("❌ Failed to load Virtual CVE stats:", error);
-
-    // Fallback : afficher 0
-    document.getElementById("total-virtual-cves").textContent = "0";
-    document.getElementById("threats-24h").textContent = "0";
-    document.getElementById("avg-confidence").textContent = "-";
-  }
-}
-
-// // ✅ AJOUT : Auto-refresh toutes les 10 secondes
-// setInterval(loadVirtualCVEStats, 10000);
-
-// ✅ Load immediately at startup
-loadVirtualCVEStats();
-
-// Animation de compteur
-function animateCounter(elementId, start, end, duration) {
-  const element = document.getElementById(elementId);
-  if (!element) return;
-
-  const range = end - start;
-  const increment = range / (duration / 16); // 60 FPS
-  let current = start;
-
-  const timer = setInterval(() => {
-    current += increment;
-    if (
-      (increment > 0 && current >= end) ||
-      (increment < 0 && current <= end)
-    ) {
-      current = end;
-      clearInterval(timer);
-    }
-    element.textContent = Math.round(current).toLocaleString();
-  }, 16);
-}
-
-// ✅ Appeler au chargement de la popup
-document.addEventListener("DOMContentLoaded", async () => {
-  console.log("🚀 Popup loaded, loading stats...");
-  await loadVirtualCVEStats();
-});
-
-// ============================================
-//FIN  VIRTUAL CVE STATISTICS
-// ============================================
-
 async function initializePopup() {
   try {
     // Check if aiHelper is available
@@ -263,7 +168,7 @@ class SecurityResourcesGenerator {
       },
     };
 
-    // Default resources if no type is detected
+    // Default resources si aucun type n'est détecté
     this.defaultResources = {
       cwe: "Unknown",
       cweUrl: "https://cwe.mitre.org/",
@@ -290,7 +195,7 @@ class SecurityResourcesGenerator {
     };
   }
 
-  // Detect vulnerability type from indicators
+  // Détecter le type de vulnérabilité depuis les indicators
   detectVulnerabilityType(indicators) {
     if (!indicators || indicators.length === 0) return null;
 
@@ -309,7 +214,7 @@ class SecurityResourcesGenerator {
     return null;
   }
 
-  // Generate complete HTML for resources
+  // Générer le HTML complet des ressources
   generateResourcesHTML(indicators) {
     const detected = this.detectVulnerabilityType(indicators);
     const resources = detected || {
@@ -397,7 +302,7 @@ class SecurityResourcesGenerator {
   }
 }
 
-// ✅ Initialize the generator
+// ✅ Initialiser le générateur
 const resourcesGenerator = new SecurityResourcesGenerator();
 
 // Helper to show/hide a deep analysis spinner inside #analysis-content
@@ -422,29 +327,8 @@ function showDeepSpinner() {
 }
 
 function hideDeepSpinner() {
-  // Remove the deep analysis spinner
   const spinner = document.getElementById("deep-analysis-spinner");
   if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
-
-  // Update n8n badge to completed state
-  const n8nBadge = document.querySelector(
-    '[data-api-key="n8n"] .api-badge-status'
-  );
-  if (n8nBadge) {
-    n8nBadge.textContent = "✅ Analysis completed";
-  }
-
-  // Update progress indicator
-  const progressiveIndicator = document.getElementById("deep-analysis-status");
-  if (progressiveIndicator) {
-    progressiveIndicator.innerHTML = "✅ Analysis completed";
-  }
-
-  // Update AI status section
-  const aiStatusSection = document.getElementById("ai-status-progress");
-  if (aiStatusSection) {
-    aiStatusSection.innerHTML = "⚡ Quick analysis • ✅ Complete";
-  }
 }
 
 // Ensure the deep-analysis-status element reflects a running state (spinner + text)
@@ -642,22 +526,22 @@ function renderRecommendationsInline(items) {
   return escapeHTML(String(items));
 }
 
-// == ADD THESE FUNCTIONS AFTER initializePopup() ==
+// == AJOUTER CES FONCTIONS APRÈS initializePopup() ==
 
 function showRealTimeAnalysis(tab) {
   console.log("🚀 Starting real-time analysis UI");
 
-  // Display real-time analysis section
+  // Afficher la section d'analyse en temps réel
   document.getElementById("analysis-status").style.display = "block";
   document.getElementById("status").style.display = "none";
   document.getElementById("analysis-content").style.display = "none";
 
-  // Update the URL
+  // Mettre à jour l'URL
   const displayUrl =
     tab.url.length > 45 ? tab.url.substring(0, 45) + "..." : tab.url;
   document.getElementById("analyzing-url").textContent = displayUrl;
 
-  // Start API animation
+  // Démarrer l'animation des APIs
   startAPIAnalysisAnimation();
 
   // Retourner une promesse pour savoir quand l'animation est finie
@@ -693,7 +577,7 @@ function startAPIAnalysisAnimation() {
         element.classList.remove("active");
         element.classList.add("completed");
 
-        // ✨ SIMPLIFIED: Simple checkmark
+        // ✨ SIMPLIFIÉ : Checkmark simple
         statusElement.textContent = "Completed ✅";
 
         console.log(`✅ ${api.name} analysis completed`);
@@ -946,21 +830,6 @@ async function updateAPIBadgesStatus(
   deepResults = null
 ) {
   try {
-    // Handle custom status object format
-    if (typeof deepCompleted === "object" && deepCompleted !== null) {
-      const customStatuses = deepCompleted;
-      Object.keys(customStatuses).forEach((key) => {
-        const statusInfo = customStatuses[key];
-        const el = document.querySelector(
-          `[data-api-key="${key}"] .api-badge-status`
-        );
-        if (el) {
-          el.textContent = statusInfo.label || statusInfo.status || "❓";
-        }
-      });
-      return;
-    }
-
     const status = await (aiHelper.testSpecializedAPIs
       ? aiHelper.testSpecializedAPIs()
       : Promise.resolve({}));
@@ -1086,286 +955,8 @@ async function testTranslator() {
   }
 }
 
-// === DISPLAY THREAT ANALYSIS ===
-function displayThreatAnalysis(analysis, siteUrl) {
-  window.currentAnalysis = analysis;
-
-  // 🛡️ SPECIAL HANDLING FOR SAFE URLs
-  if (analysis.isSafeUrl) {
-    console.log("🛡️ Displaying safe URL message");
-    const content = document.getElementById("analysis-content");
-    content.innerHTML = `
-      <div style="background: rgba(0,255,0,0.1); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #00ff00;">
-        <!-- Analyzed URL -->
-        <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
-          <strong>🌐 Analyzed URL:</strong><br>
-          <a href="${siteUrl}" target="_blank" style="color:#00aaff;">${siteUrl}</a>
-        </div>
-
-        <!-- Safe URL header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-          <div style="display: flex; align-items: center;">
-            <span style="font-size: 24px; margin-right: 10px;">✅</span>
-            <div>
-              <div style="font-size: 18px; font-weight: bold;">Safe URL</div>
-              <div style="font-size: 12px; opacity: 0.8;">No deep analysis needed</div>
-            </div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 28px; font-weight: bold; color: #00ff00">${
-              analysis.riskScore
-            }%</div>
-            <div style="font-size: 10px; opacity: 0.7;">Risk score</div>
-          </div>
-        </div>
-
-        <!-- Safe message -->
-        <div style="background: rgba(0,255,0,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,255,0,0.2);">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">🛡️</span>
-            <div>
-              <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">URL Considered Safe</div>
-              <div style="font-size: 14px; color: #cccccc;">${
-                analysis.safeReason ||
-                "This URL has been analyzed and determined to be safe. No further analysis required."
-              }</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    // Update API badges to show safe status
-    updateAPIBadgesStatus({
-      gemini: { status: "completed", label: "✅ Gemini (safe)" },
-      n8n: { status: "skipped", label: "⏭️ n8n (not needed)" },
-    });
-
-    return;
-  }
-
-  const riskConfig = {
-    safe: {
-      color: "#00ff00",
-      icon: "✅",
-      label: "Safe",
-      bg: "rgba(0,255,0,0.1)",
-    },
-    suspicious: {
-      color: "#ffff00",
-      icon: "⚠️",
-      label: "Suspicious",
-      bg: "rgba(255,255,0,0.1)",
-    },
-    phishing: {
-      color: "#ff9900",
-      icon: "🎣",
-      label: "Phishing",
-      bg: "rgba(255,153,0,0.1)",
-    },
-    "high-risk": {
-      color: "#ff5500",
-      icon: "🔍",
-      label: "High Risk",
-      bg: "rgba(255,85,0,0.1)",
-    },
-    malicious: {
-      color: "#ff0000",
-      icon: "🚨",
-      label: "Malicious",
-      bg: "rgba(255,0,0,0.1)",
-    },
-  };
-
-  const config = riskConfig[analysis.threatType] || riskConfig.safe;
-
-  const content = document.getElementById("analysis-content");
-  content.innerHTML = `
-    <div style="background: ${
-      config.bg
-    }; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid ${
-    config.color
-  }">
-      <!-- Analyzed URL -->
-      <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
-        <strong>🌐 Analyzed URL:</strong><br>
-        <a href="${siteUrl}" target="_blank" style="color:#00aaff;">${siteUrl}</a>
-      </div>
-
-      <!-- Risk header -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center;">
-          <span style="font-size: 24px; margin-right: 10px;">${
-            config.icon
-          }</span>
-          <div>
-            <div style="font-size: 18px; font-weight: bold;">${
-              config.label
-            }</div>
-            <div style="font-size: 12px; opacity: 0.8;">Confidence: ${(
-              analysis.confidence * 100
-            ).toFixed(0)}%</div>
-          </div>
-        </div>
-        <div style="text-align: right;">
-          <div style="font-size: 28px; font-weight: bold; color: ${
-            config.color
-          }">${analysis.riskScore}%</div>
-          <div style="font-size: 10px; opacity: 0.7;">Risk score</div>
-        </div>
-      </div>
-
-      <!-- Indicators -->
-      ${
-        analysis.indicators && analysis.indicators.length > 0
-          ? `
-        <div style="margin-bottom: 15px;">
-          <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-            <span style="margin-right: 5px;">🚨</span> 
-            Threat Indicators (${analysis.indicators.length})
-            <!-- 💡 INFOBULLE EXPLICATIVE -->
-            <span class="info-tooltip-trigger">i
-              <span class="info-tooltip-content">
-                <div class="tooltip-header">
-                  <span class="tooltip-icon">🎯</span>
-                  <div>
-                    <strong class="tooltip-title">Threat Indicators</strong>
-                    <span class="tooltip-subtitle">Types of Threats detected</span>
-                  </div>
-                </div>
-                <div class="tooltip-divider">
-                  <span class="tooltip-description">
-                    Describes the type of vulnerability detected<br/>
-                    by our AI security analysis engine
-                  </span>
-                </div>
-                <span class="tooltip-arrow"></span>
-              </span>
-            </span>
-          </div>
-          <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px;">
-            ${analysis.indicators.map((ind) => `• ${ind}`).join("<br>")}
-          </div>
-        </div>
-      `
-          : '<div style="margin-bottom: 15px;">✅ Aucun indicateur suspect détecté</div>'
-      }
-
-      <!-- Specialized APIs Results -->
-      ${
-        analysis.aiSummary ||
-        analysis.enhancedRecommendations ||
-        analysis.translatedAnalysis ||
-        analysis.proofreadAnalysis
-          ? `
-        <div style="margin-top: 15px; padding: 10px; background: rgba(0,255,255,0.1); border-radius: 8px; border-left: 3px solid #00ffff;">
-          <div style="font-weight: bold; margin-bottom: 8px; color: #00ffff;">
-            🤖 Enhanced AI Analysis Results
-          </div>
-          
-          ${
-            analysis.aiSummary
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Summarizer:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${analysis.aiSummary}
-              </div>
-            </div>
-          `
-              : ""
-          }
-          
-          ${
-            analysis.enhancedRecommendations
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">✍️ Writer:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${renderRecommendationsInline(analysis.enhancedRecommendations)}
-              </div>
-            </div>
-          `
-              : ""
-          }
-
-          <!-- APIs used summary -->
-          ${buildAPIBadgesHtml()}
-          
-          ${
-            analysis.translatedAnalysis
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">🌐 Translator:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; font-style: italic;">
-                ${analysis.translatedAnalysis}
-              </div>
-            </div>
-          `
-              : ""
-          }
-          
-          ${
-            analysis.proofreadAnalysis
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Proofreader:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${analysis.proofreadAnalysis}
-              </div>
-            </div>
-          `
-              : ""
-          }
-        </div>
-      `
-          : ""
-      }
-
-      <!-- Metadata with progressive indicator -->
-      <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; opacity: 0.6;">
-        <div>⏱️ ${analysis.processingTime || "2.3s"} • ${
-    analysis.timestamp
-      ? new Date(analysis.timestamp).toLocaleTimeString()
-      : new Date().toLocaleTimeString()
-  }</div>
-        ${
-          analysis.isProgressive
-            ? `<div id="deep-analysis-status" style="color: #00ffff; display:flex; align-items:center; gap:8px;">
-               <span style="width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span>
-               <span>Deep analysis n8n running...</span>
-             </div>`
-            : `<div>${analysis.mockNote || ""}</div>`
-        }
-      </div>
-    </div>
-
-    <!-- Info AI Status avec indicateur progressif -->
-    <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; font-size: 11px; text-align: center;">
-      🤖 Powered by SOC-CERT AI ${
-        aiHelper.hasNativeAI ? "(Gemini Nano)" : "(Mock - EPP Pending)"
-      }
-      ${
-        analysis.isProgressive
-          ? '<br><span id="ai-status-progress" style="color: #00ffff;">⚡ Quick analysis • 🔬 Deep analysis running...</span>'
-          : ""
-      }
-    </div>
-  `;
-
-  // Refresh API badge statuses right after rendering
-  try {
-    updateAPIBadgesStatus(false, analysis);
-  } catch (e) {
-    console.log(
-      "⚠️ updateAPIBadgesStatus failed after displayThreatAnalysis",
-      e
-    );
-  }
-}
-
 // Debug version of analyzeCurrentPage
-// Debug version of analyzeCurrentPage - WITH REAL-TIME INTERFACE
+// Debug version of analyzeCurrentPage - AVEC INTERFACE TEMPS RÉEL
 async function analyzeCurrentPage() {
   try {
     console.log(
@@ -1390,16 +981,16 @@ async function analyzeCurrentPage() {
         new Date().toISOString()
       );
 
-      // 1. DISPLAY REAL-TIME INTERFACE
+      // 1. AFFICHER L'INTERFACE TEMPS RÉEL
       await showRealTimeAnalysis(tab);
       console.log("📌 After showRealTimeAnalysis", new Date().toISOString());
 
-      // 2. Pause for demo (optional - to see animation clearly)
+      // 2. Pause pour la démo (optionnel - pour bien voir l'animation)
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       console.log("📊 Showing analysis results");
 
-      // 3. Hide real-time analysis and show results
+      // 3. Cacher l'analyse en temps réel et montrer les résultats
       document.getElementById("analysis-status").style.display = "none";
       document.getElementById("analysis-content").style.display = "block";
 
@@ -1411,97 +1002,12 @@ async function analyzeCurrentPage() {
       `;
 
       // 4. CONTINUER AVEC L'ANALYSE NORMALE EXISTANTE
-      // 🔄 Check for stored background analysis first
-      const storageKey = `analysis_${tab.url}`;
-      const stored = await chrome.storage.local.get([storageKey]);
-      let progressiveAnalysis;
-      let usedStoredAnalysis = false;
-
-      if (
-        stored[storageKey] &&
-        Date.now() - stored[storageKey].timestamp < 5 * 60 * 1000
-      ) {
-        // 5 minutes
-        console.log("🔄 Using stored background analysis for:", tab.url);
-        usedStoredAnalysis = true;
-        const bgAnalysis = stored[storageKey].analysis;
-        progressiveAnalysis = {
-          ...bgAnalysis,
-          isProgressive: true,
-          currentStep: "quick-analysis",
-          steps: {
-            quickAnalysis: { status: "completed", data: bgAnalysis },
-            deepAnalysis: { status: "pending", data: null },
-            cveEnrichment: { status: "pending", data: null },
-            finalRecommendations: { status: "pending", data: null },
-          },
-        };
-
-        // 🛡️ Check if safe URL
-        if (bgAnalysis.threatType && bgAnalysis.threatType.includes("safe")) {
-          progressiveAnalysis.isSafeUrl = true;
-          progressiveAnalysis.safeReason = `Threat type: ${bgAnalysis.threatType} - No deep analysis needed`;
-        }
-      } else {
-        // 🔄 Wait a bit for background analysis to complete
-        console.log("⏳ Waiting for background analysis to complete...");
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        // Check again for stored analysis
-        const storedAgain = await chrome.storage.local.get([storageKey]);
-        if (
-          storedAgain[storageKey] &&
-          Date.now() - storedAgain[storageKey].timestamp < 5 * 60 * 1000
-        ) {
-          console.log(
-            "🔄 Using stored background analysis (after wait) for:",
-            tab.url
-          );
-          usedStoredAnalysis = true;
-          const bgAnalysis = storedAgain[storageKey].analysis;
-          progressiveAnalysis = {
-            ...bgAnalysis,
-            isProgressive: true,
-            currentStep: "quick-analysis",
-            steps: {
-              quickAnalysis: { status: "completed", data: bgAnalysis },
-              deepAnalysis: { status: "pending", data: null },
-              cveEnrichment: { status: "pending", data: null },
-              finalRecommendations: { status: "pending", data: null },
-            },
-          };
-
-          // 🛡️ Check if safe URL
-          if (bgAnalysis.threatType && bgAnalysis.threatType.includes("safe")) {
-            progressiveAnalysis.isSafeUrl = true;
-            progressiveAnalysis.safeReason = `Threat type: ${bgAnalysis.threatType} - No deep analysis needed`;
-          }
-        } else {
-          console.log("🆕 Running new analysis for:", tab.url);
-          progressiveAnalysis = await aiHelper.analyzeCompleteFlow(
-            tab.url,
-            `Analyzing: ${tab.title}`
-          );
-        }
-      }
+      const progressiveAnalysis = await aiHelper.analyzeCompleteFlow(
+        tab.url,
+        `Analyzing: ${tab.title}`
+      );
 
       console.log("📈 Progressive analysis started:", progressiveAnalysis);
-
-      // 🔄 If using stored analysis and not safe, trigger deep analysis
-      if (usedStoredAnalysis && !progressiveAnalysis.isSafeUrl) {
-        console.log("🔄 Triggering deep analysis for stored non-safe URL");
-        setTimeout(async () => {
-          try {
-            await aiHelper.triggerDeepAnalysis(
-              tab.url,
-              `Analyzing: ${tab.title}`,
-              progressiveAnalysis
-            );
-          } catch (error) {
-            console.error("❌ Error triggering deep analysis:", error);
-          }
-        }, 100);
-      }
 
       // Display quick analysis immediately
       console.log(
@@ -1511,62 +1017,37 @@ async function analyzeCurrentPage() {
       );
       displayThreatAnalysis(progressiveAnalysis, tab.url);
       console.log("📌 After displayThreatAnalysis", new Date().toISOString());
+      // Ensure deep analysis status shows running state for new analysis
+      setDeepAnalysisStatusRunning();
+      console.log(
+        "📌 After setDeepAnalysisStatusRunning",
+        new Date().toISOString()
+      );
+      // Ensure AI status shows running state too
+      setAIStatusRunning();
+      console.log("📌 After setAIStatusRunning", new Date().toISOString());
 
-      // Only start deep analysis spinner if NOT a safe URL
-      if (!progressiveAnalysis.isSafeUrl) {
-        // Ensure deep analysis status shows running state for new analysis
-        setDeepAnalysisStatusRunning();
+      // LISTEN FOR DEEP ANALYSIS UPDATES
+      // Show spinner while deep analysis / polling is running
+      console.log(
+        "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
+        new Date().toISOString()
+      );
+      showDeepSpinner();
+
+      window.addEventListener("deepAnalysisUpdate", (event) => {
         console.log(
-          "📌 After setDeepAnalysisStatusRunning",
+          "🔍 Deep analysis update received:",
+          event.detail,
           new Date().toISOString()
         );
-        // Ensure AI status shows running state too
-        setAIStatusRunning();
-        console.log("📌 After setAIStatusRunning", new Date().toISOString());
-
-        // LISTEN FOR DEEP ANALYSIS UPDATES
-        // Show spinner while deep analysis / polling is running
-        console.log(
-          "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
-          new Date().toISOString()
-        );
-        showDeepSpinner();
-
-        // Initialiser avec l'état de départ
-        updateWithDeepResults({ stage: "starting" });
-
-        window.addEventListener("deepAnalysisUpdate", (event) => {
-          console.log(
-            "🔍 Deep analysis update received:",
-            event.detail,
-            new Date().toISOString()
-          );
-
-          // Déterminer l'étape actuelle basée sur event.detail
-          let stage = "starting";
-          if (event.detail.dataReceived) {
-            stage = "data-received";
-          } else if (event.detail.enhancing) {
-            stage = "enhancing";
-          } else if (event.detail.completed) {
-            stage = "completed";
-          }
-
-          // Mettre à jour l'interface avec l'étape actuelle
-          updateWithDeepResults({ ...event.detail, stage });
-        });
-        console.log(
-          "📌 deepAnalysisUpdate listener attached",
-          new Date().toISOString()
-        );
-      } else {
-        console.log("🛡️ Safe URL detected - skipping deep analysis spinner");
-        // For safe URLs, mark deep analysis as completed/skipped
-        updateAPIBadgesStatus({
-          gemini: { status: "completed", label: "✅ Gemini (safe)" },
-          n8n: { status: "skipped", label: "⏭️ n8n (not needed)" },
-        });
-      }
+        // Keep spinner visible while enhanced analysis (Gemini) runs
+        updateWithDeepResults(event.detail);
+      });
+      console.log(
+        "📌 deepAnalysisUpdate listener attached",
+        new Date().toISOString()
+      );
     } else {
       console.log("❌ No valid tab found");
       document.getElementById("analysis-content").innerHTML = `
@@ -1587,178 +1068,132 @@ async function analyzeCurrentPage() {
   }
 }
 
-// ============================================
-// GLOBAL STATE FOR DEEP ANALYSIS
-// ============================================
-let deepAnalysisState = {
-  stage: null,
-  timestamp: null,
-  timeout: null,
-};
-
-// ============================================
-// UPDATE WITH DEEP RESULTS (CORRECTED)
-// ============================================
+// 🆕 UPDATE WITH DEEP ANALYSIS RESULTS
 async function updateWithDeepResults(deepData) {
-  console.log("🔄 updateWithDeepResults called with:", deepData);
+  console.log("🔄 Updating display with deep analysis...");
 
-  // 🎯 UPDATE the status in n8n badge
-  let statusText = "⏳ n8n running";
-  let showSpinner = true;
-
-  if (deepData && deepData.stage) {
-    switch (deepData.stage) {
-      case "starting":
-        statusText = "⏳ n8n running";
-        break;
-      case "data-received":
-        statusText = "📥 Data received";
-        // Planifier la transition vers "enhancing" après 2 secondes
-        break;
-      case "enhancing":
-        statusText = "🔄 Enhancement recommendations";
-        // Planifier la transition vers "completed" après 3 secondes
-
-        break;
-      case "completed":
-        statusText = "✅ Analysis completed";
-        showSpinner = false;
-        break;
-      default:
-        statusText = "⏳ n8n running";
-    }
-  }
-
-  // Update n8n badge
-  const n8nBadge = document.querySelector(
-    '[data-api-key="n8n"] .api-badge-status'
-  );
-  if (n8nBadge) {
-    if (showSpinner) {
-      n8nBadge.innerHTML = `<div style="display:flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border:2px solid rgba(255,255,255,0.1); border-top-color:#4fc3f7; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span><span>${statusText}</span></div>`;
-    } else {
-      n8nBadge.textContent = statusText;
-    }
-  }
-
-  // 🎯 UPDATE the progress indicator
+  // 🎯 UPDATE the "running" status in the metadata section -> show processing while enhanced analysis runs
   const progressiveIndicator = document.getElementById("deep-analysis-status");
   if (progressiveIndicator) {
     progressiveIndicator.style.color = "#00ffff";
-    progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;">${
-      showSpinner
-        ? '<span style="width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span>'
-        : ""
-    }<span>${statusText}</span></div>`;
+    progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"width:14px; height:14px; border:3px solid rgba(255,255,255,0.08); border-top-color:#00ffff; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;\"></span><span>Deep results received — generating enhanced analysis...</span></div>`;
+    console.log(
+      "🔄 Updated deep-analysis-status to processing (enhanced analysis)"
+    );
+  } else {
+    console.log("❌ Could not find deep-analysis-status element");
   }
 
-  // 🎯 UPDATE the AI Status section
+  // 🎯 UPDATE the status in the AI Status section to indicate enhanced processing
   const aiStatusSection = document.getElementById("ai-status-progress");
   if (aiStatusSection) {
     aiStatusSection.style.color = "#00ffff";
-    aiStatusSection.innerHTML = showSpinner
-      ? "⚡ Quick analysis • 🔄 Processing..."
-      : "⚡ Quick analysis • ✅ Complete";
+    aiStatusSection.innerHTML =
+      "⚡ Quick analysis • 🔄 Generating enhanced results...";
+    console.log("🔄 Updated AI status progress to generating enhanced results");
+  } else {
+    console.log("❌ Could not find ai-status-progress element");
+  }
 
-    // Mark n8n as used (deep analysis source)
-    try {
-      if (aiHelper) aiHelper.usedAPIs = aiHelper.usedAPIs || {};
-      if (aiHelper) aiHelper.usedAPIs.n8n = true;
-    } catch (e) {
-      console.log("⚠️ Failed to mark n8n used on aiHelper", e);
-    }
+  // Mark n8n as used (deep analysis source)
+  try {
+    if (aiHelper) aiHelper.usedAPIs = aiHelper.usedAPIs || {};
+    if (aiHelper) aiHelper.usedAPIs.n8n = true;
+  } catch (e) {
+    console.log("⚠️ Failed to mark n8n used on aiHelper", e);
+  }
 
-    // Add a deep analysis section
-    const analysisContent = document.getElementById("analysis-content");
+  // Add a deep analysis section
+  const analysisContent = document.getElementById("analysis-content");
 
-    // Find or create the deep analysis section
-    let deepSection = document.getElementById("deep-analysis-section");
-    if (!deepSection) {
-      deepSection = document.createElement("div");
-      deepSection.id = "deep-analysis-section";
-      deepSection.style.cssText = `
+  // Find or create the deep analysis section
+  let deepSection = document.getElementById("deep-analysis-section");
+  if (!deepSection) {
+    deepSection = document.createElement("div");
+    deepSection.id = "deep-analysis-section";
+    deepSection.style.cssText = `
       margin-top: 15px;
       padding: 15px;
       background: rgba(0,255,255,0.1);
       border-radius: 10px;
       border-left: 4px solid #00ffff;
     `;
-      analysisContent.appendChild(deepSection);
-    }
+    analysisContent.appendChild(deepSection);
+  }
 
-    // === 🎯 TENTATIVE GEMINI ENHANCED ANALYSIS ===
-    console.log("🎯 Attempting to call generateEnhancedAnalysis...");
+  // === 🎯 TENTATIVE GEMINI ENHANCED ANALYSIS ===
+  console.log("🎯 Attempting to call generateEnhancedAnalysis...");
 
-    let enhancedRecommendations = [
-      "Enable real-time monitoring",
-      "Update security policies",
-      "Review access controls",
-    ];
+  let enhancedRecommendations = [
+    "Enable real-time monitoring",
+    "Update security policies",
+    "Review access controls",
+  ];
 
-    try {
-      // Check if function exists AND if currentAnalysis is defined
-      if (
-        aiHelper &&
-        typeof aiHelper.generateEnhancedAnalysis === "function" &&
-        window.currentAnalysis
-      ) {
-        console.log("✅ AI: generateEnhancedAnalysis will be called");
+  try {
+    // Vérifie si la fonction existe ET si currentAnalysis est défini
+    if (
+      aiHelper &&
+      typeof aiHelper.generateEnhancedAnalysis === "function" &&
+      window.currentAnalysis
+    ) {
+      console.log("✅ AI: generateEnhancedAnalysis will be called");
 
-        // Call the enriched generation function (Gemini)
-        enhancedRecommendations = await aiHelper.generateEnhancedAnalysis(
-          window.currentAnalysis,
-          deepData.deepResults
-        );
-        console.log("✅ Enhanced recommendations:", enhancedRecommendations);
+      // Appelle la fonction de génération enrichie (Gemini)
+      enhancedRecommendations = await aiHelper.generateEnhancedAnalysis(
+        window.currentAnalysis,
+        deepData.deepResults
+      );
+      console.log("✅ Enhanced recommendations:", enhancedRecommendations);
 
-        // Now that enhanced analysis finished, mark deep analysis as completed and hide spinner
-        try {
-          if (progressiveIndicator) {
-            progressiveIndicator.style.color = "#00ff00";
-            progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"font-size:14px;\">✅</span><span>Deep analysis completed</span></div>`;
-            console.log(
-              "✅ Updated deep analysis status to completed (post-enhanced)"
-            );
-          }
-          if (aiStatusSection) {
-            aiStatusSection.style.color = "#00ff00";
-            aiStatusSection.innerHTML =
-              "⚡ Quick analysis • ✅ Deep analysis completed";
-            console.log(
-              "✅ Updated AI status progress to completed (post-enhanced)"
-            );
-          }
-        } catch (e) {
-          console.log("⚠️ Error updating status to completed:", e.message || e);
-        }
-
-        // Hide spinner now that everything is done
-        hideDeepSpinner();
-        // Update API badges statuses now that deep analysis finished
-        try {
-          updateAPIBadgesStatus(true);
-        } catch (e) {
+      // Now that enhanced analysis finished, mark deep analysis as completed and hide spinner
+      try {
+        if (progressiveIndicator) {
+          progressiveIndicator.style.color = "#00ff00";
+          progressiveIndicator.innerHTML = `<div style="display:flex; align-items:center; gap:8px;"><span style=\"font-size:14px;\">✅</span><span>Deep analysis completed</span></div>`;
           console.log(
-            "⚠️ updateAPIBadgesStatus failed in updateWithDeepResults",
-            e
+            "✅ Updated deep analysis status to completed (post-enhanced)"
           );
         }
-      } else {
+        if (aiStatusSection) {
+          aiStatusSection.style.color = "#00ff00";
+          aiStatusSection.innerHTML =
+            "⚡ Quick analysis • ✅ Deep analysis completed";
+          console.log(
+            "✅ Updated AI status progress to completed (post-enhanced)"
+          );
+        }
+      } catch (e) {
+        console.log("⚠️ Error updating status to completed:", e.message || e);
+      }
+
+      // Hide spinner now that everything is done
+      hideDeepSpinner();
+      // Update API badges statuses now that deep analysis finished
+      try {
+        updateAPIBadgesStatus(true);
+      } catch (e) {
         console.log(
-          "❌ AI: generateEnhancedAnalysis not available or missing data"
+          "⚠️ updateAPIBadgesStatus failed in updateWithDeepResults",
+          e
         );
       }
-    } catch (error) {
-      console.log("⚠️ Enhanced analysis skipped:", error.message);
+    } else {
+      console.log(
+        "❌ AI: generateEnhancedAnalysis not available or missing data"
+      );
     }
-    // Compute relevance score if provided by aiHelper
-    const relevanceScore = aiHelper?.lastEnhancedValidation?.score ?? null;
-    const relevanceHtml =
-      relevanceScore !== null
-        ? `<span style="font-size:11px; color:#aaf; margin-left:8px;">Relevance: ${relevanceScore}%</span>`
-        : "";
+  } catch (error) {
+    console.log("⚠️ Enhanced analysis skipped:", error.message);
+  }
+  // Compute relevance score if provided by aiHelper
+  const relevanceScore = aiHelper?.lastEnhancedValidation?.score ?? null;
+  const relevanceHtml =
+    relevanceScore !== null
+      ? `<span style="font-size:11px; color:#aaf; margin-left:8px;">Relevance: ${relevanceScore}%</span>`
+      : "";
 
-    deepSection.innerHTML = `
+  deepSection.innerHTML = `
     <div style="display: flex; align-items: center; margin-bottom: 10px;">
       <span style="font-size: 20px; margin-right: 10px;">🔬</span>
       <h3 style="margin: 0; color: #00ffff;">Deep Analysis Results By Gemini Nano</h3>
@@ -1777,221 +1212,305 @@ async function updateWithDeepResults(deepData) {
     <div style="margin: 12px 0; text-align:center; color:#888;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
 
     <div style="margin-bottom: 10px;">
-  <strong class="cve-correlation-header">
+  <strong>🚨 CVE Correlation:</strong>
+  <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 12px;">
+    ${(() => {
+      console.log("🔍 DEBUG CVE Display:", deepData.deepResults);
 
-  🚨 CVE Correlation
-  
-  <!-- 💡 INFOBULLE EXPLICATIVE -->
-  <span class="info-tooltip-trigger">i
-    <span class="info-tooltip-content">
-      <div class="tooltip-header">
-        <span class="tooltip-icon">🔮</span>
-        <div>
-          <strong class="tooltip-title">VIRTUAL CVE(AI-Generated CVE)</strong>
-                    <span class="tooltip-subtitle">Threat detected in real time by Gemini Nano AI</span>
-        </div>
-      </div>
-      <div class="tooltip-divider">
-              <span class="tooltip-label">✨ <strong>Our advantage:</strong></span>
-              <span class="tooltip-description">
-                Instant detection of emerging threats by SOC-CERT<br/>
-                not yet listed in the official NVD database.<br/
-                Official NVD CVEs are published with a delay of several weeks or months.<br/
-                This early detection allows you to take action before public disclosure.
-              </span>
-            </div>
-      <span class="tooltip-arrow"></span>
-    </span>
-  </span>
-</strong>
-
-<div class="cve-container">
-  ${(() => {
-    console.log("🔍 DEBUG CVE Display:", deepData.deepResults);
-
-    // ✅ CAS 1 : CVE direct dans deepResults
-    if (deepData.deepResults?.cve_id) {
-      console.log("✅ CVE found:", deepData.deepResults.cve_id);
-      return `
-        <div class="cve-item">
-          <div class="cve-header">
-            <span class="cve-id">${deepData.deepResults.cve_id}</span>
-            
-            <span class="cve-badge ${
-              deepData.deepResults.isVirtual ||
-              (deepData.deepResults.cve_id &&
-                deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                ? "emerging-threat"
-                : "official-cve"
-            }">
-              <span class="badge-icon">${
-                deepData.deepResults.isVirtual ||
-                (deepData.deepResults.cve_id &&
-                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                  ? "🔮"
-                  : "✅"
-              }</span>
-              <span class="badge-text">${
-                deepData.deepResults.isVirtual ||
-                (deepData.deepResults.cve_id &&
-                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                  ? "EMERGING THREAT"
-                  : "Official CVE"
-              }</span>
-              <span class="badge-tooltip">${
-                deepData.deepResults.isVirtual ||
-                (deepData.deepResults.cve_id &&
-                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
-                  ? "🚀 Threat detected in real time by our AI - Not yet listed in NVD"
-                  : "Verified CVE from official database"
-              }</span>
-            </span>
-            
-            <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${
-        deepData.deepResults.severity
-      }</span>
-          </div>
-          <span class="badge badge-${
-            deepData.deepResults.severity?.toLowerCase() || "critical"
-          }" style="
-            background: ${
-              deepData.deepResults.severity === "Critical"
-                ? "#ff0000"
-                : "#ff9900"
-            };
-            color: white;
-            padding: 3px 8px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-            margin-left: 8px;
-          ">
-            ${deepData.deepResults.severity || "Critical"}
-          </span>
-          <br>
-          <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
-            deepData.deepResults.score || "N/A"
-          }</span>
-          ${(() => {
-            const item = deepData.deepResults;
-            if (!item) return "";
-
-            const isVirtual =
-              item.isVirtual ||
-              (item.cve_id && item.cve_id.startsWith("CVE-2026"));
-            let nvdLink;
-            let nvdLinkText;
-
-            if (isVirtual) {
-              const searchQuery =
-                (item.indicators && item.indicators.join(" ")) ||
-                item.threatType ||
-                "web vulnerability";
-              nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
-                searchQuery
-              )}`;
-              nvdLinkText = `🔍 Search NVD for ${
-                (item.indicators && item.indicators[0]) ||
-                item.threatType ||
-                "vulnerabilities"
-              }`;
-            } else if (item.cve_id) {
-              nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
-              nvdLinkText = "View on NVD";
-            } else if (item.link) {
-              nvdLink = item.link;
-              nvdLinkText = "View Details";
-            } else {
-              return "";
-            }
-
-            return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${
-              isVirtual
-                ? "Search for similar vulnerabilities in NVD"
-                : "View official CVE details"
-            }">${nvdLinkText} →</a>`;
-          })()}
-        </div>
-      `;
-    }
-
-    // ✅ CAS 2 : Array de results
-    if (deepData.deepResults?.results?.length > 0) {
-      console.log(
-        "✅ CVE results array found:",
-        deepData.deepResults.results.length
-      );
-      return deepData.deepResults.results
-        .map(
-          (cve) => `
+      // ✅ CAS 1 : CVE direct dans deepResults
+      if (deepData.deepResults?.cve_id) {
+        console.log("✅ CVE found:", deepData.deepResults.cve_id);
+        return `
           <div class="cve-item">
+            <!-- ✅ NOUVEAU : Badge CVE Type -->
             <div class="cve-header">
-              <span class="cve-id">${cve.cve_id}</span>
+              <span class="cve-id">${deepData.deepResults.cve_id}</span>
               
+              <!-- Badge selon le type -->
               <span class="cve-badge ${
-                cve.isVirtual ||
-                (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                deepData.deepResults.isVirtual ||
+                (deepData.deepResults.cve_id &&
+                  deepData.deepResults.cve_id.startsWith("CVE-2026"))
                   ? "emerging-threat"
                   : "official-cve"
               }">
                 <span class="badge-icon">${
-                  cve.isVirtual ||
-                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
                     ? "🔮"
                     : "✅"
                 }</span>
                 <span class="badge-text">${
-                  cve.isVirtual ||
-                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                    ? "Virtual CVE"
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                    ? "Emerging Threat"
                     : "Official CVE"
                 }</span>
                 <span class="badge-tooltip">${
-                  cve.isVirtual ||
-                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                    ? "🚀 Menace détectée en temps réel par notre IA"
+                  deepData.deepResults.isVirtual ||
+                  (deepData.deepResults.cve_id &&
+                    deepData.deepResults.cve_id.startsWith("CVE-2026"))
+                    ? "AI-detected threat not yet in NVD"
                     : "Verified CVE from official database"
                 }</span>
               </span>
               
-              <span class="severity ${cve.severity?.toLowerCase()}">${
-            cve.severity
-          }</span>
+              <span class="severity ${deepData.deepResults.severity?.toLowerCase()}">${
+          deepData.deepResults.severity
+        }</span>
             </div>
             <span class="badge badge-${
-              cve.severity?.toLowerCase() || "unknown"
-            }">
-              ${cve.severity || "Unknown"}
+              deepData.deepResults.severity?.toLowerCase() || "critical"
+            }" style="
+              background: ${
+                deepData.deepResults.severity === "Critical"
+                  ? "#ff0000"
+                  : "#ff9900"
+              };
+              color: white;
+              padding: 3px 8px;
+              border-radius: 3px;
+              font-size: 10px;
+              font-weight: bold;
+              margin-left: 8px;
+            ">
+              ${deepData.deepResults.severity || "Critical"}
             </span>
             <br>
-            <span class="cve-score">Score: ${cve.score || "N/A"}</span>
+            <span class="cve-score" style="font-size: 11px; color: #aaa;">Score: ${
+              deepData.deepResults.score || "N/A"
+            }</span>
+            ${(() => {
+              const item = deepData.deepResults;
+              if (!item) return "";
+
+              const isVirtual =
+                item.isVirtual ||
+                (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+              let nvdLink;
+              let nvdLinkText;
+
+              if (isVirtual) {
+                const searchQuery =
+                  (item.indicators && item.indicators.join(" ")) ||
+                  item.threatType ||
+                  "web vulnerability";
+                nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
+                  searchQuery
+                )}`;
+                nvdLinkText = `🔍 Search NVD for ${
+                  (item.indicators && item.indicators[0]) ||
+                  item.threatType ||
+                  "vulnerabilities"
+                }`;
+              } else if (item.cve_id) {
+                nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
+                nvdLinkText = "View on NVD";
+              } else if (item.link) {
+                // fallback to provided link
+                nvdLink = item.link;
+                nvdLinkText = "View Details";
+              } else {
+                return "";
+              }
+
+              return `\n              <br><a href="${nvdLink}" target="_blank" style="color: #00aaff; font-size: 11px;" title="${
+                isVirtual
+                  ? "Search for similar vulnerabilities in NVD"
+                  : "View official CVE details"
+              }">${nvdLinkText} →</a>`;
+            })()}
           </div>
-        `
-        )
-        .join("<br>");
-    }
+        `;
+      }
 
-    // ✅ CAS 3 : Array de cveResults
-    if (deepData.deepResults?.cveResults?.length > 0) {
-      console.log(
-        "✅ CVE cveResults array found:",
-        deepData.deepResults.cveResults.length
-      );
-      return deepData.deepResults.cveResults
-        .map((cve) => `${cve.id} (${cve.severity}) - ${cve.description}`)
-        .join("<br>");
-    }
+      // ✅ CAS 2 : Array de results
+      if (deepData.deepResults?.results?.length > 0) {
+        console.log(
+          "✅ CVE results array found:",
+          deepData.deepResults.results.length
+        );
+        return deepData.deepResults.results
+          .map(
+            (cve) => `
+            <div class="cve-item">
+              <!-- ✅ NOUVEAU : Badge CVE Type -->
+              <div class="cve-header">
+                <span class="cve-id">${cve.cve_id}</span>
+                
+                <!-- Badge selon le type -->
+                <span class="cve-badge ${
+                  cve.isVirtual ||
+                  (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                    ? "emerging-threat"
+                    : "official-cve"
+                }">
+                  <span class="badge-icon">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "🔮"
+                      : "✅"
+                  }</span>
+                  <span class="badge-text">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "Emerging Threat"
+                      : "Official CVE"
+                  }</span>
+                  <span class="badge-tooltip">${
+                    cve.isVirtual ||
+                    (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
+                      ? "AI-detected threat not yet in NVD"
+                      : "Verified CVE from official database"
+                  }</span>
+                </span>
+                
+                <span class="severity ${cve.severity?.toLowerCase()}">${
+              cve.severity
+            }</span>
+              </div>
+              <span class="badge badge-${
+                cve.severity?.toLowerCase() || "unknown"
+              }">
+                ${cve.severity || "Unknown"}
+              </span>
+              <br>
+              <span class="cve-score">Score: ${cve.score || "N/A"}</span>
+              ${(() => {
+                const item = cve;
+                if (!item) return "";
 
-    console.log("❌ No CVE data found in deepResults");
-    return "⏳ Waiting for CVE data...";
-  })()}
-</div>
+                const isVirtual =
+                  item.isVirtual ||
+                  (item.cve_id && item.cve_id.startsWith("CVE-2026"));
+                let nvdLink;
+                let nvdLinkText;
+
+                if (isVirtual) {
+                  const searchQuery =
+                    (item.indicators && item.indicators.join(" ")) ||
+                    item.threatType ||
+                    "web vulnerability";
+                  nvdLink = `https://nvd.nist.gov/vuln/search/results?query=${encodeURIComponent(
+                    searchQuery
+                  )}`;
+                  nvdLinkText = `🔍 Search NVD for ${
+                    (item.indicators && item.indicators[0]) ||
+                    item.threatType ||
+                    "vulnerabilities"
+                  }`;
+                } else if (item.cve_id) {
+                  nvdLink = `https://nvd.nist.gov/vuln/detail/${item.cve_id}`;
+                  nvdLinkText = "View on NVD";
+                } else if (item.link) {
+                  nvdLink = item.link;
+                  nvdLinkText = "View Details";
+                } else {
+                  return "";
+                }
+
+                return `\n                <br><a href="${nvdLink}" target="_blank">${nvdLinkText} →</a>`;
+              })()}
+            </div>
+          `
+          )
+          .join("<br>");
+      }
+
+      // ✅ CAS 3 : Array de cveResults
+      if (deepData.deepResults?.cveResults?.length > 0) {
+        console.log(
+          "✅ CVE cveResults array found:",
+          deepData.deepResults.cveResults.length
+        );
+        return deepData.deepResults.cveResults
+          .map((cve) => `${cve.id} (${cve.severity}) - ${cve.description}`)
+          .join("<br>");
+      }
+
+      console.log("❌ No CVE data found in deepResults");
+      return "⏳ Waiting for CVE data...";
+    })()}
+  </div>
 
 <!-- NVD link now generated per-item above -->
 
+
+
+
+
 </div>
 
-    ${""}
+    ${
+      deepData.deepResults?.aiSummary ||
+      deepData.deepResults?.enhancedRecommendations ||
+      deepData.deepResults?.translatedAnalysis ||
+      deepData.deepResults?.proofreadAnalysis
+        ? `
+      <div style="margin-bottom: 10px;">
+        <strong>🤖 Specialized AI Analysis:</strong>
+        
+        ${
+          deepData.deepResults?.aiSummary
+            ? `
+          <div style="margin: 5px 0;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Summarizer:</div>
+            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
+              ${deepData.deepResults.aiSummary}
+            </div>
+          </div>
+        `
+            : ""
+        }
+        
+        ${
+          deepData.deepResults?.enhancedRecommendations
+            ? `
+          <div style="margin: 5px 0;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">✍️ Writer:</div>
+            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
+              ${
+                Array.isArray(deepData.deepResults.enhancedRecommendations)
+                  ? deepData.deepResults.enhancedRecommendations.join("<br>")
+                  : deepData.deepResults.enhancedRecommendations
+              }
+            </div>
+          </div>
+        `
+            : ""
+        }
+        
+        ${
+          deepData.deepResults?.translatedAnalysis
+            ? `
+          <div style="margin: 5px 0;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">🌐 Translator:</div>
+            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; font-style: italic;">
+              ${deepData.deepResults.translatedAnalysis}
+            </div>
+          </div>
+        `
+            : ""
+        }
+        
+        ${
+          deepData.deepResults?.proofreadAnalysis
+            ? `
+          <div style="margin: 5px 0;">
+            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Proofreader:</div>
+            <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
+              ${deepData.deepResults.proofreadAnalysis}
+            </div>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    `
+        : ""
+    }
     
       <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
       <div>
@@ -2117,108 +1636,54 @@ async function updateWithDeepResults(deepData) {
     </div>
   `;
 
-    // (no dynamic source label used)
-    console.log("✅ Deep analysis section updated");
-  }
-  function displayThreatAnalysis(analysis, siteUrl) {
-    window.currentAnalysis = analysis;
+  // (no dynamic source label used)
+  console.log("✅ Deep analysis section updated");
+}
+function displayThreatAnalysis(analysis, siteUrl) {
+  window.currentAnalysis = analysis;
 
-    // 🛡️ SPECIAL HANDLING FOR SAFE URLs
-    if (analysis.isSafeUrl) {
-      console.log("🛡️ Displaying safe URL message");
-      const content = document.getElementById("analysis-content");
-      content.innerHTML = `
-      <div style="background: rgba(0,255,0,0.1); padding: 20px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid #00ff00;">
-        <!-- Analyzed URL -->
-        <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
-          <strong>🌐 Analyzed URL:</strong><br>
-          <a href="${siteUrl}" target="_blank" style="color:#00aaff;">${siteUrl}</a>
-        </div>
+  const riskConfig = {
+    safe: {
+      color: "#00ff00",
+      icon: "✅",
+      label: "Safe",
+      bg: "rgba(0,255,0,0.1)",
+    },
+    suspicious: {
+      color: "#ffff00",
+      icon: "⚠️",
+      label: "Suspicious",
+      bg: "rgba(255,255,0,0.1)",
+    },
+    phishing: {
+      color: "#ff9900",
+      icon: "🎣",
+      label: "Phishing",
+      bg: "rgba(255,153,0,0.1)",
+    },
+    "high-risk": {
+      color: "#ff5500",
+      icon: "🔍",
+      label: "High Risk",
+      bg: "rgba(255,85,0,0.1)",
+    },
+    malicious: {
+      color: "#ff0000",
+      icon: "🚨",
+      label: "Malicious",
+      bg: "rgba(255,0,0,0.1)",
+    },
+  };
 
-        <!-- Safe URL header -->
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
-          <div style="display: flex; align-items: center;">
-            <span style="font-size: 24px; margin-right: 10px;">✅</span>
-            <div>
-              <div style="font-size: 18px; font-weight: bold;">Safe URL</div>
-              <div style="font-size: 12px; opacity: 0.8;">No deep analysis needed</div>
-            </div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 28px; font-weight: bold; color: #00ff00">${
-              analysis.riskScore
-            }%</div>
-            <div style="font-size: 10px; opacity: 0.7;">Risk score</div>
-          </div>
-        </div>
+  const config = riskConfig[analysis.threatType] || riskConfig.safe;
 
-        <!-- Safe message -->
-        <div style="background: rgba(0,255,0,0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(0,255,0,0.2);">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">🛡️</span>
-            <div>
-              <div style="font-weight: bold; color: #00ff00; margin-bottom: 5px;">URL Considered Safe</div>
-              <div style="font-size: 14px; color: #cccccc;">${
-                analysis.safeReason ||
-                "This URL has been analyzed and determined to be safe. No further analysis required."
-              }</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-      // Update API badges to show safe status
-      updateAPIBadgesStatus({
-        gemini: { status: "completed", label: "✅ Gemini (safe)" },
-        n8n: { status: "skipped", label: "⏭️ n8n (not needed)" },
-      });
-
-      return;
-    }
-
-    const riskConfig = {
-      safe: {
-        color: "#00ff00",
-        icon: "✅",
-        label: "Safe",
-        bg: "rgba(0,255,0,0.1)",
-      },
-      suspicious: {
-        color: "#ffff00",
-        icon: "⚠️",
-        label: "Suspicious",
-        bg: "rgba(255,255,0,0.1)",
-      },
-      phishing: {
-        color: "#ff9900",
-        icon: "🎣",
-        label: "Phishing",
-        bg: "rgba(255,153,0,0.1)",
-      },
-      "high-risk": {
-        color: "#ff5500",
-        icon: "🔍",
-        label: "High Risk",
-        bg: "rgba(255,85,0,0.1)",
-      },
-      malicious: {
-        color: "#ff0000",
-        icon: "🚨",
-        label: "Malicious",
-        bg: "rgba(255,0,0,0.1)",
-      },
-    };
-
-    const config = riskConfig[analysis.threatType] || riskConfig.safe;
-
-    const content = document.getElementById("analysis-content");
-    content.innerHTML = `
+  const content = document.getElementById("analysis-content");
+  content.innerHTML = `
     <div style="background: ${
       config.bg
     }; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid ${
-      config.color
-    }">
+    config.color
+  }">
   <!-- Analyzed URL -->
   <div style="margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 5px; font-size: 12px; word-break: break-all;">
     <strong>🌐 Analyzed URL:</strong><br>
@@ -2253,31 +1718,11 @@ async function updateWithDeepResults(deepData) {
         analysis.indicators && analysis.indicators.length > 0
           ? `
         <div style="margin-bottom: 15px;">
-          <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-  <span style="margin-right: 5px;">🚨</span> 
-  Threat Indicators (${analysis.indicators.length})
-  
-  <!-- 💡 INFOBULLE EXPLICATIVE -->
-  <span class="info-tooltip-trigger">i
-    <span class="info-tooltip-content">
-      <div class="tooltip-header">
-        <span class="tooltip-icon">🎯</span>
-        <div>
-          <strong class="tooltip-title">Threat Indicators</strong>
-          <span class="tooltip-subtitle">Types of Threats detected</span>
-        </div>
-      </div>
-      <div class="tooltip-divider">
-        <span class="tooltip-description">
-          Describes the type of vulnerability detected<br/>
-          by our AI security analysis engine
-        </span>
-      </div>
-      <span class="tooltip-arrow"></span>
-    </span>
-  </span>
-</div>
-
+          <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
+            <span style="margin-right: 5px;">🚨</span> Threat Indicators (${
+              analysis.indicators.length
+            })
+          </div>
           <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 5px;">
             ${analysis.indicators.map((ind) => `• ${ind}`).join("<br>")}
           </div>
@@ -2362,10 +1807,10 @@ async function updateWithDeepResults(deepData) {
   <!-- Metadata with progressive indicator -->
       <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 10px; opacity: 0.6;">
         <div>⏱️ ${analysis.processingTime || "2.3s"} • ${
-      analysis.timestamp
-        ? new Date(analysis.timestamp).toLocaleTimeString()
-        : new Date().toLocaleTimeString()
-    }</div>
+    analysis.timestamp
+      ? new Date(analysis.timestamp).toLocaleTimeString()
+      : new Date().toLocaleTimeString()
+  }</div>
         ${
           analysis.isProgressive
             ? `<div id="deep-analysis-status" style="color: #00ffff; display:flex; align-items:center; gap:8px;">
@@ -2389,92 +1834,92 @@ async function updateWithDeepResults(deepData) {
       }
     </div>
   `;
-    // Refresh API badge statuses right after rendering
-    try {
-      updateAPIBadgesStatus(false, analysis);
-    } catch (e) {
-      console.log(
-        "⚠️ updateAPIBadgesStatus failed after displayThreatAnalysis",
-        e
-      );
-    }
-
-    // Initialize API badges statuses after DOM insertion
-    try {
-      updateAPIBadgesStatus(false);
-    } catch (e) {
-      console.log("⚠️ updateAPIBadgesStatus init failed", e);
-    }
+  // Refresh API badge statuses right after rendering
+  try {
+    updateAPIBadgesStatus(false, analysis);
+  } catch (e) {
+    console.log(
+      "⚠️ updateAPIBadgesStatus failed after displayThreatAnalysis",
+      e
+    );
   }
 
-  // 🆕 SIMPLIFIED CVE POLLING
-  async function startCVEPolling() {
-    console.log("🔄 Démarrage polling CVE...");
+  // Initialize API badges statuses after DOM insertion
+  try {
+    updateAPIBadgesStatus(false);
+  } catch (e) {
+    console.log("⚠️ updateAPIBadgesStatus init failed", e);
+  }
+}
 
-    // Create container if it doesn't exist
-    let container = document.getElementById("alerts-container");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "alerts-container";
-      container.style.cssText =
-        "margin-top: 20px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;";
-      document.body.appendChild(container);
+// 🆕 SIMPLIFIED CVE POLLING
+async function startCVEPolling() {
+  console.log("🔄 Démarrage polling CVE...");
+
+  // Create container if it doesn't exist
+  let container = document.getElementById("alerts-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "alerts-container";
+    container.style.cssText =
+      "margin-top: 20px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px;";
+    document.body.appendChild(container);
+  }
+
+  try {
+    const extensionId = chrome.runtime.id;
+    const url = `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=${extensionId}&format=cve`;
+    console.log("🌐 Fetching CVE data from:", url);
+
+    const response = await fetch(url);
+    console.log("📡 Response status:", response.status, response.statusText);
+
+    const data = await response.json();
+    console.log("📊 CVE Response:", JSON.stringify(data, null, 2));
+
+    // ✅ Handle both old and new formats
+    let cveData = null;
+    let hasData = false;
+
+    // Old format : {success: true, results: [...]}
+    if (data.success && data.results && data.results.length > 0) {
+      console.log(
+        "✅ CVE Alerts trouvées (format ancien):",
+        data.results.length
+      );
+      cveData = data.results;
+      hasData = true;
     }
-
-    try {
-      const extensionId = chrome.runtime.id;
-      const url = `https://soc-cert-extension.vercel.app/api/extension-result?extensionId=${extensionId}&format=cve`;
-      console.log("🌐 Fetching CVE data from:", url);
-
-      const response = await fetch(url);
-      console.log("📡 Response status:", response.status, response.statusText);
-
-      const data = await response.json();
-      console.log("📊 CVE Response:", JSON.stringify(data, null, 2));
-
-      // ✅ Handle both old and new formats
-      let cveData = null;
-      let hasData = false;
-
-      // Old format : {success: true, results: [...]}
-      if (data.success && data.results && data.results.length > 0) {
-        console.log(
-          "✅ CVE Alerts trouvées (format ancien):",
-          data.results.length
-        );
-        cveData = data.results;
+    // New format : {result: {...}} ou {result: [...]}
+    else if (data.result && data.result !== null) {
+      console.log("✅ CVE Alerts trouvées (format nouveau):", data.result);
+      // new array of results
+      if (Array.isArray(data.result)) {
+        cveData = data.result;
+        hasData = data.result.length > 0;
+      }
+      // If it's a single object, wrap it into an array
+      else {
+        cveData = [data.result];
         hasData = true;
       }
-      // New format : {result: {...}} ou {result: [...]}
-      else if (data.result && data.result !== null) {
-        console.log("✅ CVE Alerts trouvées (format nouveau):", data.result);
-        // new array of results
-        if (Array.isArray(data.result)) {
-          cveData = data.result;
-          hasData = data.result.length > 0;
-        }
-        // If it's a single object, wrap it into an array
-        else {
-          cveData = [data.result];
-          hasData = true;
-        }
-      }
+    }
 
-      if (hasData && cveData && cveData.length > 0) {
-        console.log("🎉 Affichage des CVE:", cveData.length);
-        displayCVEAlerts(cveData);
-      } else {
-        console.log("ℹ️ Pas d'alertes CVE disponibles");
-        console.log("🔍 Debug info:", {
-          success: data.success,
-          resultsExist: !!data.results,
-          resultsLength: data.results ? data.results.length : "undefined",
-          resultExist: !!data.result,
-          resultType: typeof data.result,
-          debug: data.debug,
-        });
+    if (hasData && cveData && cveData.length > 0) {
+      console.log("🎉 Affichage des CVE:", cveData.length);
+      displayCVEAlerts(cveData);
+    } else {
+      console.log("ℹ️ Pas d'alertes CVE disponibles");
+      console.log("🔍 Debug info:", {
+        success: data.success,
+        resultsExist: !!data.results,
+        resultsLength: data.results ? data.results.length : "undefined",
+        resultExist: !!data.result,
+        resultType: typeof data.result,
+        debug: data.debug,
+      });
 
-        container.innerHTML = `
+      container.innerHTML = `
         <div style="text-align: center; padding: 20px; color: #888;">
           <h3>🔍 Active CVE Monitoring</h3>
           <p>No new security alerts</p>
@@ -2483,41 +1928,41 @@ async function updateWithDeepResults(deepData) {
           </div>
         </div>
       `;
-      }
-    } catch (error) {
-      console.error("❌ CVE polling error:", error);
-      container.innerHTML = `
+    }
+  } catch (error) {
+    console.error("❌ CVE polling error:", error);
+    container.innerHTML = `
       <div style="background: rgba(255,0,0,0.1); padding: 15px; border-radius: 8px; text-align: center;">
         <h3>⚠️ CVE Monitoring Error</h3>
         <p>Unable to retrieve alerts</p>
       </div>
     `;
-    }
   }
+}
 
-  // 📱 CVE ALERTS DISPLAY - FIXED
-  function displayCVEAlerts(alerts) {
-    const container = document.getElementById("alerts-container");
+// 📱 CVE ALERTS DISPLAY - FIXED
+function displayCVEAlerts(alerts) {
+  const container = document.getElementById("alerts-container");
 
-    console.log("🎨 DISPLAY CVE ALERTS DEBUG:");
-    console.log("  Container found:", !!container);
-    console.log("  Container ID:", container?.id);
-    console.log("  Alerts count:", alerts.length);
+  console.log("🎨 DISPLAY CVE ALERTS DEBUG:");
+  console.log("  Container found:", !!container);
+  console.log("  Container ID:", container?.id);
+  console.log("  Alerts count:", alerts.length);
 
-    // 🔍 DEBUG: Log each received alert
-    console.log("🔍 ALERTS RECEIVED:", alerts);
-    alerts.forEach((alert, index) => {
-      console.log(`Alert ${index}:`, {
-        cve_id: alert.cve_id,
-        title: alert.title,
-        severity: alert.severity,
-        fullAlert: alert,
-      });
+  // 🔍 DEBUG: Log each received alert
+  console.log("🔍 ALERTS RECEIVED:", alerts);
+  alerts.forEach((alert, index) => {
+    console.log(`Alert ${index}:`, {
+      cve_id: alert.cve_id,
+      title: alert.title,
+      severity: alert.severity,
+      fullAlert: alert,
     });
+  });
 
-    const alertsHTML = alerts
-      .map(
-        (alert) => `
+  const alertsHTML = alerts
+    .map(
+      (alert) => `
     <div style="background: rgba(255,255,255,0.9); color: #333; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ff0000;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
         <strong style="color: #cc0000;">${alert.cve_id}</strong>
@@ -2532,8 +1977,8 @@ async function updateWithDeepResults(deepData) {
       
       <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
         Score: ${alert.score || 100}/100 | Source: ${
-          alert.source || "Extension"
-        }
+        alert.source || "Extension"
+      }
       </div>
       
       <div style="font-size: 11px; color: #888;">
@@ -2555,10 +2000,10 @@ async function updateWithDeepResults(deepData) {
       }
     </div>
   `
-      )
-      .join("");
+    )
+    .join("");
 
-    container.innerHTML = `
+  container.innerHTML = `
     <div style="background: linear-gradient(135deg, #ff4444, #cc0000); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
       <h3 style="margin: 0 0 15px 0; color: white; text-align: center;">
         🚨 ALERTES CVE CRITIQUES (${alerts.length})
@@ -2574,22 +2019,21 @@ async function updateWithDeepResults(deepData) {
     </div>
   `;
 
-    console.log(
-      "🎨 HTML INJECTED - Container innerHTML length:",
-      container.innerHTML.length
-    );
-    console.log("🎨 Container style:", container.style.cssText);
-    console.log("🎨 Container parent:", container.parentElement?.tagName);
+  console.log(
+    "🎨 HTML INJECTED - Container innerHTML length:",
+    container.innerHTML.length
+  );
+  console.log("🎨 Container style:", container.style.cssText);
+  console.log("🎨 Container parent:", container.parentElement?.tagName);
 
-    // Add the event listener for the button after creating it
-    setTimeout(() => {
-      const refreshBtn = document.getElementById("refresh-cve-btn");
-      if (refreshBtn) {
-        refreshBtn.addEventListener("click", startCVEPolling);
-      }
-    }, 100);
-  }
+  // Add the event listener for the button after creating it
+  setTimeout(() => {
+    const refreshBtn = document.getElementById("refresh-cve-btn");
+    if (refreshBtn) {
+      refreshBtn.addEventListener("click", startCVEPolling);
+    }
+  }, 100);
+}
 
-  // Debug helper
-  console.log("📄 popup.js loaded - waiting for DOMContentLoaded");
-} // Fin de la dernière accolade manquante
+// Debug helper
+console.log("📄 popup.js loaded - waiting for DOMContentLoaded");

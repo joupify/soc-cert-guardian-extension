@@ -476,13 +476,29 @@ async function getAnalysisFromAPI(url) {
 // Returns parsed analysis object { riskScore, threatType, indicators, confidence, recommendations, analysis }
 async function performQuickAnalysisInBackground(url) {
   try {
-    // Prefer global LanguageModel API if exposed in service worker (some browsers may expose it)
+    // ✅ STAGE 1: Starting
+    console.log("🚀 Deep analysis starting for:", url);
+    notifyPopupDeepAnalysisProgress("starting");
+
+    // Wait 2 seconds
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // ✅ STAGE 2: Data received
+    console.log("📥 Data received, processing...");
+    notifyPopupDeepAnalysisProgress("data-received");
+
+    // Prefer global LanguageModel API
     const LM =
       globalThis.LanguageModel ||
       (globalThis.ai && globalThis.ai.languageModel) ||
       null;
+
     if (!LM) {
       console.log("ℹ️ No LanguageModel available in background");
+      // Still notify completion
+      notifyPopupDeepAnalysisProgress("completed", {
+        error: "No AI available",
+      });
       return null;
     }
 
@@ -491,11 +507,10 @@ async function performQuickAnalysisInBackground(url) {
       url
     );
 
-    // Create a short prompt similar to ai-helper
+    // Create prompt
     const prompt = `Analyze this URL for security risks and respond in strict JSON:
 
 URL: ${url}
-Context: 
 
 Respond ONLY with this exact JSON format:
 {
@@ -509,13 +524,18 @@ Respond ONLY with this exact JSON format:
 
     const startTime = Date.now();
 
-    // Create a session if API exposes create; fall back to direct LM.prompt-like API
+    // Wait another 2 seconds before enhancing
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // ✅ STAGE 3: Enhancing
+    console.log("🔄 Enhancement recommendations...");
+    notifyPopupDeepAnalysisProgress("enhancing");
+
+    // Create session
     let session = null;
     try {
       if (LM.create) {
-        const sessionPromise = LM.create({
-          outputLanguage: "en",
-        });
+        const sessionPromise = LM.create({ outputLanguage: "en" });
         const sessionTimeout = new Promise((resolve) =>
           setTimeout(() => resolve(null), 5000)
         );
@@ -525,10 +545,7 @@ Respond ONLY with this exact JSON format:
         }
       }
     } catch (e) {
-      console.warn(
-        "⚠️ Could not create session in background, will try direct prompt:",
-        e && e.message ? e.message : e
-      );
+      console.warn("⚠️ Could not create session in background:", e.message);
     }
 
     let rawResult = null;
@@ -541,9 +558,7 @@ Respond ONLY with this exact JSON format:
       } else if (LM.call) {
         rawResult = await LM.call(prompt);
       } else {
-        console.log(
-          "⚠️ No usable prompt/call API available on LanguageModel in background"
-        );
+        console.log("⚠️ No usable prompt/call API available");
         return null;
       }
 
@@ -559,22 +574,79 @@ Respond ONLY with this exact JSON format:
       return parsed;
     })();
 
-    // Timeout after 60 seconds to avoid slow AI calls
+    // Timeout after 60 seconds
     const timeoutPromise = new Promise((resolve) => {
       setTimeout(() => resolve(null), 60000);
     });
 
     const result = await Promise.race([analysisPromise, timeoutPromise]);
     const elapsed = Date.now() - startTime;
+
     if (result) {
       console.log(`✅ Background quick analysis completed in ${elapsed}ms`);
+
+      // ✅ STAGE 4: Completed
+      notifyPopupDeepAnalysisProgress("completed", {
+        deepResults: result,
+        elapsed: elapsed,
+      });
+
+      // Store result
+      const storageKey = `analysis_${url}`;
+      const storedData = {
+        analysis: result,
+        timestamp: Date.now(),
+        url: url,
+        source: "background",
+      };
+      chrome.storage.local.set({ [storageKey]: storedData });
+      console.log("💾 Stored background analysis for:", url);
+
+      return result;
     } else {
       console.log(`⏰ Background quick analysis timed out after ${elapsed}ms`);
+      notifyPopupDeepAnalysisProgress("completed", {
+        error: "Timeout",
+        elapsed: elapsed,
+      });
+      return null;
     }
-    return result;
   } catch (error) {
     console.error("❌ performQuickAnalysisInBackground error:", error);
+    notifyPopupDeepAnalysisProgress("completed", {
+      error: error.message,
+    });
     return null;
+  }
+}
+
+// ============================================
+// SEND DEEP ANALYSIS UPDATES TO POPUP
+// ============================================
+
+async function notifyPopupDeepAnalysisProgress(stage, data = {}) {
+  console.log(`📡 Sending deep analysis stage to popup: ${stage}`);
+
+  try {
+    // Send message to popup
+    chrome.runtime.sendMessage(
+      {
+        action: "updateDeepResults",
+        data: {
+          stage: stage,
+          ...data,
+        },
+      },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.log(`⚠️ Popup not open: ${chrome.runtime.lastError.message}`);
+        } else {
+          console.log(`✅ Stage "${stage}" sent to popup`);
+        }
+      }
+    );
+  } catch (error) {
+    console.log("⚠️ Error notifying popup:", error.message);
   }
 }
 

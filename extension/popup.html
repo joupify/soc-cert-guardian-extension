@@ -185,6 +185,32 @@
             <span class="api-status">Ready</span>
           </div>
         </div>
+
+        <!-- ✅ AJOUTE ÇA APRÈS TES API STATUS BADGES -->
+
+<!-- Translation Section -->
+<div id="translation-container" style="margin-top: 16px; padding: 12px; background: #1a1a2e; border-radius: 8px; display: none;">
+  <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 12px;">
+    <select id="target-language" style="flex: 1; padding: 8px; border-radius: 6px; background: #0f0f1e; color: #fff; border: 1px solid #444; cursor: pointer;">
+      <option value="fr">🇫🇷 French</option>
+      <option value="es">🇪🇸 Spanish</option>
+      <option value="de">🇩🇪 German</option>
+      <option value="ja">🇯🇵 Japanese</option>
+      <option value="zh">🇨🇳 Chinese</option>
+      <option value="ar">🇸🇦 Arabic</option>
+    </select>
+    <button id="translate-btn" style="padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px;">
+      🌐 Translate
+    </button>
+  </div>
+  
+  <!-- Translation Output -->
+  <div id="translation-output" style="padding: 12px; background: #0f0f1e; border-radius: 6px; display: none;">
+    <div style="font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600;">📝 Translation:</div>
+    <div id="translated-text" style="color: #e0e0e0; font-size: 13px; line-height: 1.6;"></div>
+  </div>
+</div>
+
       </div>
 
       <!-- Time indicator -->

@@ -26,9 +26,9 @@
         "ai-mock.js",
         "ai-helper.js",
         "content-script.js",
-        "cve-content-script.js",
         "content-alert.js"
-      ]
+      ],
+      "run_at": "document_start"
     }
   ],
 

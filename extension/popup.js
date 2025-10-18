@@ -1603,13 +1603,13 @@ async function updateWithDeepResults(deepData) {
   console.log("🔄 updateWithDeepResults called with:", deepData);
 
   // 🎯 UPDATE the status in n8n badge
-  let statusText = "⏳ n8n running";
+  let statusText = "n8n running";
   let showSpinner = true;
 
   if (deepData && deepData.stage) {
     switch (deepData.stage) {
       case "starting":
-        statusText = "⏳ n8n running";
+        statusText = "n8n running";
         break;
       case "data-received":
         statusText = "📥 Data received";
@@ -1625,7 +1625,7 @@ async function updateWithDeepResults(deepData) {
         showSpinner = false;
         break;
       default:
-        statusText = "⏳ n8n running";
+        statusText = "n8n running";
     }
   }
 
@@ -2589,6 +2589,55 @@ async function updateWithDeepResults(deepData) {
       }
     }, 100);
   }
+
+  // ✅ Translation button handler
+  document
+    .getElementById("translate-btn")
+    ?.addEventListener("click", async () => {
+      const btn = document.getElementById("translate-btn");
+      const output = document.getElementById("translation-output");
+      const textDiv = document.getElementById("translated-text");
+      const lang = document.getElementById("target-language").value;
+
+      try {
+        btn.disabled = true;
+        btn.textContent = "⏳ Translating...";
+
+        // Get text
+        const cveText =
+          document.querySelector("#cve-description")?.textContent.trim() || "";
+        if (!cveText) throw new Error("No CVE loaded");
+
+        // Show container
+        document.getElementById("translation-container").style.display =
+          "block";
+
+        // Translate
+        const translator = await translation.createTranslator({
+          sourceLanguage: "en",
+          targetLanguage: lang,
+        });
+        const translated = await translator.translate(cveText);
+
+        // Show result
+        output.style.display = "block";
+        textDiv.textContent = translated;
+        btn.textContent = "✅ Translated!";
+
+        // Update badge
+        document.querySelector("#api-translator .api-status").textContent =
+          "Active";
+
+        setTimeout(() => (btn.textContent = "🌐 Translate"), 2000);
+      } catch (error) {
+        console.error(error);
+        output.style.display = "block";
+        textDiv.textContent = "❌ " + error.message;
+        btn.textContent = "🌐 Translate";
+      } finally {
+        btn.disabled = false;
+      }
+    });
 
   // Debug helper
   console.log("📄 popup.js loaded - waiting for DOMContentLoaded");

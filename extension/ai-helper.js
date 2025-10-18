@@ -1085,26 +1085,14 @@ BAD EXAMPLES (don't use decoded):
           // ✅ Fonction pour normaliser les URLs (décoder les caractères)
           function normalizeUrl(url) {
             try {
-              // Créer un objet URL
-              const urlObj = new URL(url);
-
-              // Décoder tous les paramètres
-              const params = new URLSearchParams(urlObj.search);
-              const decodedParams = new URLSearchParams();
-
-              for (const [key, value] of params) {
-                // Décoder le paramètre (transform %27 → ')
-                decodedParams.set(key, decodeURIComponent(value));
-              }
-
-              // Reconstruire l'URL avec paramètres décodés
-              urlObj.search = decodedParams.toString();
-
-              return urlObj.toString();
+              const u = new URL(url);
+              // On garde uniquement le domaine + chemin, sans www, sans slash final, sans query
+              const hostname = u.hostname.replace(/^www\./, "").toLowerCase();
+              const pathname = u.pathname.replace(/\/+$/, "");
+              return `${hostname}${pathname}`;
             } catch (error) {
               console.error("URL normalization error:", error);
-              // Fallback: décoder simplement toute l'URL
-              return decodeURIComponent(url);
+              return url;
             }
           }
 
@@ -1123,7 +1111,7 @@ BAD EXAMPLES (don't use decoded):
             "results"
           );
 
-          // If multiple matches, pick the most recent (receivedAt > timestamp), fallback to highest score
+          // Si plusieurs correspondances → garder la plus récente (ou la mieux notée)
           let selectedResult = null;
           if (urlFilteredResults.length === 1) {
             selectedResult = urlFilteredResults[0];
@@ -1136,7 +1124,6 @@ BAD EXAMPLES (don't use decoded):
                 cur.receivedAt || cur.timestamp || 0
               ).getTime();
               if (curTime !== bestTime) return curTime > bestTime ? cur : best;
-              // tie-breaker: higher score
               const bScore = best.score || 0;
               const cScore = cur.score || 0;
               return cScore > bScore ? cur : best;
@@ -1147,106 +1134,6 @@ BAD EXAMPLES (don't use decoded):
             "✅ Selected by URL:",
             selectedResult && selectedResult.cve_id
           );
-
-          // ///////////////////////// ✅ FILTER BY VISITED SITE URL + SORT BY SEVERITY/SCORE
-
-          // // ✅ FILTER BY VISITED SITE URL + SORT BY SEVERITY/SCORE
-          // chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          //   const currentUrl = tabs[0]?.url;
-          //   console.log(`🌐 Current tab URL: ${currentUrl}`);
-
-          //   // 1️⃣ FILTRER : Afficher UNIQUEMENT les CVE de cette URL
-          //   const urlFilteredResults = data.filter((item) => {
-          //     const itemUrl = item.link || item.url || "";
-
-          //     // ✅ Match exact
-          //     if (itemUrl === currentUrl) {
-          //       console.log(`✅ EXACT MATCH: ${item.cve_id} - ${itemUrl}`);
-          //       return true;
-          //     }
-
-          //     // ✅ Match partiel (sans protocole et sans query params)
-          //     const normalizeUrl = (url) => {
-          //       try {
-          //         const urlObj = new URL(url);
-          //         return urlObj.hostname + urlObj.pathname;
-          //       } catch {
-          //         return url.replace(/^https?:\/\//, "").split("?")[0];
-          //       }
-          //     };
-
-          //     const normalizedItemUrl = normalizeUrl(itemUrl);
-          //     const normalizedCurrentUrl = normalizeUrl(currentUrl);
-
-          //     if (normalizedItemUrl === normalizedCurrentUrl) {
-          //       console.log(`✅ PARTIAL MATCH: ${item.cve_id} - ${itemUrl}`);
-          //       return true;
-          //     }
-
-          //     return false;
-          //   });
-
-          //   console.log(
-          //     `🔍 Filtered by URL: ${urlFilteredResults.length} results for ${currentUrl}`
-          //   );
-
-          //   // 2️⃣ TRIER : Par Severity > Score > Type (Real/Virtual) > Date
-          //   urlFilteredResults.sort((a, b) => {
-          //     // 1️⃣ Comparer par SEVERITY (Critical > High > Medium > Low)
-          //     const severityOrder = {
-          //       Critical: 0,
-          //       High: 1,
-          //       Medium: 2,
-          //       Low: 3,
-          //       Unknown: 4,
-          //     };
-          //     const aSeverity = severityOrder[a.severity] ?? 4;
-          //     const bSeverity = severityOrder[b.severity] ?? 4;
-
-          //     if (aSeverity !== bSeverity) {
-          //       console.log(
-          //         `🔥 Sort by severity: ${a.severity} (${aSeverity}) vs ${b.severity} (${bSeverity})`
-          //       );
-          //       return aSeverity - bSeverity; // ✅ Plus critique en premier
-          //     }
-
-          //     // 2️⃣ If same severity, compare by SCORE (90 > 80 > 70...)
-          //     const aScore = a.score || 0;
-          //     const bScore = b.score || 0;
-
-          //     if (aScore !== bScore) {
-          //       console.log(`📊 Sort by score: ${aScore} vs ${bScore}`);
-          //       return bScore - aScore; // ✅ Higher score first
-          //     }
-
-          //     // 3️⃣ If same severity AND same score, THEN prioritize real CVE
-          //     const aIsReal = !a.cve_id?.startsWith("CVE-2026");
-          //     const bIsReal = !b.cve_id?.startsWith("CVE-2026");
-
-          //     console.log(
-          //       `🔍 Compare CVE type: ${a.cve_id} (${
-          //         aIsReal ? "REAL" : "VIRTUAL"
-          //       }) vs ${b.cve_id} (${bIsReal ? "REAL" : "VIRTUAL"})`
-          //     );
-
-          //     if (aIsReal && !bIsReal) return -1; // ✅ Real CVE first (at equality)
-          //     if (!aIsReal && bIsReal) return 1; // ✅ Virtual CVE last (at equality)
-
-          //     // 4️⃣ If everything is equal, sort by date (most recent first)
-          //     const aDate = new Date(a.timestamp || 0);
-          //     const bDate = new Date(b.timestamp || 0);
-          //     return bDate - aDate; // ✅ Most recent first
-          //   });
-
-          //   console.log(
-          //     `✅ After sort: ${urlFilteredResults[0]?.cve_id} (severity: ${urlFilteredResults[0]?.severity}, score: ${urlFilteredResults[0]?.score})`
-          //   );
-
-          //   // 3️⃣ Display the results
-          //   this.displayResults(urlFilteredResults);
-          // });
-
-          // /////////////////////////************************************************ */
 
           console.log(
             "✅ After sort:",

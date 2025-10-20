@@ -825,7 +825,8 @@ h1.title {
 .stats-dashboard {
   margin-bottom: 24px;
   padding: 20px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  /* background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); */
+  background: linear-gradient(135deg, #1c1c43 0%, #200858 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
 }
@@ -1032,4 +1033,95 @@ h1.title {
   border-radius: 5px;
   margin-top: 5px;
   font-size: 12px;
+}
+
+/* 🌐 Bouton Traduction - Style SOC-CERT */
+.translate-mini-btn {
+  background: rgba(79, 195, 247, 0.15);
+  border: 1px solid rgba(79, 195, 247, 0.3);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #4fc3f7;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+
+.translate-mini-btn:hover {
+  background: rgba(79, 195, 247, 0.25);
+  border-color: rgba(79, 195, 247, 0.5);
+}
+
+.translate-mini-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 📦 Box de traduction */
+.translation-box {
+  background: rgba(79, 195, 247, 0.08);
+  border-left: 3px solid #4fc3f7;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 12px 0;
+}
+
+.translation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.translation-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4fc3f7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.translation-content {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #e0e0e0;
+  font-style: italic;
+}
+
+/* 🔄 Bouton "Original" */
+.restore-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cccccc;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+
+.restore-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* 🔵 Bouton "Learn More" amélioré */
+.learn-more-btn {
+  background: linear-gradient(135deg, #00D9FF 0%, #0099CC 100%);
+  color: white;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+}
+
+.learn-more-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 217, 255, 0.4);
 }

@@ -320,7 +320,7 @@ class SecurityResourcesGenerator {
     return `
       <div class="security-resources-section">
         <div class="resources-header">
-          <h3>📚 Learn More About This Threat</h3>
+          // <h3>📚 Learn More About This Threat</h3>
           <p class="resources-subtitle">Educational resources and hands-on practice</p>
         </div>
 
@@ -729,33 +729,77 @@ async function addAITestButtons() {
   `;
 
   testSection.innerHTML = `
-    <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">🤖 Chrome AI APIs</h4>
-    
-    <!-- Automatic download button -->
-    <button id="download-all-ai" style="width: 100%; padding: 8px; border: none; border-radius: 4px; background: #4285f4; color: white; font-size: 12px; cursor: pointer; margin-bottom: 10px;">
-      📥 Download all APIs
+  <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">🤖 Chrome AI APIs</h4>
+  
+  <!-- Automatic download button -->
+  <button id="download-all-ai" style="width: 100%; padding: 8px; border: none; border-radius: 4px; background: #4285f4; color: white; font-size: 12px; cursor: pointer; margin-bottom: 10px;">
+    📥 Download all APIs
+  </button>
+  
+  <!-- API status -->
+  <div id="ai-status" style="margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 10px; color: #ccc;">
+    Checking status...
+  </div>
+  
+  <!-- Test buttons -->
+  <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+    <button id="test-summarizer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #0066cc; color: white; font-size: 10px; cursor: pointer;">
+      📝 Summarizer
     </button>
-    
-    <!-- API status -->
-    <div id="ai-status" style="margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 10px; color: #ccc;">
-      Checking status...
+    <button id="test-writer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #024a04ff; color: white; font-size: 10px; cursor: pointer;">
+      ✍️ Writer
+    </button>
+    <button id="test-translator" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #FF9800; color: white; font-size: 10px; cursor: pointer;">
+      🌐 Translator
+    </button>
+  </div>
+  
+  <!-- AI Results with inline translate buttons -->
+  <div id="ai-test-results" style="margin-top: 10px; font-size: 11px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; display: none;">
+  </div>
+`;
+
+  // ✅ AJOUTE LE CODE POUR AFFICHER LES RÉSULTATS AVEC BOUTONS TRANSLATE
+  function displayAIResult(title, content, containerId = "ai-test-results") {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const resultId = `ai-result-${Date.now()}`;
+
+    const resultDiv = document.createElement("div");
+    resultDiv.style.cssText =
+      "margin-bottom: 10px; padding: 8px; background: rgba(102, 126, 234, 0.1); border-radius: 4px; border-left: 3px solid #667eea;";
+
+    resultDiv.innerHTML = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+      <strong style="color: #667eea; font-size: 11px;">${title}</strong>
+      <button class="translate-mini-btn" data-target="${resultId}">
+        🌐
+      </button>
     </div>
-    
-    <!-- Test buttons -->
-    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
-      <button id="test-summarizer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #0066cc; color: white; font-size: 10px; cursor: pointer;">
-        📝 Summarizer
-      </button>
-      <button id="test-writer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #024a04ff; color: white; font-size: 10px; cursor: pointer;">
-        ✍️ Writer
-      </button>
-      <button id="test-translator" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #FF9800; color: white; font-size: 10px; cursor: pointer;">
-        🌐 Translator
-      </button>
-    </div>
-    <div id="ai-test-results" style="margin-top: 10px; font-size: 11px; max-height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; display: none;">
+    <div id="${resultId}" style="color: #ccc; font-size: 10px; line-height: 1.4;">
+      ${content}
     </div>
   `;
+
+    container.appendChild(resultDiv);
+    container.style.display = "block";
+  }
+
+  // ✅ UTILISE displayAIResult DANS TES TESTS
+  document
+    .getElementById("test-summarizer")
+    ?.addEventListener("click", async () => {
+      // ... ton code de test ...
+      displayAIResult("📝 Summarizer Result", "Your summary text here");
+    });
+
+  document
+    .getElementById("test-writer")
+    ?.addEventListener("click", async () => {
+      // ... ton code de test ...
+      displayAIResult("✍️ Writer Result", "Your writer output here");
+    });
 
   container.appendChild(testSection);
 
@@ -1087,7 +1131,7 @@ async function testTranslator() {
 }
 
 // === DISPLAY THREAT ANALYSIS ===
-function displayThreatAnalysis(analysis, siteUrl) {
+async function displayThreatAnalysis(analysis, siteUrl) {
   window.currentAnalysis = analysis;
 
   // 🛡️ SPECIAL HANDLING FOR SAFE URLs
@@ -1155,7 +1199,7 @@ function displayThreatAnalysis(analysis, siteUrl) {
       color: "#ffff00",
       icon: "⚠️",
       label: "Suspicious",
-      bg: "rgba(255,255,0,0.1)",
+      // bg: "rgba(255,255,0,0.1)",
     },
     phishing: {
       color: "#ff9900",
@@ -1266,57 +1310,78 @@ function displayThreatAnalysis(analysis, siteUrl) {
           ${
             analysis.aiSummary
               ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Summarizer:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${analysis.aiSummary}
-              </div>
-            </div>
-          `
-              : ""
-          }
-          
-          ${
-            analysis.enhancedRecommendations
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">✍️ Writer:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${renderRecommendationsInline(analysis.enhancedRecommendations)}
-              </div>
-            </div>
-          `
+  <div style="margin-bottom: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+      <div style="font-size: 11px; font-weight: bold;">📝 Summarizer:</div>
+      <button class="translate-mini-btn" data-target="ai-summary-text">
+        🌐
+      </button>
+    </div>
+    <div id="ai-summary-text" style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; color: #ccc;">
+      ${analysis.aiSummary}
+    </div>
+  </div>
+`
               : ""
           }
 
-          <!-- APIs used summary -->
-          ${buildAPIBadgesHtml()}
-          
-          ${
-            analysis.translatedAnalysis
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">🌐 Translator:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; font-style: italic;">
-                ${analysis.translatedAnalysis}
-              </div>
-            </div>
-          `
-              : ""
-          }
-          
-          ${
-            analysis.proofreadAnalysis
-              ? `
-            <div style="margin-bottom: 10px;">
-              <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">📝 Proofreader:</div>
-              <div style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px;">
-                ${analysis.proofreadAnalysis}
-              </div>
-            </div>
-          `
-              : ""
-          }
+${
+  analysis.enhancedRecommendations
+    ? `
+  <div style="margin-bottom: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+      <div style="font-size: 11px; font-weight: bold;">✍️ Writer:</div>
+      <button class="translate-mini-btn" data-target="ai-writer-text">
+        🌐
+      </button>
+    </div>
+    <div id="ai-writer-text" style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; color: #ccc;">
+      ${renderRecommendationsInline(analysis.enhancedRecommendations)}
+    </div>
+  </div>
+`
+    : ""
+}
+
+<!-- APIs used summary -->
+${buildAPIBadgesHtml()}
+
+${
+  analysis.translatedAnalysis
+    ? `
+  <div style="margin-bottom: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+      <div style="font-size: 11px; font-weight: bold;">🌐 Translator:</div>
+      <button class="translate-mini-btn" data-target="ai-translator-text">
+        🌐
+      </button>
+    </div>
+    <div id="ai-translator-text" style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; font-style: italic; color: #ccc;">
+      ${analysis.translatedAnalysis}
+    </div>
+  </div>
+`
+    : ""
+}
+
+${
+  analysis.proofreadAnalysis
+    ? `
+  <div style="margin-bottom: 10px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px;">
+      <div style="font-size: 11px; font-weight: bold;">📝 Proofreader:</div>
+      <button class="translate-mini-btn" data-target="ai-proofreader-text">
+        🌐
+      </button>
+    </div>
+    <div id="ai-proofreader-text" style="font-size: 12px; background: rgba(0,0,0,0.2); padding: 6px; border-radius: 4px; color: #ccc;">
+      ${analysis.proofreadAnalysis}
+    </div>
+  </div>
+`
+    : ""
+}
+
         </div>
       `
           : ""
@@ -1362,9 +1427,24 @@ function displayThreatAnalysis(analysis, siteUrl) {
       e
     );
   }
+
+  // ✅ AJOUTE CES LIGNES ICI (À LA FIN, AVANT LE })
+  await chrome.storage.local.set({
+    lastAnalysis: {
+      threatLevel: analysis.threatLevel,
+      riskScore: analysis.riskScore,
+      description: analysis.description || analysis.summary,
+      indicators: analysis.indicators || [],
+      recommendations: analysis.recommendations || [],
+    },
+  });
+  console.log("✅ Analysis saved for translation");
+  const translateSection = document.getElementById("translate-section");
+  if (translateSection) {
+    translateSection.style.display = "block";
+  }
 }
 
-// Debug version of analyzeCurrentPage
 // Debug version of analyzeCurrentPage - WITH REAL-TIME INTERFACE
 async function analyzeCurrentPage() {
   try {
@@ -1994,16 +2074,23 @@ async function updateWithDeepResults(deepData) {
     ${""}
     
       <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
-      <div>
-        <strong>💡 AI-Enhanced Recommendations:</strong>
-        <span class="badge-new orange">NEW</span>
+  <div>
+    <strong>💡 AI-Enhanced Recommendations:</strong>
+    <span class="badge-new orange">NEW</span>
+    <div style="font-size: 10px; color: #888; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <button class="translate-mini-btn" data-target="ai-recommendations-list">
+  🌐
+</button>
 
-        <div style="font-size: 10px; color: #888; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
-      </div>
-      <div style="text-align:right;">${relevanceHtml}</div>
-      </div>
-      ${renderRecommendationsList(enhancedRecommendations)}
-    </div>
+    <div style="text-align:right;">${relevanceHtml}</div>
+  </div>
+</div>
+<div id="ai-recommendations-list">
+  ${renderRecommendationsList(enhancedRecommendations)}
+</div>
+
 
     <!-- 🎯 POINT 2: Educational Resources Section -->
     ${(() => {
@@ -2031,12 +2118,13 @@ async function updateWithDeepResults(deepData) {
 
       return `
           <div style="margin: 20px 0; padding: 15px; background: rgba(0,255,255,0.05); border-radius: 10px; border-left: 3px solid #00ffff;">
-            <div style="display: flex; align-items: center; margin-bottom: 15px;">
-              <span style="font-size: 20px; margin-right: 10px;">📚</span>
-              <div>
-                <h3 style="margin: 0; color: #00ffff; font-size: 16px;">Learn More About This Threat</h3>
-                <p style="margin: 2px 0 0 0; font-size: 12px; color: #aaa;">Educational resources and hands-on practice</p>
-              </div>
+            <div style="margin-bottom: 20px;">
+              <button class="learn-more-btn">
+                📚 Learn More About This Threat
+              </button>
+              <p style="margin: 8px 0 0 0; font-size: 12px; color: #aaa;">
+                Educational resources and hands-on practice
+              </p>
             </div>
 
             <!-- Vulnerability Classification -->
@@ -2188,7 +2276,7 @@ async function updateWithDeepResults(deepData) {
         color: "#ffff00",
         icon: "⚠️",
         label: "Suspicious",
-        bg: "rgba(255,255,0,0.1)",
+        // bg: "rgba(255,255,0,0.1)",
       },
       phishing: {
         color: "#ff9900",
@@ -2495,150 +2583,139 @@ async function updateWithDeepResults(deepData) {
     }
   }
 
-  // 📱 CVE ALERTS DISPLAY - FIXED
-  function displayCVEAlerts(alerts) {
-    const container = document.getElementById("alerts-container");
-
-    console.log("🎨 DISPLAY CVE ALERTS DEBUG:");
-    console.log("  Container found:", !!container);
-    console.log("  Container ID:", container?.id);
-    console.log("  Alerts count:", alerts.length);
-
-    // 🔍 DEBUG: Log each received alert
-    console.log("🔍 ALERTS RECEIVED:", alerts);
-    alerts.forEach((alert, index) => {
-      console.log(`Alert ${index}:`, {
-        cve_id: alert.cve_id,
-        title: alert.title,
-        severity: alert.severity,
-        fullAlert: alert,
-      });
-    });
-
-    const alertsHTML = alerts
-      .map(
-        (alert) => `
-    <div style="background: rgba(255,255,255,0.9); color: #333; padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #ff0000;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <strong style="color: #cc0000;">${alert.cve_id}</strong>
-        <span style="background: #cc0000; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
-          ${alert.severity || "Critical"}
-        </span>
-      </div>
-      
-      <div style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">
-        ${alert.title || "Chrome Extension Security Alert"}
-      </div>
-      
-      <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-        Score: ${alert.score || 100}/100 | Source: ${
-          alert.source || "Extension"
-        }
-      </div>
-      
-      <div style="font-size: 11px; color: #888;">
-        Détecté: ${new Date(
-          alert.receivedAt || alert.timestamp
-        ).toLocaleString()}
-      </div>
-      
-      ${
-        alert.link
-          ? `
-        <div style="margin-top: 8px;">
-          <a href="${alert.link}" target="_blank" style="color: #0066cc; font-size: 11px; text-decoration: none;">
-            🔗 Voir détails NVD →
-          </a>
-        </div>
-      `
-          : ""
-      }
-    </div>
-  `
-      )
-      .join("");
-
-    container.innerHTML = `
-    <div style="background: linear-gradient(135deg, #ff4444, #cc0000); padding: 15px; border-radius: 10px; margin-bottom: 15px;">
-      <h3 style="margin: 0 0 15px 0; color: white; text-align: center;">
-        🚨 ALERTES CVE CRITIQUES (${alerts.length})
-      </h3>
-      
-      ${alertsHTML}
-      
-      <div style="text-align: center; margin-top: 15px;">
-        <button id="refresh-cve-btn" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-          🔄 Actualiser
-        </button>
-      </div>
-    </div>
-  `;
-
-    console.log(
-      "🎨 HTML INJECTED - Container innerHTML length:",
-      container.innerHTML.length
-    );
-    console.log("🎨 Container style:", container.style.cssText);
-    console.log("🎨 Container parent:", container.parentElement?.tagName);
-
-    // Add the event listener for the button after creating it
-    setTimeout(() => {
-      const refreshBtn = document.getElementById("refresh-cve-btn");
-      if (refreshBtn) {
-        refreshBtn.addEventListener("click", startCVEPolling);
-      }
-    }, 100);
-  }
-
-  // ✅ Translation button handler
-  document
-    .getElementById("translate-btn")
-    ?.addEventListener("click", async () => {
-      const btn = document.getElementById("translate-btn");
-      const output = document.getElementById("translation-output");
-      const textDiv = document.getElementById("translated-text");
-      const lang = document.getElementById("target-language").value;
-
-      try {
-        btn.disabled = true;
-        btn.textContent = "⏳ Translating...";
-
-        // Get text
-        const cveText =
-          document.querySelector("#cve-description")?.textContent.trim() || "";
-        if (!cveText) throw new Error("No CVE loaded");
-
-        // Show container
-        document.getElementById("translation-container").style.display =
-          "block";
-
-        // Translate
-        const translator = await translation.createTranslator({
-          sourceLanguage: "en",
-          targetLanguage: lang,
-        });
-        const translated = await translator.translate(cveText);
-
-        // Show result
-        output.style.display = "block";
-        textDiv.textContent = translated;
-        btn.textContent = "✅ Translated!";
-
-        // Update badge
-        document.querySelector("#api-translator .api-status").textContent =
-          "Active";
-
-        setTimeout(() => (btn.textContent = "🌐 Translate"), 2000);
-      } catch (error) {
-        console.error(error);
-        output.style.display = "block";
-        textDiv.textContent = "❌ " + error.message;
-        btn.textContent = "🌐 Translate";
-      } finally {
-        btn.disabled = false;
-      }
-    });
-
   // Debug helper
   console.log("📄 popup.js loaded - waiting for DOMContentLoaded");
 } // Fin de la dernière accolade manquante
+
+// 🌐 TRADUCTION - API GOOGLE GRATUITE
+document
+  .getElementById("translate-btn")
+  ?.addEventListener("click", async () => {
+    const btn = document.getElementById("translate-btn");
+    const result = document.getElementById("translated-result");
+    const lang = document.getElementById("lang-select").value;
+
+    try {
+      btn.disabled = true;
+      btn.textContent = "Translating...";
+
+      // Récupère le texte de l'analyse
+      const text = document.getElementById("analysis-content")?.innerText || "";
+      if (!text || text.length < 10) {
+        throw new Error("No analysis text found. Run an analysis first!");
+      }
+
+      console.log("🌐 Translating to", lang, "- Text length:", text.length);
+
+      // API de traduction Google (gratuite, sans clé)
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(
+        text.substring(0, 5000)
+      )}`;
+      const response = await fetch(url);
+
+      if (!response.ok) throw new Error("Translation API failed");
+
+      const data = await response.json();
+      const translated = data[0].map((x) => x[0]).join("");
+
+      result.textContent = translated;
+      result.style.display = "block";
+      btn.textContent = "✅ Translated";
+
+      console.log("✅ Translation completed");
+
+      setTimeout(() => {
+        btn.textContent = "Translate";
+      }, 2000);
+    } catch (e) {
+      console.error("❌ Translation error:", e);
+      result.textContent = "❌ Translation failed: " + e.message;
+      result.style.display = "block";
+      btn.textContent = "Translate";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+// ✅ CODE DE TRADUCTION INLINE
+// 🌐 TRADUCTION INLINE - VERSION FINALE
+// 🌐 TRADUCTION - VERSION FINALE AVEC CLASSES CSS
+document.addEventListener("click", async (e) => {
+  if (!e.target.classList.contains("translate-mini-btn")) return;
+
+  const btn = e.target;
+  const targetId = btn.dataset.target;
+  const targetDiv = document.getElementById(targetId);
+
+  if (!targetDiv) return;
+
+  try {
+    btn.textContent = "⏳";
+    btn.disabled = true;
+
+    if (btn.dataset.original) {
+      targetDiv.innerHTML = btn.dataset.original;
+      delete btn.dataset.original;
+      btn.textContent = "🌐";
+      btn.disabled = false;
+      return;
+    }
+
+    const originalHTML = targetDiv.innerHTML;
+    const text = targetDiv.innerText;
+
+    if (!text || text.length < 10) throw new Error("No content");
+
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fr&dt=t&q=${encodeURIComponent(
+      text.substring(0, 3000)
+    )}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const translated = data[0].map((x) => x[0]).join("");
+
+    const formattedTranslation = translated
+      .replace(/\n\n/g, "<br><br>")
+      .replace(/\n/g, "<br>")
+      .split(/(?<=[.!?])\s+/)
+      .filter((s) => s.trim().length > 0)
+      .map((sentence) => {
+        const trimmed = sentence.trim();
+        if (/^[🔒🛡️📋🌐⚠️💡🔍✍️📝🔥]/.test(trimmed)) {
+          return `<div style="margin: 8px 0; padding-left: 4px;">${trimmed}</div>`;
+        }
+        return trimmed;
+      })
+      .join(" ");
+
+    btn.dataset.original = originalHTML;
+    targetDiv.innerHTML = `
+      <div class="translation-box">
+        <div class="translation-header">
+          <span class="translation-title">🌐 Traduction (Français)</span>
+          <button class="restore-btn" data-target="${targetId}">↺ Original</button>
+        </div>
+        <div class="translation-content">${formattedTranslation}</div>
+      </div>
+      <div style="opacity: 0.85;">${originalHTML}</div>
+    `;
+
+    btn.textContent = "🔄";
+  } catch (e) {
+    console.error("❌ Translation error:", e);
+    alert("❌ Translation failed");
+    btn.textContent = "🌐";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// Bouton "Original"
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("restore-btn")) {
+    const targetId = e.target.dataset.target;
+    const btn = document.querySelector(
+      `.translate-mini-btn[data-target="${targetId}"]`
+    );
+    if (btn) btn.click();
+  }
+});

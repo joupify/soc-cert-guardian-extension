@@ -1,4 +1,4 @@
-# 🚀 SOC-CERT Extension - Installation Guide
+# 🚀 SOC-CERT Guardian Extension - Installation Guide
 
 ## 📋 Prerequisites
 
@@ -14,70 +14,68 @@ When loading in Chrome, select the `extension/` folder inside the cloned or extr
 
 ### 1. 📥 Get the Extension
 
-# Clone the repository
+**Clone the repository:**
 
-git clone https://github.com/jpupify/soc-cert-extension
-cd soc-cert-extension
+git clone https://github.com/joupify/soc-cert-guardian-extension
+cd soc-cert-guardian-extension
 
-# OR Download ZIP from GitHub and extract
+text
 
-2. 🔧 Install in Chrome
-   Navigate to chrome://extensions/
+**OR Download ZIP from GitHub and extract**
 
-Enable "Developer mode" (toggle in top-right)
+### 2. 🔧 Install in Chrome
 
-Click "Load unpacked"
+1. Navigate to `chrome://extensions/`
+2. Enable **"Developer mode"** (toggle in top-right)
+3. Click **"Load unpacked"**
+4. Select the **`extension/`** folder from the cloned repository
 
-Select the extension folder from the cloned repository
+🎉 **Extension installed!**
 
-🎉 Extension installed!
+### 3. 🧪 Immediate Test
 
-3. 🧪 Immediate Test
-   Visit any page from these test domains to see automatic detection:
+Visit any page from these test domains to see automatic detection:
 
-```
-http://testphp.vulnweb.com/ (any page)
-http://zero.webappsecurity.com/ (any page)
-https://testsafebrowsing.appspot.com/ (any page)
-```
+**Test Domains:**
 
-Expected Results:
+- http://testphp.vulnweb.com/ (any page)
+- http://zero.webappsecurity.com/ (any page)
+- https://testsafebrowsing.appspot.com/ (any page)
 
-🔴 Red security overlay appears automatically on any page within these domains
+**Expected Results:**
 
-📊 Click extension icon for detailed AI analysis
+- 🔴 Red security overlay appears automatically on any page within these domains
+- 📊 Click extension icon for detailed AI analysis
+- 🛡️ Real CVE correlation and recommendations
 
-🛡️ Real CVE correlation and recommendations
+## 🎯 Full Feature Demo
 
-🎯 Full Feature Demo
-Test Domains for Different Threat Types:
-Threat Type | Test Domain | Detection
----|---|---
-SQL Injection | http://testphp.vulnweb.com/ | Any page on vulnweb
-Banking Security | http://zero.webappsecurity.com/ | Any banking demo page
-Suspicious Content | https://testsafebrowsing.appspot.com/ | Any Safe Browsing test
+**Test Domains for Different Threat Types:**
 
-What to Look For:
+| Threat Type        | Test Domain                           | Detection              |
+| ------------------ | ------------------------------------- | ---------------------- |
+| SQL Injection      | http://testphp.vulnweb.com/           | Any page on vulnweb    |
+| Banking Security   | http://zero.webappsecurity.com/       | Any banking demo page  |
+| Suspicious Content | https://testsafebrowsing.appspot.com/ | Any Safe Browsing test |
 
-✅ Automatic overlay on malicious pages
+**What to Look For:**
 
-✅ AI-powered analysis with Gemini Nano
+- ✅ Automatic overlay on malicious pages
+- ✅ AI-powered analysis with Gemini Nano
+- ✅ Real CVE intelligence (CVE-2020-0618)
+- ✅ Virtual CVE generation for emerging threats
+- ✅ 5 Chrome AI APIs working together
 
-✅ Real CVE intelligence (CVE-2020-0618)
+## ⚙️ Enhanced Testing (Optional)
 
-✅ Virtual CVE generation for emerging threats
+**Enable Chrome AI Features:**
 
-✅ 5 Chrome AI APIs working together
-
-⚙️ Enhanced Testing (Optional)
-Enable Chrome AI Features:
-bash
-
-# Launch Chrome with AI flags for full functionality
-
+Launch Chrome with AI flags for full functionality
 --enable-features=PromptAPIForWeb,OptimizationGuideModelExecution
 
-### Backend Services:
+text
+
+### Backend Services
 
 **⚠️ IMPORTANT: What Makes SOC-CERT Unique**
 
@@ -128,39 +126,38 @@ The extension has two analysis levels:
 - Get real CVE correlations and virtual CVE generation
 - Experience SOC-CERT's unique hybrid AI architecture
 
-🛠 Troubleshooting
-❌ "AI APIs not available"
+## 🛠 Troubleshooting
 
-Solution: Enable Chrome flags above
+### ❌ "AI APIs not available"
 
-Fallback: Mock system provides full demo experience
+**Solution:** Enable Chrome flags above
 
-❌ No CVE information showing
+**Fallback:** Mock system provides full demo experience
 
-**Cause**: CVE correlation requires n8n workflow setup
+### ❌ No CVE information showing
 
-**Solution**:
+**Cause:** CVE correlation requires n8n workflow setup
+
+**Solution:**
 
 1. Install n8n: `npm install -g n8n`
 2. Follow setup instructions in `n8n-workflows/README.md`
 3. Start n8n: `n8n start`
 4. Test extension again - CVE data should now appear
 
-**Note**: Local AI analysis works without n8n, but CVE features require the workflow.
+**Note:** Local AI analysis works without n8n, but CVE features require the workflow.
 
-❌ Extension not loading
+### ❌ Extension not loading
 
-Check console in chrome://extensions/
+- Check console in `chrome://extensions/`
+- Ensure all files are in `extension/` folder
 
-Ensure all files are in extension/ folder
+### ❌ No security overlay
 
-❌ No security overlay
+- Verify domain is in test list above (any page within the domain will trigger detection)
+- Check content scripts in extension details
 
-Verify domain is in test list above (any page within the domain will trigger detection)
-
-Check content scripts in extension details
-
-📊 Verification Checklist
+## 📊 Verification Checklist
 
 **Basic Functionality (No Setup Required):**
 
@@ -168,6 +165,14 @@ Check content scripts in extension details
 - ✅ Red overlay appears on test URLs
 - ✅ Popup shows detailed AI analysis
 - ✅ Risk scoring and recommendations work
+
+**Check DevTools Console for Detailed Logs:**
+
+Open Chrome DevTools (`F12` or `Right-click → Inspect`) and verify:
+
+- ✅ **Popup shows detailed analysis** - Check for analysis results in console
+- ✅ **CVE information displays correctly** - Verify CVE data in network tab
+- ✅ **AI recommendations are generated** - Look for recommendation logs
 
 **Advanced Features (Requires n8n - What Makes SOC-CERT Enterprise-Grade):**
 
@@ -181,10 +186,10 @@ Check content scripts in extension details
 
 The extension uses Chrome's built-in Gemini Nano AI for threat detection:
 
-- **Background Analysis**: Attempts quick analysis in the service worker for fast detection on all sites.
-- **Fallback to Tab Analysis**: If background fails or times out, analyzes directly in the page content script.
-- **Detection Threshold**: Shows overlay for riskScore > 60 (high-confidence threats).
-- **Timeout Protection**: 60-second timeout on background analysis to prevent hanging.
+- **Background Analysis:** Attempts quick analysis in the service worker for fast detection on all sites
+- **Fallback to Tab Analysis:** If background fails or times out, analyzes directly in the page content script
+- **Detection Threshold:** Shows overlay for riskScore > 60 (high-confidence threats)
+- **Timeout Protection:** 60-second timeout on background analysis to prevent hanging
 
 No API keys required - uses Chrome's native AI capabilities.
 
@@ -194,66 +199,66 @@ This extension leverages multiple Chrome built-in AI APIs powered by Gemini Nano
 
 ### 🔍 LanguageModel API (Prompt API)
 
-**Location**: `extension/ai-helper.js` - `analyzeThreat()` function
-**Purpose**: Core threat analysis engine
+**Location:** `extension/ai-helper.js` - `analyzeThreat()` function  
+**Purpose:** Core threat analysis engine
 
 - Analyzes URLs and page context for security risks
 - Generates risk scores, threat types, and indicators
 - Provides detailed security recommendations
-- **Status**: ✅ Fully implemented and operational
+- **Status:** ✅ Fully implemented and operational
 
 ### 📝 Summarizer API
 
-**Location**: `extension/ai-helper.js` - `analyzeCompleteFlow()` function
-**Purpose**: Creates concise security summaries
+**Location:** `extension/ai-helper.js` - `analyzeCompleteFlow()` function  
+**Purpose:** Creates concise security summaries
 
 - Generates key-point summaries of threat analysis
 - Provides executive-level security overviews
-- **Status**: 🔄 Attempted with fallback to mock system
+- **Status:** 🔄 Attempted with fallback to mock system
 
 ### ✍️ Writer API
 
-**Location**: `extension/ai-helper.js` - `analyzeCompleteFlow()` function
-**Purpose**: Generates detailed security recommendations
+**Location:** `extension/ai-helper.js` - `analyzeCompleteFlow()` function  
+**Purpose:** Generates detailed security recommendations
 
 - Creates comprehensive remediation steps
 - Produces formal security guidance
-- **Status**: 🔄 Attempted with fallback to mock system
+- **Status:** 🔄 Attempted with fallback to mock system
 
 ### 🌐 Translator API
 
-**Location**: `extension/ai-helper.js` - `analyzeCompleteFlow()` function
-**Purpose**: Multi-language security support
+**Location:** `extension/ai-helper.js` - `analyzeCompleteFlow()` function  
+**Purpose:** Multi-language security support
 
 - Translates analysis results for international users
 - Provides localized security recommendations
-- **Status**: 🔄 Attempted with fallback to mock system
+- **Status:** 🔄 Attempted with fallback to mock system
 
 ### 📝 Proofreader API
 
-**Location**: `extension/ai-helper.js` - `analyzeCompleteFlow()` function
-**Purpose**: Quality assurance for analysis text
+**Location:** `extension/ai-helper.js` - `analyzeCompleteFlow()` function  
+**Purpose:** Quality assurance for analysis text
 
 - Improves clarity and professionalism of security reports
 - Ensures technical accuracy in recommendations
-- **Status**: 🔄 Attempted with fallback to mock system
+- **Status:** 🔄 Attempted with fallback to mock system
 
 ### 🎯 API Integration Architecture
 
-**Primary Analysis Flow**:
+**Primary Analysis Flow:**
 
 1. **LanguageModel API** performs initial threat assessment
 2. **Background processing** attempts to use specialized APIs for enhanced analysis
 3. **Fallback system** ensures functionality even when specialized APIs are unavailable
 4. **Progressive enhancement** provides basic analysis immediately, with advanced features loading asynchronously
 
-**Fallback Behavior**:
+**Fallback Behavior:**
 
 - If specialized APIs are not available, the extension uses intelligent mock implementations
 - All core functionality remains available regardless of API availability
 - Users get full security analysis experience with or without advanced AI features
 
-**Technical Implementation**:
+**Technical Implementation:**
 
 - APIs are accessed via `window.ai` and `window.LanguageModel` objects
 - Service worker handles background analysis for performance
@@ -262,96 +267,40 @@ This extension leverages multiple Chrome built-in AI APIs powered by Gemini Nano
 
 This multi-API approach demonstrates advanced integration of Chrome's AI capabilities for comprehensive cybersecurity analysis.
 
-## 🎯 Project Purpose & Innovation
-
-### 🚨 The Critical Problem: CVE Response Time Gap
-
-**Traditional Cybersecurity Challenge**:
-
-- Official CVE assignments by NVD take **3+ months** on average
-- Emerging threats remain untracked during this critical window
-- Organizations are vulnerable to zero-day exploits and novel attack vectors
-- Security teams lack actionable intelligence for immediate response
-
-### ⚡ Our Revolutionary Solution: Real-Time Virtual CVE Generation
-
-**SOC-CERT Extension Innovation**:
-
-- **Instant Threat Intelligence**: Generates virtual CVEs within seconds of threat detection
-- **AI-Powered Analysis**: Uses Gemini Nano to analyze and classify emerging threats
-- **Immediate Actionability**: Provides CVE-like structured data for security teams
-- **Continuous Monitoring**: Tracks threat evolution in real-time
-
-### 📊 Impact & Benefits
-
-**For Security Teams**:
-
-- **Zero-Day Protection**: Respond to threats before official CVE assignment
-- **Rapid Response**: Implement mitigations immediately, not months later
-- **Intelligence Advantage**: Stay ahead of threat actors with live threat tracking
-- **Operational Efficiency**: Reduce mean time to respond (MTTR) from months to minutes
-
-**For Organizations**:
-
-- **Proactive Defense**: Prevent breaches before they happen
-- **Cost Reduction**: Avoid expensive incident response by early detection
-- **Compliance Edge**: Demonstrate proactive security posture
-- **Competitive Advantage**: Lead in cybersecurity innovation
-
-### 🔬 Technical Innovation
-
-**Virtual CVE Structure**:
-
-```
-CVE-2025-{timestamp}-{unique_id}
-├── Threat Analysis (Gemini Nano)
-├── Risk Scoring (0-100)
-├── Attack Vectors Identified
-├── Mitigation Recommendations
-└── Real-time Tracking Updates
-```
-
-**vs. Traditional NVD Process**:
-
-- **NVD**: Manual analysis → Committee review → 90+ days → Publication
-- **SOC-CERT**: AI analysis → Instant generation → Immediate distribution → Continuous updates
-
-This approach transforms reactive cybersecurity into **proactive threat intelligence**, giving users unprecedented visibility into emerging cyber threats.
-
 ## 💬 Development Feedback on Chrome AI APIs
 
 As part of our development process with Chrome's built-in AI APIs, here are our key insights and feedback:
 
 ### ✅ Strengths of Chrome AI APIs
 
-**LanguageModel API (Prompt API)**:
+**LanguageModel API (Prompt API):**
 
-- **Reliability**: Extremely stable and consistently available across different Chrome versions
-- **Performance**: Fast response times for threat analysis (typically <2 seconds)
-- **Flexibility**: Excellent for structured JSON output and security analysis tasks
-- **Integration**: Seamless integration with existing JavaScript code
+- **Reliability:** Extremely stable and consistently available across different Chrome versions
+- **Performance:** Fast response times for threat analysis (typically <2 seconds)
+- **Flexibility:** Excellent for structured JSON output and security analysis tasks
+- **Integration:** Seamless integration with existing JavaScript code
 
-**Specialized APIs (Summarizer, Writer, Translator, Proofreader)**:
+**Specialized APIs (Summarizer, Writer, Translator, Proofreader):**
 
-- **Potential**: When available, provide significant value for enhanced analysis
-- **Availability**: Currently in experimental phase, may not be enabled by default
-- **Fallback Importance**: Critical to have robust fallback systems for production use
+- **Potential:** When available, provide significant value for enhanced analysis
+- **Availability:** Currently in experimental phase, may not be enabled by default
+- **Fallback Importance:** Critical to have robust fallback systems for production use
 
 ### 🔄 Challenges Encountered
 
-**API Availability Detection**:
+**API Availability Detection:**
 
 - Complex initialization process requiring proper Chrome flags
 - Need for user activation in some cases
 - Different availability states (available/downloadable/downloading)
 
-**Error Handling**:
+**Error Handling:**
 
 - APIs may fail silently or throw unexpected errors
 - Need comprehensive try-catch blocks and fallback mechanisms
 - Graceful degradation is essential for user experience
 
-**Performance Optimization**:
+**Performance Optimization:**
 
 - Background processing requires careful timeout management
 - Balance between analysis depth and response time
@@ -359,19 +308,19 @@ As part of our development process with Chrome's built-in AI APIs, here are our 
 
 ### 🎯 Recommendations for Future Development
 
-**For Chrome Team**:
+**For Chrome Team:**
 
 - More predictable API availability detection
 - Better documentation for experimental features
 - Clearer error messages and status reporting
 
-**For Developers**:
+**For Developers:**
 
 - Always implement fallback systems
 - Test extensively across different Chrome versions
 - Plan for progressive enhancement rather than hard dependencies
 
-**For Production Applications**:
+**For Production Applications:**
 
 - Robust error handling is non-negotiable
 - User education about Chrome flags when APIs are unavailable
@@ -383,7 +332,7 @@ This feedback is based on our experience building a production-ready Chrome exte
 
 ### 🚨 The Critical Problem: CVE Response Time Gap
 
-**Traditional Cybersecurity Challenge**:
+**Traditional Cybersecurity Challenge:**
 
 - Official CVE assignments by NVD take **3+ months** on average
 - Emerging threats remain untracked during this critical window
@@ -392,79 +341,64 @@ This feedback is based on our experience building a production-ready Chrome exte
 
 ### ⚡ Our Revolutionary Solution: Real-Time Virtual CVE Generation
 
-**SOC-CERT Extension Innovation**:
+**SOC-CERT Extension Innovation:**
 
-- **Instant Threat Intelligence**: Generates virtual CVEs within seconds of threat detection
-- **AI-Powered Analysis**: Uses Gemini Nano to analyze and classify emerging threats
-- **Immediate Actionability**: Provides CVE-like structured data for security teams
-- **Continuous Monitoring**: Tracks threat evolution in real-time
+- **Instant Threat Intelligence:** Generates virtual CVEs within seconds of threat detection
+- **AI-Powered Analysis:** Uses Gemini Nano to analyze and classify emerging threats
+- **Immediate Actionability:** Provides CVE-like structured data for security teams
+- **Continuous Monitoring:** Tracks threat evolution in real-time
 
 ### 📊 Impact & Benefits
 
-**For Security Teams**:
+**For Security Teams:**
 
-- **Zero-Day Protection**: Respond to threats before official CVE assignment
-- **Rapid Response**: Implement mitigations immediately, not months later
-- **Intelligence Advantage**: Stay ahead of threat actors with live threat tracking
-- **Operational Efficiency**: Reduce mean time to respond (MTTR) from months to minutes
+- **Zero-Day Protection:** Respond to threats before official CVE assignment
+- **Rapid Response:** Implement mitigations immediately, not months later
+- **Intelligence Advantage:** Stay ahead of threat actors with live threat tracking
+- **Operational Efficiency:** Reduce mean time to respond (MTTR) from months to minutes
 
-**For Organizations**:
+**For Organizations:**
 
-- **Proactive Defense**: Prevent breaches before they happen
-- **Cost Reduction**: Avoid expensive incident response by early detection
-- **Compliance Edge**: Demonstrate proactive security posture
-- **Competitive Advantage**: Lead in cybersecurity innovation
+- **Proactive Defense:** Prevent breaches before they happen
+- **Cost Reduction:** Avoid expensive incident response by early detection
+- **Compliance Edge:** Demonstrate proactive security posture
+- **Competitive Advantage:** Lead in cybersecurity innovation
 
 ### 🔬 Technical Innovation
 
-**Virtual CVE Structure**:
+**Virtual CVE Structure:**
 
-```
 CVE-2025-{timestamp}-{unique_id}
 ├── Threat Analysis (Gemini Nano)
 ├── Risk Scoring (0-100)
 ├── Attack Vectors Identified
 ├── Mitigation Recommendations
 └── Real-time Tracking Updates
-```
 
-**vs. Traditional NVD Process**:
+text
 
-- **NVD**: Manual analysis → Committee review → 90+ days → Publication
-- **SOC-CERT**: AI analysis → Instant generation → Immediate distribution → Continuous updates
+**vs. Traditional NVD Process:**
+
+- **NVD:** Manual analysis → Committee review → 90+ days → Publication
+- **SOC-CERT:** AI analysis → Instant generation → Immediate distribution → Continuous updates
 
 This approach transforms reactive cybersecurity into **proactive threat intelligence**, giving users unprecedented visibility into emerging cyber threats.
-
-🎥 Video Demo Reference
-See full functionality in our 3-minute demo video
-Demo video link: [Demo SOC-CERT Extension](https://youtu.be/DEMO-LINK)
-
-## 📬 Contact & Support
-
-For any questions or issues, contact:
-
-- Email: support@joupify.com
-- GitHub Issues: [https://github.com/jpupify/soc-cert-extension/issues](https://github.com/jpupify/soc-cert-extension/issues)
 
 ## 📄 License
 
 This project is distributed under the MIT license. See the `LICENSE` file for details.
 
-Time to test: ~2 minutes ⏱️
-Technical level required: Basic 🟢
+---
 
-For any issues, check the troubleshooting section or review console logs.
+## 🎥 Video Demo
 
-Popup shows detailed analysis
+See full functionality in our 2.55-minute demo video:
 
-CVE information displays correctly
+**Demo Video:** [Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
 
-AI recommendations are generated
+---
 
-🎥 Video Demo Reference
-See full functionality in our 3-minute demo video
-
-Time to test: ~2 minutes ⏱️
-Technical level required: Basic 🟢
+**Time to test:** ~2 minutes ⏱️  
+**Technical level required:** Basic 🟢
 
 For any issues, check the troubleshooting section or review console logs.

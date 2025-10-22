@@ -12,7 +12,6 @@
       margin: 0;
       padding: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      /* background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%); */
       background: linear-gradient(135deg, #0f0c29 0%, #231b50 100%);
       
       color: white;
@@ -207,7 +206,7 @@
       <!-- dashboard -->
     </div>
 
-<!-- ✅ STATISTIQUES CVE VIRTUELS -->
+<!-- ✅ STATISTIQUES VIRTULS CVE-->
 <div class="stats-dashboard" id="virtual-cve-stats">
   <div class="stats-header">
     <h3>📊 Virtual CVE Intelligence</h3>
@@ -246,12 +245,25 @@
   </div>
 
 
-
-
-
   <!-- scripts -->
   <script src="ai-mock.js"></script>
   <script src="ai-helper.js"></script>
   <script src="popup.js"></script>
 </body>
+<footer
+  style="
+    position: fixed;
+    bottom: 6px;           /* 🔹 remonte un peu le footer */
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: #aaa;
+    background: rgba(0, 0, 0, 0.3); /* 🔹 légère bande de contraste */
+    padding: 6px 0;                /* 🔹 un peu d’air autour du texte */
+    z-index: 9999;
+  "
+>
+  🔒 SOC-CERT Guardian v1.0 — <span style="color:#FF9800;">AI Agents Challenge Submission</span>
+</footer>
 </html>

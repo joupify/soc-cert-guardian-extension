@@ -867,6 +867,33 @@
     },
     {
       "parameters": {
+        "jsCode": "/**\n * 🎯 DEBUG API FORMAT\n */\n\nconsole.log(\"=== 🔍 DEBUG API FORMAT ===\");\n\n// Vérifier le format des données envoyées à l'API\nif (items.length === 1 && Array.isArray(items[0].json)) {\n  console.log(\"✅ Format correct: Tableau de\", items[0].json.length, \"alertes\");\n  // Envoyer directement le tableau\n  return items[0].json.map(alert => ({ json: alert }));\n} else if (items.length > 1) {\n  console.log(\"✅ Format correct:\", items.length, \"alertes individuelles\");\n  return items;\n} else {\n  console.log(\"⚠️ Format à vérifier. Items reçus:\", items.length);\n  console.log(\"Structure:\", items.map(item => ({\n    type: typeof item.json,\n    isArray: Array.isArray(item.json),\n    keys: item.json ? Object.keys(item.json) : 'no json'\n  })));\n  \n  // format correct\n  const allAlerts = items.flatMap(item => \n    Array.isArray(item.json) ? item.json : [item.json]\n  ).filter(alert => alert && alert.title);\n  \n  console.log(`✅ Converti en ${allAlerts.length} alertes individuelles`);\n  return allAlerts.map(alert => ({ json: alert }));\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-5936, -816],
+      "id": "353a8130-7d97-4f9a-9a80-6b090be963ee",
+      "name": "🎯 DEBUG API FORMAT DASHBOARD",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://soc-cert-dashboard.vercel.app/api/alerts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{$input.all().map(e => e.json)}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-5728, -816],
+      "id": "3387c9ae-92b8-4ed2-8885-93b7eb765cd4",
+      "name": "WEBHOOK DASHBOARD",
+      "disabled": true
+    },
+    {
+      "parameters": {
         "jsCode": "// ============================================================================\n// COUNT STATS — AVEC VRAI FILTRE 24H (HISTORIQUE COMPLET)\n// ============================================================================\n\nconsole.log('📊 === STATS AVEC HISTORIQUE 24H ===');\n\nconst items = $input.all();\nconst allCVEs = items[0]?.json?.results || [];\nconst virtualCount = allCVEs.filter(i => i.isVirtual === true).length;\nconst realCount = allCVEs.filter(i => i.isVirtual === false).length;\n\nconsole.log(`📥 Batch: ${virtualCount} virtual, ${realCount} real`);\n\n// ✅ 1. SAUVEGARDER LES NOUVEAUX ÉVÉNEMENTS AVEC TIMESTAMP\nconst now = new Date();\nconst eventsToSave = allCVEs\n  .filter(i => i.isVirtual === true)\n  .map(cve => ({\n    cve_id: cve.cve_id,\n    title: cve.title,\n    timestamp: cve.timestamp || cve.receivedAt || now.toISOString(),\n    isVirtual: true\n  }));\n\nif (eventsToSave.length > 0) {\n  await this.helpers.httpRequest({\n    method: 'POST',\n    url: 'https://soc-cert-extension.vercel.app/api/cve-events',\n    headers: { 'Content-Type': 'application/json' },\n    body: { events: eventsToSave },\n    json: true\n  });\n  console.log(`💾 Sauvegardé ${eventsToSave.length} événements`);\n}\n\n// ✅ 2. LIRE L'HISTORIQUE COMPLET ET FILTRER PAR 24H\nconst last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();\nconst historyResponse = await this.helpers.httpRequest({\n  method: 'GET',\n  url: `https://soc-cert-extension.vercel.app/api/cve-events?since=${last24h}`,\n  headers: { 'Content-Type': 'application/json' }\n}).catch(() => ({ total: 0, events: [] }));\n\nconst threats24h = historyResponse.total || 0;\nconsole.log(`🕐 Threats dans les dernières 24h: ${threats24h}`);\n\n// ✅ 3. LIRE LES TOTAUX CUMULÉS\nconst existing = await this.helpers.httpRequest({\n  method: 'GET',\n  url: 'https://soc-cert-extension.vercel.app/api/virtual-cve-stats',\n  headers: { 'Content-Type': 'application/json' }\n}).catch(() => ({ totalVirtualCVEs: 0, totalRealCVEs: 0 }));\n\nconst newTotal = (existing.totalVirtualCVEs || 0) + virtualCount;\nconst newRealTotal = (existing.totalRealCVEs || 0) + realCount;\n\n// ✅ 4. SAUVEGARDER LES STATS\nconst stats = {\n  totalVirtualCVEs: newTotal,\n  totalRealCVEs: newRealTotal,\n  threatsLast24h: threats24h,  // ← Calculé depuis l'historique réel\n  avgConfidence: 0.87,\n  avgDetectionTime: '2.3s',\n  lastUpdate: now.toISOString()\n};\n\nconsole.log('📈 Stats finales:', JSON.stringify(stats, null, 2));\n\nawait this.helpers.httpRequest({\n  method: 'POST',\n  url: 'https://soc-cert-extension.vercel.app/api/update-stats',\n  headers: { 'Content-Type': 'application/json' },\n  body: { stats },\n  json: true\n});\n\nconsole.log('✅ Stats sauvegardées');\nreturn items;\n"
       },
       "type": "n8n-nodes-base.code",
@@ -958,6 +985,11 @@
           },
           {
             "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "🎯 DEBUG API FORMAT DASHBOARD",
             "type": "main",
             "index": 0
           },
@@ -1520,6 +1552,17 @@
         [
           {
             "node": "DELETE PROCESSED BATCHE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎯 DEBUG API FORMAT DASHBOARD": {
+      "main": [
+        [
+          {
+            "node": "WEBHOOK DASHBOARD",
             "type": "main",
             "index": 0
           }

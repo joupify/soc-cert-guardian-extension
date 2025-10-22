@@ -658,10 +658,10 @@ async function notifyPopupDeepAnalysisProgress(stage, data = {}) {
 // Very small parser to extract JSON from an AI text response
 function parseAIJSONResponse(text) {
   try {
-    // Nettoyer la réponse (enlever markdown, espaces, etc.)
+    // clean response 
     let cleanResponse = text.trim();
 
-    // Chercher du JSON dans la réponse
+    // find json in response 
     const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       cleanResponse = jsonMatch[0];
@@ -670,7 +670,7 @@ function parseAIJSONResponse(text) {
     const parsed = JSON.parse(cleanResponse);
     console.log("✅ Background AI response parsed successfully:", parsed);
 
-    // Valider la structure
+    // structure validate
     return {
       riskScore: parsed.riskScore || 50,
       threatType: parsed.threatType || "unknown",
@@ -688,7 +688,7 @@ function parseAIJSONResponse(text) {
       "⚠️ JSON parsing failed in background, using text analysis:",
       error.message
     );
-    // Créer une analyse basée sur le texte brut
+    // create analysis based  on brut text
     const textLower = text.toLowerCase();
     let riskScore = 25;
     let threatType = "safe";
@@ -708,7 +708,7 @@ function parseAIJSONResponse(text) {
       riskScore: riskScore,
       threatType: threatType,
       indicators: [text.substring(0, 150) + "..."],
-      confidence: 0.9, // Gemini Nano confidence
+      confidence: 0.9,
       recommendations: [
         "Review AI analysis details",
         "Cross-reference with threat intel",

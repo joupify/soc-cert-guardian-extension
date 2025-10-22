@@ -47,7 +47,7 @@ function shouldAnalyzePage() {
     return false;
   }
 
-  // Analyser toutes les autres pages HTTPS
+  // Analyse all urls HTTPS
   return url.startsWith("https://");
 }
 
@@ -58,7 +58,7 @@ async function triggerAutoAnalysis() {
 
     console.log("🔍 Starting security analysis for:", url);
 
-    // ✅ ÉTAPE 1: Analyse Gemini Nano FIRST
+    // ✅ Step 1: Analyse Gemini Nano FIRST
     const geminiAnalysis = await window.socAI?.analyzeURL?.(url);
 
     if (!geminiAnalysis) {
@@ -72,15 +72,15 @@ async function triggerAutoAnalysis() {
       threatType: geminiAnalysis.threatType,
     });
 
-    // ✅ ÉTAPE 2: CHECK si site SAFE selon Gemini (même seuil que popup)
+    // ✅ Step  2: CHECK is this SAFE / Gemini
     if (geminiAnalysis.riskScore < 40) {
       console.log(
         `✅ Site marked as SAFE by Gemini (risk: ${geminiAnalysis.riskScore}/100) - SKIP n8n`
       );
-      return; // ❌ STOP - Ne pas envoyer à n8n
+      return; // ❌ STOP - Not send to  n8n
     }
 
-    // ✅ ÉTAPE 3: Site suspect - Détecte les alertes réelles
+    // ✅ Step  3:  site - Detecte real alerts
     console.log("⚠️ Suspicious site detected - Running security checks...");
     const realSecurityAlerts = detectRealSecurityAlerts();
 
@@ -90,7 +90,7 @@ async function triggerAutoAnalysis() {
         realSecurityAlerts
       );
 
-      // ✅ ÉTAPE 4: Envoie à n8n seulement si vraies menaces
+      // ✅ Step 4: Send n8n only real threats
       console.log("📡 Sending to n8n for KEV correlation...");
       await sendRealAlertsToN8N(url, realSecurityAlerts);
     } else {
@@ -587,19 +587,19 @@ async function handlePageAnalysis(sendResponse) {
   }
 }
 
-// Analyse complète de la page
+// Complete Analysis of the page
 async function performComprehensiveAnalysis() {
   const url = window.location.href;
   const pageContent = extractPageContent();
 
   const analysis = {
-    // Informations de base
+    // Basic Informations
     url: url,
     domain: window.location.hostname,
     title: document.title,
     is_https: url.startsWith("https://"),
 
-    // Analyse de sécurité
+    // Threat Analysis
     security: {
       has_password_fields:
         document.querySelectorAll('input[type="password"]').length > 0,
@@ -614,7 +614,7 @@ async function performComprehensiveAnalysis() {
       security_headers: await checkSecurityHeaders(),
     },
 
-    // Contenu de la page
+    // Page content
     content: {
       text_length: pageContent.length,
       word_count: pageContent.split(/\s+/).length,
@@ -626,13 +626,13 @@ async function performComprehensiveAnalysis() {
     // Technology detection
     technologies: detectTechnologies(),
 
-    // Menaces détectées
+    // threats detected
     threats: await detectSecurityThreats(pageContent),
 
-    // Score de sécurité
+    // Score
     security_score: calculateSecurityScore(),
 
-    // Métadonnées
+    // Métadata
     analyzed_at: new Date().toISOString(),
     user_agent: navigator.userAgent,
   };
@@ -640,9 +640,8 @@ async function performComprehensiveAnalysis() {
   return analysis;
 }
 
-// Extraction du contenu de la page
+// Page Content Extraction
 function extractPageContent() {
-  // Supprime les scripts et styles pour le contenu textuel
   const clone = document.cloneNode(true);
   const scripts = clone.querySelectorAll("script, style, noscript");
   scripts.forEach((el) => el.remove());
@@ -682,7 +681,7 @@ function detectMixedContent() {
   });
 }
 
-// Vérification des en-têtes de sécurité (basique)
+// Headers Verification
 async function checkSecurityHeaders() {
   return {
     https: window.location.protocol === "https:",
@@ -726,7 +725,7 @@ async function detectSecurityThreats(content) {
     });
   }
 
-  // Formulaire de login en HTTP
+  // login Form in HTTP
   if (
     document.querySelector('input[type="password"]') &&
     !url.startsWith("https://")
@@ -791,7 +790,7 @@ function detectSuspiciousScripts() {
   });
 }
 
-// Calcul du score de sécurité
+// score de sécurité
 function calculateSecurityScore() {
   let score = 100;
 
@@ -806,18 +805,15 @@ function calculateSecurityScore() {
     score -= 30;
   }
 
-  // Nombre élevé de scripts tiers
   const thirdPartyCount = countThirdPartyScripts();
   if (thirdPartyCount > 10) score -= 10;
   if (thirdPartyCount > 20) score -= 10;
 
-  // Contenu mixte
   if (detectMixedContent()) score -= 20;
 
   return Math.max(0, score);
 }
 
-// Informations basiques de la page
 function getBasicPageInfo() {
   return {
     url: window.location.href,
@@ -827,7 +823,6 @@ function getBasicPageInfo() {
   };
 }
 
-// Extraction de contenu spécifique
 async function handleContentExtraction(request, sendResponse) {
   try {
     const { type, selector } = request;
@@ -864,12 +859,10 @@ async function handleContentExtraction(request, sendResponse) {
   }
 }
 
-// 🆕 FONCTIONS CVE POLLING - VERSION CORRIGÉE
+// 🆕 FONCTIONS CVE POLLING 
 // =================================================================
 
-// ✅ CORRIGÉ : Utilise extensionId dynamique et persistant
 async function sendThreatAlertAndPoll(threatData) {
-  // Générer ou récupérer un ID persistant pour cette extension
   let extensionId = localStorage.getItem("soc-cert-extension-id");
   if (!extensionId) {
     extensionId = `ai-helper-${Date.now()}`;
@@ -914,7 +907,7 @@ async function sendThreatAlertAndPoll(threatData) {
   }
 }
 
-// ✅ CORRIGÉ : Fonction simplifiée pour afficher notification seulement
+// ✅ Notification function
 function displayCVEAlert(cve) {
   console.log(`🔒 CVE Alert:`, {
     id: cve.cve_id,
@@ -923,7 +916,6 @@ function displayCVEAlert(cve) {
     title: cve.title.substring(0, 60) + "...",
   });
 
-  // Notification navigateur seulement
   if (Notification.permission === "granted") {
     new Notification(`🔒 CVE Alert: ${cve.severity}`, {
       body: `${cve.cve_id}: ${cve.title}`,
@@ -943,14 +935,12 @@ function displayCVEAlert(cve) {
     });
 }
 
-// ✅ FIXED: Simplified detection without auto-polling
 async function checkForThreatsAndAlert() {
   const threats = await detectSecurityThreats(extractPageContent());
 
   if (threats.length > 0) {
     console.log(`🚨 ${threats.length} menace(s) détectée(s):`, threats);
 
-    // Envoyer seulement, pas de polling
     const highestThreat = threats.reduce((prev, current) =>
       prev.severity === "high" || current.severity !== "high" ? prev : current
     );
@@ -964,16 +954,8 @@ async function checkForThreatsAndAlert() {
   }
 }
 
-// content_script.js
 // 🛡️ CVE EXTRACTION FUNCTIONS
 
-// Robust CVE extractor + sender for exploit-db pages (and generic pages).
-
-// - scans links, text nodes, pre/code blocks and common attributes
-// - uses MutationObserver to catch SPA / dynamic content
-// - attempts direct fetch to webhook, falls back to chrome.runtime messaging for background fetch (CORS safe)
-
-// ✅ CORRIGÉ : Analyse automatique simplifiée
 setTimeout(async () => {
   try {
     pageAnalysis = await performComprehensiveAnalysis();

@@ -1,4 +1,3 @@
-// popup.js - Corrected and simplified version
 document.addEventListener("DOMContentLoaded", function () {
   console.log("🔒 SOC-CERT Extension loaded - DOM ready");
 
@@ -15,7 +14,7 @@ async function loadVirtualCVEStats() {
   console.log("📊 Loading Virtual CVE stats...");
 
   try {
-    // ✅ AJOUT : Cache-busting avec timestamp
+    // ✅ Cache-busting with timestamp
     const response = await fetch(
       `${API_BASE_URL}/api/virtual-cve-stats?t=${Date.now()}`,
       {
@@ -43,7 +42,7 @@ async function loadVirtualCVEStats() {
       ? `${Math.round(stats.avgConfidence * 100)}%`
       : "-";
 
-    // Optionnel : Ajouter une animation de compteur
+    // Optionnel : animation count
     if (typeof animateCounter === "function") {
       animateCounter(
         "total-virtual-cves",
@@ -63,13 +62,10 @@ async function loadVirtualCVEStats() {
   }
 }
 
-// // ✅ AJOUT : Auto-refresh toutes les 10 secondes
-// setInterval(loadVirtualCVEStats, 10000);
 
 // ✅ Load immediately at startup
 loadVirtualCVEStats();
 
-// Animation de compteur
 function animateCounter(elementId, start, end, duration) {
   const element = document.getElementById(elementId);
   if (!element) return;
@@ -91,14 +87,14 @@ function animateCounter(elementId, start, end, duration) {
   }, 16);
 }
 
-// ✅ Appeler au chargement de la popup
+// ✅ Call popup on reload
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Popup loaded, loading stats...");
   await loadVirtualCVEStats();
 });
 
 // ============================================
-//FIN  VIRTUAL CVE STATISTICS
+// END VIRTUAL CVE STATISTICS
 // ============================================
 
 async function initializePopup() {
@@ -553,7 +549,7 @@ function renderRecommendationsList(items) {
             ? `<strong>${escapeHTML(rec.title)}</strong>`
             : "";
           const desc = rec.description
-            ? `<div style="font-size:11px; color:#ddd; margin-top:4px;">${escapeHTML(
+            ? `<div style="font-size:11px;margin-top:6px;line-height:1.6; color:#ddd; margin-top:4px;">${escapeHTML(
                 rec.description
               )}</div>`
             : "";
@@ -1490,7 +1486,6 @@ async function analyzeCurrentPage() {
         </div>
       `;
 
-      // 4. CONTINUER AVEC L'ANALYSE NORMALE EXISTANTE
       // 🔄 Check for stored background analysis first
       const storageKey = `analysis_${tab.url}`;
       const stored = await chrome.storage.local.get([storageKey]);
@@ -1604,7 +1599,6 @@ async function analyzeCurrentPage() {
         setAIStatusRunning();
         console.log("📌 After setAIStatusRunning", new Date().toISOString());
 
-        // LISTEN FOR DEEP ANALYSIS UPDATES
         // Show spinner while deep analysis / polling is running
         console.log(
           "📌 About to showDeepSpinner and attach deepAnalysisUpdate listener",
@@ -1854,7 +1848,7 @@ async function updateWithDeepResults(deepData) {
       </div>
     </div>
 
-    <div style="margin: 12px 0; text-align:center; color:#888;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+    <div style="margin: 12px 0; text-align:center; color:#eee;">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
 
     <div style="margin-bottom: 10px;">
   <strong class="cve-correlation-header">
@@ -2073,11 +2067,11 @@ async function updateWithDeepResults(deepData) {
 
     ${""}
     
-      <div style="margin-bottom: 10px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="margin-bottom: 10px; margin-top: 15px:flex; align-items:center; justify-content:space-between;">
   <div>
     <strong>💡 AI-Enhanced Recommendations:</strong>
     <span class="badge-new orange">NEW</span>
-    <div style="font-size: 10px; color: #888; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
+    <div style="font-size: 10px; color: #eee; margin: 2px 0;">Generated with Gemini Nano + CVE Intelligence</div>
   </div>
   <div style="display: flex; align-items: center; gap: 8px;">
     <button class="translate-mini-btn" data-target="ai-recommendations-list">
@@ -2563,7 +2557,7 @@ async function updateWithDeepResults(deepData) {
         });
 
         container.innerHTML = `
-        <div style="text-align: center; padding: 20px; color: #888;">
+        <div style="text-align: center; padding: 20px; color: #eee;">
           <h3>🔍 Active CVE Monitoring</h3>
           <p>No new security alerts</p>
           <div style="font-size: 12px; margin-top: 10px;">

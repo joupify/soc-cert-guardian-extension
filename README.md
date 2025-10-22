@@ -2,7 +2,7 @@
 
 # SOC-CERT is the first Chrome extension to combine instant local AI analysis with real-time CVE enrichment via n8n and the KEV Catalog—delivering enterprise-grade threat intelligence directly in your browser.
 
-[![First-of-Its-Kind](https://img.shields.io/badge/Innovation-First%20of%20Its%20Kind-gold?style=for-the-badge&logo=google-chrome)](https://github.com/joupify/soc-cert-extension)
+[![First-of-Its-Kind](https://img.shields.io/badge/Innovation-First%20of%20Its%20Kind-gold?style=for-the-badge&logo=google-chrome)](https://github.com/joupify/soc-cert-guardian-extension)
 [![Chrome Built-in AI](https://img.shields.io/badge/Powered%20by-Gemini%20Nano-4285F4?style=for-the-badge&logo=google)](https://developer.chrome.com/docs/ai/)
 [![CISA KEV](https://img.shields.io/badge/CVE%20Source-CISA%20KEV-red?style=for-the-badge)](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
 
@@ -47,7 +47,7 @@ An innovative security extension combining Chrome's Built-in AI with real-time C
 
 ## 🎯 What Makes This Special
 
-## � **CRITICAL DIFFERENTIATOR: Hybrid AI Architecture**
+## 🔥 **CRITICAL DIFFERENTIATOR: Hybrid AI Architecture**
 
 **❌ Without n8n Backend = Just Another AI Extension**
 
@@ -188,7 +188,7 @@ Second 10: Stored in threat intelligence database
 
 ```
 {
-"cve_id": "CVE-2026-148724",
+"cve_id": "CVE-2026-202745",
 "type": "virtual",
 "url": "http://example.com/vulnerable.php?id=1'",
 "indicators": ["SQL injection", "URL encoding"],
@@ -510,8 +510,7 @@ Virtual CVEs contribute to the broader security community:
 ---
 
 **Ready to experience proactive threat detection? Install SOC-CERT Guardian and start tracking emerging threats today.**
-
-[Get Started →](#installation) | [View Demo →](#demo-video) | [Documentation →](#documentation)
+[Get Started →](./install.md) | [Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
 
 ## 🏆 The Winning Architecture: Dual-Analysis System
 
@@ -786,7 +785,7 @@ Download Gemini Nano model:
 Download extension package:
 
 ```bash
-git clone https://github.com/joupify/soc-cert-extension
+git clone https://github.com/joupify/soc-cert-guardian-extension
 cd soc-cert-extension
 ```
 
@@ -879,14 +878,8 @@ Popup Sections:
 
 ### 🎥 Demo Video
 
-📹 Watch the full demo (< 3 minutes): [YouTube Link - Coming Soon]
-
-Video Contents:
-
-- Installation and setup (30s)
-- Analysis 1: Gemini Nano detection (30s)
-- Analysis 2: n8n CVE enrichment (60s)
-- UI walkthrough and features (60s)
+🎬 **Live Demo Video** (2:55 minutes):  
+[Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
 
 ### 📸 Screenshot Gallery
 
@@ -920,39 +913,29 @@ Video Contents:
 
 ### 🏆 Prize Categories Targeted
 
-1️⃣ **Best Hybrid AI Application - Chrome Extension ($9,000)** 🎯
+1️⃣ **Most Helpful - Chrome Extension ($14,000)** 🎯
 
-Why SOC-CERT is the perfect candidate:
+Why SOC-CERT helps millions of users:
 
-- ✅ Client-Side AI: Gemini Nano for instant local analysis
-- ✅ Server-Side AI: n8n workflow for deep CVE intelligence
-- ✅ Hybrid Strategy: Documented architecture combining both
-- ✅ Real Integration: Vercel API + KEV Catalog (1400+ CVEs)
-- ✅ Proven Benefits: Speed + Privacy + Accuracy
+- ✅ Solves Critical Problem: Eliminates 90-day vulnerability gap
+- ✅ Instant Impact: Automatic protection on every website visit
+- ✅ Zero Configuration: "Install → Protected" in 30 seconds
+- ✅ Life-Changing: Prevents cyber attacks before they happen
 
-Unique Value Proposition:
+User Impact Statement:
+_"SOC-CERT provides what every web user needs but doesn't have: enterprise-grade zero-day protection that works automatically, without technical knowledge or configuration."_
 
-_"SOC-CERT demonstrates the ONLY true hybrid AI pattern in the challenge: leveraging Chrome's local AI for speed and privacy, while seamlessly integrating server-side CVE intelligence for real-world vulnerability correlation."_
+2️⃣ **Best Hybrid AI Application - Chrome Extension ($9,000)** 🎯
 
-2️⃣ **Most Helpful - Chrome Extension ($14,000)** 🎯
+Technical Innovation Highlights:
 
-Why SOC-CERT helps users:
+- ✅ True Hybrid Architecture: Chrome AI Local + Cloud CVE Intelligence
+- ✅ 5/5 Chrome APIs: Maximum API integration demonstrating platform mastery
+- ✅ Gemini Nano: Local processing for speed and privacy
+- ✅ Virtual CVE: World-first innovation for emerging threats
 
-- ✅ Solves Real Problem: Proactive web security without technical knowledge
-- ✅ Daily Impact: Automatic protection on every website
-- ✅ Easy to Use: Zero configuration, instant protection
-- ✅ Practical Value: Real CVE data for informed decisions
-
-### 📊 Competitive Advantages
-
-| Feature         | Traditional Extensions | SOC-CERT                      |
-| --------------- | ---------------------- | ----------------------------- |
-| Analysis Speed  | 5-10s (cloud only)     | < 2s (local) + enhanced       |
-| Offline Support | ❌ Requires internet   | ✅ Works offline (Analysis 1) |
-| Privacy         | ❌ All data to cloud   | ✅ Hybrid: local first        |
-| CVE Data        | ❌ Generic responses   | ✅ Real KEV Catalog           |
-| AI APIs Used    | 1-2 APIs typically     | ✅ 5/5 APIs integrated        |
-| Progressive UX  | ❌ All-or-nothing      | ✅ Instant + enhanced         |
+Technical Excellence:
+_"SOC-CERT demonstrates the most sophisticated hybrid AI implementation: seamless local-cloud integration that delivers both instant protection and deep threat intelligence."_
 
 ## 🔬 Technical Deep Dive
 
@@ -1087,18 +1070,10 @@ Permission is hereby granted, free of charge, to any person obtaining a copy...
 
 ### 👥 Team
 
-- Lead Developer: [Your Name]
-- Project: SOC-CERT AI Helper
+- Lead Developer: JOUPIFY
+- Project: SOC-CERT AI Guardian
 - Challenge: Chrome Built-in AI Challenge 2025
 - Category: Best Hybrid AI Application - Chrome Extension
-
-## Support
-
-### Get Help
-
-- Issues: Open a GitHub issue for bugs
-- Discussions: Join our community forum
-- Email: For private inquiries
 
 ## 🏁 Submission Summary
 
@@ -1443,22 +1418,22 @@ MIT License - Part of SOC-CERT Chrome Extension
 
 ## 🔗 Related Links
 
-- **Chrome Extension Repository:** [GitHub](https://github.com/joupify/soc-cert-extension)
+- **Chrome Extension Repository:** [GitHub](https://github.com/joupify/soc-cert-guardian-extension)
 - **Challenge Submission:** [Devpost](https://devpost.com/software/soc-cert)
-- **Demo Video:** [YouTube](https://youtube.com/your-demo-link)
+- **Demo Video:** [Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
 
 ---
 
 ## 👥 Credits
 
-- **Developer:** [Your Name]
-- **Project:** SOC-CERT AI Helper
+- **Developer:** Joupify
+- **Project:** SOC-CERT AI Guardian
 - **Challenge:** Chrome Built-in AI Challenge 2025
 - **Data Sources:** CISA KEV Catalog, NIST NVD, AlienVault OTX
 
 ---
 
-**Last Updated:** October 7, 2025  
+**Last Updated:** October 22, 2025  
 **Version:** 1.0.0  
 **Status:** ✅ Production Ready
 
@@ -1471,18 +1446,33 @@ SOC-CERT demonstrates **innovation in threat intelligence** through:
 3. **Instant Protection**: No waiting for NVD - threats identified in seconds
 4. **Resilient Architecture**: Works with or without internet connectivity
 
-### Testing Recommendations
+### 🏆 Testing Recommendations - Our Core Innovation
 
-**Simple Test** (Recommended):
+### **🚨 CRITICAL: Test Both Analysis Layers**
+
+**🔬 Test 1: Local AI Analysis (Required)**
+_Tests Gemini Nano's instant threat detection_
 
 1. Load the extension
-2. Visit testphp.vulnweb.com/artists.php?artist=1'
-3. See instant threat detection and virtual CVE
+2. Visit: `http://testphp.vulnweb.com/artists.php?artist=1%27`
+3. **Expected**: Red overlay appears in <2 seconds
+4. **Innovation**: Pure local AI processing (works offline)
 
-**Advanced Test** (Optional):
+**🔬 Test 2: Hybrid AI Architecture (Required)**  
+_Tests our breakthrough innovation - CVE correlation_
 
-1. Set up n8n workflow (see n8n-workflows/README.md)
-2. Enables CISA KEV correlation and threat feeds
-3. Not required for judging - core features work without it
+1. Ensure internet connection
+2. Click "View Details" in the overlay
+3. **Expected**: CVE-2026-XXXXX appears within 10 seconds
+4. **Innovation**: Real CVE mapping via n8n + KEV Catalog
 
-The extension is designed to work perfectly in both scenarios.
+### 🎯 Why Both Tests Are Essential
+
+| Test       | What It Demonstrates    | Why It Matters                            |
+| ---------- | ----------------------- | ----------------------------------------- |
+| **Test 1** | Chrome AI works locally | Privacy + Speed + Offline capability      |
+| **Test 2** | Hybrid AI architecture  | Enterprise intelligence + CVE correlation |
+
+### 💡 Key Innovation to Observe
+
+**Watch for this progression:**

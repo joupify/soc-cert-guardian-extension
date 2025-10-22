@@ -1,4 +1,3 @@
-// ai-mock.js - Version complète avec analyzeThreat
 const mockAI = {
   summarizer: {
     summarize: async ({ text, maxOutputTokens = 100 }) => {
@@ -41,19 +40,17 @@ const mockAI = {
     },
   },
 
-  // 🆕 AJOUTE CETTE FONCTION MANQUANTE
   analyzeThreat: async ({ url, context = "" }) => {
     console.log(`🤖 Mock SOC-CERT analyzing: ${url}`);
 
-    // Simulation d'analyse intelligente
-    let riskScore = 15; // Base sécurisé
+    let riskScore = 15;
     let threatType = "safe";
     let indicators = [];
     let recommendations = ["Continue normal monitoring"];
 
     const urlLower = url.toLowerCase();
 
-    // 🚨 Détection Phishing
+    // 🚨 Phishing detection
     const phishingBrands = [
       "paypal",
       "amazon",
@@ -74,7 +71,7 @@ const mockAI = {
       }
     });
 
-    // 🔗 URLs raccourcies suspectes
+    // 🔗 Suspicious shortened URLs
     const shorteners = ["bit.ly", "tinyurl", "t.co", "goo.gl", "ow.ly"];
     shorteners.forEach((shortener) => {
       if (urlLower.includes(shortener)) {
@@ -84,14 +81,14 @@ const mockAI = {
       }
     });
 
-    // 🌐 Adresse IP au lieu de domaine
+    // 🌐 Direct IP access instead of domain
     if (/\d+\.\d+\.\d+\.\d+/.test(url)) {
       riskScore += 45;
       indicators.push("🌐 Direct IP access (suspicious)");
       threatType = "malicious";
     }
 
-    // ⚠️ Mots-clés suspects
+    // ⚠️ Suspicious keywords
     const suspiciousKeywords = [
       "verify",
       "urgent",
@@ -107,23 +104,23 @@ const mockAI = {
       }
     });
 
-    // 📏 URL anormalement longue
+    // 📏 Unusually long URL
     if (url.length > 100) {
       riskScore += 15;
       indicators.push("📏 Unusually long URL");
     }
 
-    // 🔢 Trop de sous-domaines
+    // 🔢 Too many subdomains
     const subdomainCount = (url.match(/\./g) || []).length;
     if (subdomainCount > 4) {
       riskScore += 20;
       indicators.push(`🔢 Multiple subdomains (${subdomainCount})`);
     }
 
-    // Limiter le score
+    // Limit the score
     riskScore = Math.min(riskScore, 100);
 
-    // Générer recommandations basées sur le risque
+    // Generate recommendations based on risk
     if (riskScore >= 80) {
       recommendations = [
         "🚫 BLOCK IMMEDIATELY",
@@ -143,7 +140,7 @@ const mockAI = {
       recommendations = ["👀 Enhanced monitoring", "📢 User awareness alert"];
     }
 
-    // Simulation délai d'analyse
+    // Simulation delay
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     return {
@@ -161,7 +158,7 @@ const mockAI = {
     };
   },
 
-  // 🆕 BONUS: Détecteur de langue amélioré
+  // 🆕 Improved language detector
   languageDetector: {
     detect: async ({ text }) => {
       console.log("🌍 Mock language detection...");
@@ -200,6 +197,6 @@ const mockAI = {
   },
 };
 
-// Export pour usage global
+// Export for global usage
 window.mockAI = mockAI;
 console.log("🔄 AI Mock system loaded - Ready for EPP");

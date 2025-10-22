@@ -8,13 +8,9 @@
 body {
 
   width: 408px;
-  height: fit-content;  /* ← S'ADAPTE AU CONTENU */
-  min-height: 600px;    /* ← MINIMUM POUR L'ANALYSE */
-  /* max-height: 90vh;     ← MAX = 90% de l'écran */
-  /* width: 400px;
-  min-height: 500px;
-  max-height: 1200px; */
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  height: fit-content; 
+  min-height: 600px;  
+   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: linear-gradient(135deg, #0f0c29 0%, #302b63 100%);
 
   color: #fff;
@@ -93,10 +89,20 @@ body {
 .stat-card.low { border-left: 4px solid #4caf50; }
 
 .stat-number {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 4px;
+  font-size: 32px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00D9FF, #0099FF);
+  -webkit-background-clip: text;
+  background-clip: text; /* ← Ajoute cette ligne */
+  -webkit-text-fill-color: transparent;
+  animation: pulse 2s ease-in-out infinite;
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
 
 .stat-label {
   font-size: 11px;
@@ -181,34 +187,14 @@ body {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
-/* 
-.alert-header {
-  padding: 12px 15px;
-  background: #f5f5f5;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #e0e0e0;
-} */
+
 
 .cve-id {
   font-family: 'Courier New', monospace;
   font-weight: bold;
   color: #1976d2;
 }
-/* 
-.severity-badge {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 10px;
-  font-weight: bold;
-  text-transform: uppercase;
-}
 
-.severity-badge.critical { background: #f44336; color: white; }
-.severity-badge.high { background: #ff9800; color: white; }
-.severity-badge.medium { background: #ffc107; color: #333; }
-.severity-badge.low { background: #4caf50; color: white; } */
 
 .alert-body {
   padding: 15px;
@@ -220,22 +206,7 @@ body {
   margin-bottom: 8px;
   line-height: 1.3;
 }
-/* 
-.alert-meta {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #666;
-  margin-bottom: 10px;
-} */
-/* 
-.enrichment {
-  background: #f8f9fa;
-  padding: 8px;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  font-size: 12px;
-} */
+
 
 .recommendations {
   background: #e3f2fd;
@@ -249,23 +220,6 @@ body {
   margin-bottom: 5px;
   color: #1976d2;
 }
-
-/* .alert-actions {
-  padding: 10px 15px;
-  background: #fafafa;
-  display: flex;
-  gap: 8px;
-}
-
-.action-btn {
-  padding: 5px 10px;
-  border: 1px solid #ddd;
-  background: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 11px;
-  transition: all 0.2s;
-} */
 
 .action-btn:hover {
   background: #f0f0f0;
@@ -335,22 +289,6 @@ body {
 }
 
 
-/* 
-.cve-item {
-  padding: 10px;
-  margin: 5px 0;
-  background: #f5f5f5;
-  border-left: 4px solid #4CAF50;
-  border-radius: 4px;
-}
-
-.badge {
-  padding: 3px 8px;
-  border-radius: 3px;
-  font-size: 0.85em;
-  font-weight: bold;
-  color: white;
-} */
 
 .badge-critical {
   background: #d32f2f;
@@ -497,18 +435,17 @@ h1.title {
   margin-right: 8px;
   font-size: 14px;
   vertical-align: middle;
-  color: #ffeb3b; /* visible yellow on dark background */
+  color: #ffeb3b;
 }
 
 .recommendations ul li {
-  color: #072b4a; /* keep recommendation text dark as designed */
+  color: #072b4a;
 }
 
 /* ========================================
    BADGE "NEW" - FIX LIGNE
    ======================================== */
 
-/* Animation pulse pour le badge NEW */
 @keyframes pulse-new {
   0%, 100% { 
     opacity: 1; 
@@ -520,10 +457,9 @@ h1.title {
   }
 }
 
-/* Badge NEW avec animation + FIX ligne */
 .badge-new {
   display: inline-block;
-  background: #ffa502; /* Orange pour plus de visibilité */
+  background: #ffa502;
   color: white;
   padding: 2px 5px;
   border-radius: 12px;
@@ -535,18 +471,16 @@ h1.title {
   animation: pulse-new 2s ease-in-out infinite;
   box-shadow: 0 2px 4px rgba(255, 165, 2, 0.3);
   
-  /* 🔥 FIX : Force à rester sur la même ligne */
   white-space: nowrap;
   vertical-align: middle;
   flex-shrink: 0;
 }
 
-/* Style du conteneur parent pour forcer inline */
 .recommendations-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: nowrap; /* 🔥 Empêche le retour à la ligne */
+  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -558,7 +492,7 @@ h1.title {
 .cve-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
@@ -582,12 +516,27 @@ h1.title {
   color: white;
   border: 2px solid #7c3aed;
   box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  
 }
 
 .cve-badge.emerging-threat:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
 }
+
+.emerging-threat-badge {
+  animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 87, 34, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 87, 34, 0.8);
+  }
+}
+
 
 /* Official CVE Badge */
 .cve-badge.official-cve {
@@ -825,7 +774,6 @@ h1.title {
 .stats-dashboard {
   margin-bottom: 24px;
   padding: 20px;
-  /* background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); */
   background: linear-gradient(135deg, #1c1c43 0%, #200858 100%);
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
@@ -1124,4 +1072,14 @@ h1.title {
 .learn-more-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 217, 255, 0.4);
+}
+
+footer {
+  opacity: 0;
+  animation: fadeIn 1s ease forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }

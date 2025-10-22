@@ -52,7 +52,7 @@ class AIHelper {
 
   async testAIAvailability() {
     try {
-      // Test du nouveau LanguageModel API
+      // Test availability using window.LanguageModel
       let availability;
       if (window.LanguageModel) {
         availability = await window.LanguageModel.availability();
@@ -66,7 +66,7 @@ class AIHelper {
         console.log("🎉 Gemini Nano ready!");
         this.hasNativeAI = true;
 
-        // 🆕 Attendre que window.ai soit disponible
+        // 🆕 waitForWindowAI
         await this.waitForWindowAI();
 
         // Test specialized APIs now
@@ -93,7 +93,7 @@ class AIHelper {
 
     const foundAPIs = [];
 
-    // Chercher sur window directement
+    // search on window
     if (window.Summarizer) {
       foundAPIs.push("📝 Summarizer (window.Summarizer)");
       console.log("� window.Summarizer détecté");
@@ -114,7 +114,7 @@ class AIHelper {
       console.log("📝 window.Proofreader detected");
     }
 
-    // Chercher sur window.chrome
+    // Search on window.chrome
     if (window.chrome && window.chrome.ai) {
       console.log(
         "� window.chrome.ai detected:",
@@ -162,7 +162,6 @@ class AIHelper {
     };
   }
 
-  // 🔧 FONCTION MANQUANTE: testSpecializedAPIs
   async testSpecializedAPIs() {
     console.log("🔍 Test des APIs spécialisées...");
 
@@ -170,7 +169,7 @@ class AIHelper {
     return await this.searchSpecializedAPIs();
   }
 
-  // 🆕 Attendre que window.ai soit disponible
+  // 🆕 wait for window.ai
   async waitForWindowAI(maxWait = 10000) {
     console.log("⏳ Attente de window.ai...");
     const startTime = Date.now();
@@ -179,7 +178,7 @@ class AIHelper {
       await new Promise((resolve) => setTimeout(resolve, 500));
       console.log("🔄 Checking window.ai...", !!window.ai);
 
-      // 🆕 Tentative de forcer l'activation de window.ai
+      // 🆕 Try to force activation  window.ai
       if (!window.ai && window.LanguageModel) {
         try {
           // Creating a temporary session may trigger window.ai
@@ -235,7 +234,7 @@ class AIHelper {
 
     console.log("🔍 APIs alternatives détectées:", alternativeAPIs);
 
-    // Essayer window.chrome.ai
+    // Try window.chrome.ai
     if (window.chrome && window.chrome.ai) {
       console.log(
         "🔍 window.chrome.ai détecté:",
@@ -260,7 +259,7 @@ class AIHelper {
         return false;
       }
 
-      // Utiliser uniquement window.LanguageModel qui fonctionne
+      // Use only window.LanguageModel which works
       let session;
       if (window.LanguageModel) {
         session = await window.LanguageModel.create({
@@ -272,7 +271,7 @@ class AIHelper {
         console.log("✅ Gemini Nano téléchargé et prêt !");
         this.hasNativeAI = true;
 
-        // Nettoyer la session de test
+        // Clean up session test
         if (session && session.destroy) {
           session.destroy();
         }
@@ -623,7 +622,7 @@ BAD EXAMPLES (don't use decoded):
               enhancementPromises.push(proofreaderPromise);
             }
 
-            // Attendre tous les enrichissements
+            // wait all enrichissements
             const enhancements = await Promise.all(enhancementPromises);
 
             // Integrate enrichments into result
@@ -823,7 +822,6 @@ BAD EXAMPLES (don't use decoded):
         JSON.stringify(webhookData, null, 2)
       );
 
-      // 🔧 CORRECTION: Utiliser extension-webhook
       console.log(
         "🌐 Envoi vers:",
         "https://soc-cert-extension.vercel.app/api/extension-webhook"
@@ -890,7 +888,6 @@ BAD EXAMPLES (don't use decoded):
           await new Promise((resolve) => setTimeout(resolve, 5000));
         }
 
-        // ✅ UTILISER L'ID DE TEST
         const apiUrl = `${API_URL}?extensionId=test-login-token&format=cve`;
 
         console.log(`🔍 TEST Tentative ${attempt}/${maxAttempts} - ${apiUrl}`);
@@ -908,7 +905,7 @@ BAD EXAMPLES (don't use decoded):
           } catch (e) {
             console.log(`❌ Erreur parsing JSON:`, e);
             console.log(`📄 Raw response:`, rawText);
-            continue; // Essayer la tentative suivante
+            continue;
           }
 
           // 🔍 DETAILED DEBUG of n8n TEST response
@@ -935,11 +932,11 @@ BAD EXAMPLES (don't use decoded):
             console.log(`  - result content:`, data.result);
           }
 
-          // ✅ Support des deux formats d'API
+          // ✅ Supporte 2 formats d'API
           let resultData = null;
           let hasResults = false;
 
-          // Format ANCIEN : {success: true, results: [...]}
+          // OLd Format : {success: true, results: [...]}
           if (data.success && data.results && data.results.length > 0) {
             console.log(
               "🧪 TEST: Deep analysis résultats trouvés (format ancien)!"
@@ -947,7 +944,7 @@ BAD EXAMPLES (don't use decoded):
             resultData = data.results[0];
             hasResults = true;
           }
-          // Format NOUVEAU : {result: {...}}
+          // Bew format : {result: {...}}
           else if (data.result && data.result !== null) {
             console.log(
               "🧪 TEST: Deep analysis résultats trouvés (format nouveau)!"
@@ -1076,13 +1073,7 @@ BAD EXAMPLES (don't use decoded):
           console.log("  - URL length:", url?.length);
           console.log("  - Link length:", data.results?.[0]?.link?.length);
 
-          // Filter results by current URL
-          // Filter by visited URL (normalized) — only criteria requested by user.
-          // Ne pas appliquer de priorisation real/virtual ici : afficher simplement la CVE
-          // that matches the analyzed URL. If multiple results exist for the same URL,
-          // we take the most recent (receivedAt > timestamp) — this reflects what the backend
-          // (n8n) returned last for this URL.
-          // ✅ Fonction pour normaliser les URLs (décoder les caractères)
+          // ✅ normaliseurls  function
           function normalizeUrl(url) {
             try {
               const u = new URL(url);
@@ -1111,7 +1102,7 @@ BAD EXAMPLES (don't use decoded):
             "results"
           );
 
-          // Si plusieurs correspondances → garder la plus récente (ou la mieux notée)
+          // If multiple results for the same URL, pick the best one
           let selectedResult = null;
           if (urlFilteredResults.length === 1) {
             selectedResult = urlFilteredResults[0];
@@ -1140,13 +1131,13 @@ BAD EXAMPLES (don't use decoded):
             urlFilteredResults[0] && urlFilteredResults[0].cve_id
           );
 
-          // Format ANCIEN : {success: true, results: [...]}
+          // old Format : {success: true, results: [...]}
           if (data.success && selectedResult && urlFilteredResults.length > 0) {
             console.log("✅ Deep analysis résultats trouvés (format ancien)!");
             resultData = selectedResult;
             hasResults = true;
           }
-          // Format NOUVEAU : {result: {...}}
+          // new Format : {result: {...}}
           else if (data.result && data.result !== null) {
             console.log("✅ Deep analysis résultats trouvés (format nouveau)!");
             resultData = data.result;
@@ -1207,7 +1198,6 @@ BAD EXAMPLES (don't use decoded):
     return coherentFallback;
   }
 
-  // Ligne ~1320
   simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -1215,7 +1205,7 @@ BAD EXAMPLES (don't use decoded):
       hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32bit integer
     }
-    // Format: 6 chiffres (ex: 148724)
+    // Format: 6 nums  (ex: 148724)
     return Math.abs(hash).toString().slice(0, 6).padStart(6, "0");
   }
 

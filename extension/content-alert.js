@@ -1,7 +1,5 @@
-// content-alert.js - SOC-CERT Threat Alert Overlay (COMPACT & ÉLÉGANT)
 console.log("🚨 SOC-CERT Content Alert Script loaded");
 
-// Écoute les messages du background
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   console.log("📨 Message reçu:", message);
 
@@ -14,7 +12,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 function showThreatOverlay(data) {
-  // Vérifie si overlay existe déjà
   if (document.getElementById("soc-cert-threat-overlay")) {
     console.log("⚠️ Overlay already exists");
     return;

@@ -1421,6 +1421,7 @@ MIT License - Part of SOC-CERT Chrome Extension
 - **Chrome Extension Repository:** [GitHub](https://github.com/joupify/soc-cert-guardian-extension)
 - **Challenge Submission:** [Devpost](https://devpost.com/software/soc-cert)
 - **Demo Video:** [Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
+  https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080
 
 ---
 
@@ -1436,6 +1437,8 @@ MIT License - Part of SOC-CERT Chrome Extension
 **Last Updated:** October 22, 2025  
 **Version:** 1.0.0  
 **Status:** ✅ Production Ready
+
+**Built with:** Chrome Built-in AI (Gemini Nano, 5 APIs) • n8n • Vercel • JavaScript • CISA KEV • Hybrid AI Architecture
 
 ## 🏆 For Competition Judges
 

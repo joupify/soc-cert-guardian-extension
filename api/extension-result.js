@@ -1,7 +1,7 @@
 import { kv } from "@vercel/kv";
 
 const RESULTS_PREFIX = "extension-results:";
-const RESULTS_TTL = 3600; // 1 heure
+const RESULTS_TTL = 3600; // 1 hour
 
 export default async function handler(req, res) {
   const timestamp = new Date().toISOString();
@@ -56,23 +56,23 @@ export default async function handler(req, res) {
           processedBy: "api-storage",
         };
 
-        // Récupère les résultats existants
+        // Retrieve existing results
         const key = `${RESULTS_PREFIX}${targetId}`;
         let existing = (await kv.get(key)) || [];
 
-        // Ajoute le nouveau
+        // Add the new result
         existing.push(enrichedResult);
 
-        // ✅ TRI PAR TIMESTAMP (PLUS RÉCENT EN PREMIER) + LIMITE À 10
+        // ✅ SORT BY TIMESTAMP (MOST RECENT FIRST) + LIMIT TO 10
         const sorted = existing
           .sort((a, b) => {
             const timeA = new Date(a.timestamp || a.receivedAt || 0).getTime();
             const timeB = new Date(b.timestamp || b.receivedAt || 0).getTime();
-            return timeB - timeA; // Plus récent d'abord
+            return timeB - timeA; // Most recent first
           })
-          .slice(0, 10); // Garde les 10 plus récents
+          .slice(0, 10); // Keep the 10 most recent
 
-        // Sauvegarde avec TTL
+        // Save back to KV with TTL
         await kv.set(key, sorted, { ex: RESULTS_TTL });
 
         storedExtensions.add(targetId);
@@ -103,7 +103,7 @@ export default async function handler(req, res) {
           `📊 Extension ${extensionId} polling CVE: ${results.length} results`
         );
 
-        // ✅ TRI PAR TIMESTAMP (PLUS RÉCENT EN PREMIER)
+        // ✅ SORT BY TIMESTAMP (MOST RECENT FIRST)
         const sortedResults = results.sort((a, b) => {
           const timeA = new Date(a.timestamp || a.receivedAt || 0).getTime();
           const timeB = new Date(b.timestamp || b.receivedAt || 0).getTime();
@@ -119,15 +119,15 @@ export default async function handler(req, res) {
           });
         }
 
-        // 🔧 Debug: Liste toutes les clés
+        // 🔧 Debug: List all keys
         const allKeys = await kv.keys(`${RESULTS_PREFIX}*`);
         console.log("🔍 All stored keys:", allKeys);
 
         return res.json({
           success: true,
           extensionId,
-          results: sortedResults, // ✅ Triés par timestamp
-          latestResult: sortedResults[0] || null, // ✅ Le plus récent
+          results: sortedResults, // ✅ Sorted by timestamp
+          latestResult: sortedResults[0] || null, // ✅ Most recent
           count: sortedResults.length,
           timestamp,
           hasMore: sortedResults.length > 1,

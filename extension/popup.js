@@ -42,7 +42,7 @@ async function loadVirtualCVEStats() {
       ? `${Math.round(stats.avgConfidence * 100)}%`
       : "-";
 
-    // Optionnel : animation count
+    // Optional: animation count
     if (typeof animateCounter === "function") {
       animateCounter(
         "total-virtual-cves",
@@ -55,7 +55,7 @@ async function loadVirtualCVEStats() {
   } catch (error) {
     console.error("❌ Failed to load Virtual CVE stats:", error);
 
-    // Fallback : afficher 0
+    // Fallback: display 0
     document.getElementById("total-virtual-cves").textContent = "0";
     document.getElementById("threats-24h").textContent = "0";
     document.getElementById("avg-confidence").textContent = "-";
@@ -761,7 +761,7 @@ async function addAITestButtons() {
   </div>
 `;
 
-  // ✅ AJOUTE LE CODE POUR AFFICHER LES RÉSULTATS AVEC BOUTONS TRANSLATE
+  // ✅ ADD CODE TO DISPLAY RESULTS WITH TRANSLATE BUTTONS
   function displayAIResult(title, content, containerId = "ai-test-results") {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -1430,7 +1430,7 @@ ${
     );
   }
 
-  // ✅ AJOUTE CES LIGNES ICI (À LA FIN, AVANT LE })
+  // ✅ ADD THESE LINES HERE (AT THE END, BEFORE THE })
   await chrome.storage.local.set({
     lastAnalysis: {
       threatLevel: analysis.threatLevel,
@@ -1612,7 +1612,7 @@ async function analyzeCurrentPage() {
         );
         showDeepSpinner();
 
-        // Initialiser avec l'état de départ
+        // Initialize with starting state
         updateWithDeepResults({ stage: "starting" });
 
         window.addEventListener("deepAnalysisUpdate", (event) => {
@@ -1622,7 +1622,7 @@ async function analyzeCurrentPage() {
             new Date().toISOString()
           );
 
-          // Déterminer l'étape actuelle basée sur event.detail
+          // Determine current stage based on event.detail
           let stage = "starting";
           if (event.detail.dataReceived) {
             stage = "data-received";
@@ -1632,7 +1632,7 @@ async function analyzeCurrentPage() {
             stage = "completed";
           }
 
-          // Mettre à jour l'interface avec l'étape actuelle
+          // Update interface with current stage
           updateWithDeepResults({ ...event.detail, stage });
         });
         console.log(
@@ -1693,11 +1693,11 @@ async function updateWithDeepResults(deepData) {
         break;
       case "data-received":
         statusText = "📥 Data received";
-        // Planifier la transition vers "enhancing" après 2 secondes
+        // Schedule transition to "enhancing" after 2 seconds
         break;
       case "enhancing":
         statusText = "🔄 Enhancement recommendations";
-        // Planifier la transition vers "completed" après 3 secondes
+        // Schedule transition to "completed" after 3 seconds
 
         break;
       case "completed":
@@ -2585,7 +2585,7 @@ async function updateWithDeepResults(deepData) {
 
   // Debug helper
   console.log("📄 popup.js loaded - waiting for DOMContentLoaded");
-} // Fin de la dernière accolade manquante
+} // End of last missing brace
 
 // 🌐 TRADUCTION - Chrome Translator API (OBLIGATOIRE pour le challenge)
 // Populate language selector with Chrome Translator supported languages

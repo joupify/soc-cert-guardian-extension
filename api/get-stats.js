@@ -12,7 +12,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     try {
-      // ✅ Lire les stats depuis Redis KV
+      // ✅ Get stats from Redis KV
       const stats = await kv.get("virtual-cve-stats");
 
       if (stats) {
@@ -20,10 +20,10 @@ export default async function handler(req, res) {
         return res.status(200).json(stats);
       }
 
-      // Fallback si pas de stats enregistrées
+      // Fallback if no stats recorded
       console.log("⚠️ No stats found in Redis, returning defaults");
       const defaultStats = {
-        totalVirtualCVEs: 123, // ← Valeurs impressionnantes pour la démo
+        totalVirtualCVEs: 123, // ← Impressive values for demo
         totalRealCVEs: 45,
         threatsLast24h: 67,
         avgConfidence: 0.87,

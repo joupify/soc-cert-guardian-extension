@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         receivedAt: new Date().toISOString(),
       };
 
-      // ✅ Stocker dans Redis KV (clé: 'virtual-cve-stats')
+      // ✅ Store in Redis KV (key: 'virtual-cve-stats')
       await kv.set("virtual-cve-stats", updatedStats);
 
       console.log("✅ Stats updated in Redis KV:", updatedStats);

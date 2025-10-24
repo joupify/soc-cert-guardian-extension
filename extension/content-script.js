@@ -423,7 +423,7 @@ function detectRealSecurityAlerts() {
   };
 })();
 
-// 🚨 ENVOYER LES VRAIES ALERTES À N8N
+// 🚨 SEND REAL ALERTS TO N8N
 async function sendRealAlertsToN8N(url, securityAlerts) {
   try {
     console.log("📡 Sending REAL security alerts to n8n...");
@@ -476,7 +476,7 @@ async function sendRealAlertsToN8N(url, securityAlerts) {
   }
 }
 
-// 📊 CALCULER LE RISQUE GLOBAL BASÉ SUR LES VRAIES ALERTES
+// 📊 CALCULATE OVERALL RISK BASED ON REAL ALERTS
 function calculateOverallRisk(alerts) {
   let riskScore = 0;
   let maxSeverity = "LOW";
@@ -510,18 +510,18 @@ function calculateOverallRisk(alerts) {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initializeAIConnection);
 } else {
-  // Page déjà chargée
+  // Page already loaded
   setTimeout(initializeAIConnection, 500);
 }
 
-// Écoute les messages du popup et background
+// Listen to messages from popup and background
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Content script received:", request);
 
   switch (request.action) {
     case "analyze_page":
       handlePageAnalysis(sendResponse);
-      return true; // Réponse asynchrone
+      return true; // Asynchronous response
 
     case "get_page_info":
       sendResponse({ pageInfo: getBasicPageInfo() });
@@ -567,7 +567,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Analyse complète de la page
+// Complete page analysis
 async function handlePageAnalysis(sendResponse) {
   try {
     if (!pageAnalysis) {
@@ -632,7 +632,7 @@ async function performComprehensiveAnalysis() {
     // Score
     security_score: calculateSecurityScore(),
 
-    // Métadata
+    // Metadata
     analyzed_at: new Date().toISOString(),
     user_agent: navigator.userAgent,
   };
@@ -790,7 +790,7 @@ function detectSuspiciousScripts() {
   });
 }
 
-// score de sécurité
+// Security score
 function calculateSecurityScore() {
   let score = 100;
 
@@ -859,7 +859,7 @@ async function handleContentExtraction(request, sendResponse) {
   }
 }
 
-// 🆕 FONCTIONS CVE POLLING 
+// 🆕 FONCTIONS CVE POLLING
 // =================================================================
 
 async function sendThreatAlertAndPoll(threatData) {
@@ -897,7 +897,7 @@ async function sendThreatAlertAndPoll(threatData) {
 
     if (response.ok) {
       console.log("✅ Alerte envoyée vers n8n, démarrage polling CVE...");
-      // ✅ CORRIGÉ : Ne pas démarrer polling ici pour éviter conflit avec popup
+      // ✅ FIXED: Don't start polling here to avoid conflict with popup
       console.log("ℹ️ Polling CVE géré par le popup pour éviter les conflits");
     } else {
       console.error("❌ Erreur envoi alerte:", response.status);
@@ -931,7 +931,7 @@ function displayCVEAlert(cve) {
       color: "#ff0000",
     })
     .catch(() => {
-      // Ignore si background script pas prêt
+      // Ignore if background script not ready
     });
 }
 
@@ -965,7 +965,7 @@ setTimeout(async () => {
       threats: pageAnalysis.threats.length,
     });
 
-    // Vérifier menaces seulement si score < 70
+    // Check threats only if score < 70
     if (pageAnalysis.security_score < 70) {
       await checkForThreatsAndAlert();
     }

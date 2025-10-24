@@ -1748,7 +1748,7 @@ Format: Plain list, no bullets, 2-3 lines only.`;
       aiAnalysis: enhancedAnalysis,
       ...specializedResults,
 
-      // ✅ FORMAT IDENTIQUE À N8N - STRUCTURE COMPLÈTE
+      // ✅ IDENTICAL FORMAT TO N8N - COMPLETE STRUCTURE
       cve_id: cveId,
       title: generateTitle(),
       severity: coherentSeverity,
@@ -1778,7 +1778,7 @@ Format: Plain list, no bullets, 2-3 lines only.`;
       isVirtual: true,
       processedBy: "local-ai-fallback",
 
-      // ✅ AUSSI AJOUTER recommendations POUR COMPATIBILITÉ
+      // ✅ ALSO ADD recommendations FOR COMPATIBILITY
       recommendations: recommendations,
       recommendationsSource:
         recMethod === "gemini-ai"

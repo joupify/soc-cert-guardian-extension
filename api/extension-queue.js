@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   // ========================================
-  // POST: Ajouter un item à la queue
+  // POST: Add an item to the queue
   // ========================================
   if (req.method === "POST") {
     const extensionData = req.body;
@@ -36,10 +36,10 @@ export default async function handler(req, res) {
   }
 
   // ========================================
-  // GET: Lire les items NON traités (batch)
+  // GET: Read unprocessed items (batch)
   // ========================================
   if (req.method === "GET") {
-    const batchSize = parseInt(req.query.batch) || 10; // Batch de 10 par défaut
+    const batchSize = parseInt(req.query.batch) || 10; // Batch of 10 by default
 
     try {
       const queueLength = await kv.llen(QUEUE_KEY);
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
   }
 
   // ========================================
-  // DELETE: Supprimer N items traités
+  // DELETE: Remove N processed items
   // ========================================
   if (req.method === "DELETE") {
     const count = parseInt(req.body?.count) || parseInt(req.query.count) || 1;
@@ -79,14 +79,14 @@ export default async function handler(req, res) {
     try {
       const beforeLen = await kv.llen(QUEUE_KEY);
 
-      // ✅ Supprime les N premiers items (ceux qui viennent d'être traités)
+      // ✅ Remove the first N items (those just processed)
       if (count >= beforeLen) {
-        // Si count >= longueur, vide complètement
+        // If count >= length, empty completely
         await kv.del(QUEUE_KEY);
         console.log(`🗑️ Queue vidée complètement (${beforeLen} items)`);
         return res.json({ success: true, deleted: beforeLen, remaining: 0 });
       } else {
-        // Sinon, trim pour garder uniquement [count, -1]
+        // Otherwise, trim to keep only [count, -1]
         await kv.ltrim(QUEUE_KEY, count, -1);
         const afterLen = await kv.llen(QUEUE_KEY);
         console.log(`🗑️ Supprimés: ${count}, Restants: ${afterLen}`);

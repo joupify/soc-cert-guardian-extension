@@ -268,7 +268,7 @@ class AIHelper {
           topK: 3,
           outputLanguage: "en",
         });
-        console.log("✅ Gemini Nano téléchargé et prêt !");
+        console.log("✅ Gemini Nano downloaded and ready!");
         this.hasNativeAI = true;
 
         // Clean up session test
@@ -400,13 +400,127 @@ class AIHelper {
     }
   }
 
-  // 🆕 TRANSLATOR version simple
+  // 🆕 TRANSLATOR - Real translation using Chrome AI
   async translateText(text, targetLanguage = "en", sourceLanguage = "auto") {
+    console.log(
+      `🌐 Translating to ${targetLanguage} (from ${sourceLanguage})...`
+    );
+
     try {
-      console.log("🌐 Traduction en cours...");
+      // OBLIGATOIRE: Try Chrome Translator API first (required for challenge)
+      if (window.Translator) {
+        try {
+          console.log("✅ Using window.Translator API (Chrome Built-in)");
+
+          // Detect source language if auto
+          let detectedSource = sourceLanguage;
+          if (sourceLanguage === "auto") {
+            // Improved detection: check for common English and French words
+            const frenchWords =
+              /\b(le|la|les|un|une|des|et|dans|pour|avec|sur|par|sont|est|cette|ces|vous|nous|mais|qui|que|comme|tout|très|bien|peut|faire)\b/gi;
+            const englishWords =
+              /\b(the|a|an|and|in|for|with|on|by|are|is|this|these|you|we|but|who|that|as|all|very|can|make|risk|threat|detected|security|vulnerability)\b/gi;
+
+            const frenchMatches = (text.match(frenchWords) || []).length;
+            const englishMatches = (text.match(englishWords) || []).length;
+
+            console.log(
+              `🔍 Language detection: FR=${frenchMatches} matches, EN=${englishMatches} matches`
+            );
+
+            if (englishMatches > frenchMatches) {
+              detectedSource = "en";
+            } else if (frenchMatches > englishMatches) {
+              detectedSource = "fr";
+            } else {
+              // Default to English (most common for security content)
+              detectedSource = "en";
+            }
+            console.log(
+              `🔍 Auto-detected source language: ${detectedSource} (EN:${englishMatches} FR:${frenchMatches})`
+            );
+          }
+
+          // Check if source and target are the same - skip translation
+          if (detectedSource === targetLanguage) {
+            console.log(
+              `⚠️ Source and target are both ${targetLanguage} - returning original text`
+            );
+            return text;
+          }
+
+          // Try to create translator session directly (canCreateSession not available yet)
+          console.log(
+            `� Creating Translator session: ${detectedSource} → ${targetLanguage}`
+          );
+
+          const translator = await window.Translator.create({
+            sourceLanguage: detectedSource,
+            targetLanguage: targetLanguage,
+          });
+
+          const translated = await translator.translate(text);
+          translator.destroy();
+          console.log(
+            `✅ Translation completed via Chrome Translator API: ${detectedSource} → ${targetLanguage}`
+          );
+          console.log(`📝 Result preview: ${translated.substring(0, 100)}...`);
+          return translated;
+        } catch (e) {
+          console.warn(
+            "⚠️ Translator API failed, trying LanguageModel:",
+            e.message || e
+          );
+        }
+      } else {
+        console.warn("⚠️ window.Translator not available");
+      }
+
+      // Fallback to LanguageModel with translation prompt
+      if (window.LanguageModel) {
+        try {
+          console.log("✅ Using LanguageModel for translation (fallback)");
+          const session = await window.LanguageModel.create({
+            systemPrompt: `You are a professional translator. You will receive text and must translate it to the target language. Preserve the meaning and technical terms. Return ONLY the translated text.`,
+          });
+
+          const languageNames = {
+            en: "English",
+            fr: "French",
+            es: "Spanish",
+            de: "German",
+            it: "Italian",
+            pt: "Portuguese",
+            nl: "Dutch",
+            ru: "Russian",
+            zh: "Chinese",
+            ja: "Japanese",
+            ko: "Korean",
+            ar: "Arabic",
+            tr: "Turkish",
+            hi: "Hindi",
+            bn: "Bengali",
+          };
+
+          const langName = languageNames[targetLanguage] || targetLanguage;
+          const translated = await session.prompt(
+            `Translate the following text to ${langName}. Keep technical terms and formatting:\n\n${text}`
+          );
+          session.destroy();
+          console.log(
+            `✅ Translation completed via LanguageModel to ${targetLanguage}`
+          );
+          return translated;
+        } catch (e) {
+          console.warn("⚠️ LanguageModel translation failed:", e);
+        }
+      }
+
+      // Final fallback to mock
+      console.log("⚠️ No AI available, using mock translation");
       return this.mockTranslate(text, targetLanguage);
     } catch (error) {
-      console.error("❌ Erreur translation:", error);
+      console.error("❌ Translation error:", error);
       return this.mockTranslate(text, targetLanguage);
     }
   }
@@ -2041,16 +2155,83 @@ Format: Plain list, no bullets, 2-3 lines only.`;
   }
 
   mockTranslate(text, targetLanguage) {
+    console.log(`🎭 Mock translation to ${targetLanguage}`);
+
+    // Simple translation simulation for common security terms
     const translations = {
-      en: `🌐 [AUTO-TRANSLATED TO ENGLISH]\n\n${text}\n\n*Translation by SOC-CERT AI*`,
-      fr: `🌐 [TRADUIT AUTOMATIQUEMENT EN FRANÇAIS]\n\n${text}\n\n*Traduction par SOC-CERT AI*`,
-      es: `🌐 [TRADUCIDO AUTOMÁTICAMENTE AL ESPAÑOL]\n\n${text}\n\n*Traducción por SOC-CERT AI*`,
+      en: {
+        prefix: "🌐 [TRANSLATED TO ENGLISH]",
+        transforms: {
+          risque: "risk",
+          menace: "threat",
+          analyse: "analysis",
+          sécurité: "security",
+          vulnérabilité: "vulnerability",
+          détecté: "detected",
+          recommandations: "recommendations",
+          "injection SQL": "SQL injection",
+          "script malveillant": "malicious script",
+        },
+      },
+      es: {
+        prefix: "🌐 [TRADUCIDO AL ESPAÑOL]",
+        transforms: {
+          risk: "riesgo",
+          threat: "amenaza",
+          analysis: "análisis",
+          security: "seguridad",
+          vulnerability: "vulnerabilidad",
+          detected: "detectado",
+          recommendations: "recomendaciones",
+        },
+      },
+      de: {
+        prefix: "🌐 [INS DEUTSCHE ÜBERSETZT]",
+        transforms: {
+          risk: "Risiko",
+          threat: "Bedrohung",
+          analysis: "Analyse",
+          security: "Sicherheit",
+          vulnerability: "Schwachstelle",
+          detected: "erkannt",
+        },
+      },
     };
 
-    return (
-      translations[targetLanguage] ||
-      `🌐 [TRANSLATED TO ${targetLanguage.toUpperCase()}]\n\n${text}`
-    );
+    const langData = translations[targetLanguage];
+
+    if (langData && langData.transforms) {
+      let translated = text;
+      Object.entries(langData.transforms).forEach(([from, to]) => {
+        const regex = new RegExp(from, "gi");
+        translated = translated.replace(regex, to);
+      });
+      return `${langData.prefix}\n\n${translated}\n\n*Mock translation by SOC-CERT AI*`;
+    }
+
+    const headers = {
+      en: "🌐 [AUTO-TRANSLATED TO ENGLISH]",
+      fr: "🌐 [TRADUIT AUTOMATIQUEMENT EN FRANÇAIS]",
+      es: "🌐 [TRADUCIDO AUTOMÁTICAMENTE AL ESPAÑOL]",
+      de: "🌐 [AUTOMATISCH INS DEUTSCHE ÜBERSETZT]",
+      it: "🌐 [TRADOTTO AUTOMATICAMENTE IN ITALIANO]",
+      pt: "🌐 [TRADUZIDO AUTOMATICAMENTE PARA PORTUGUÊS]",
+      nl: "🌐 [AUTOMATISCH VERTAALD NAAR NEDERLANDS]",
+      ru: "🌐 [АВТОМАТИЧЕСКИ ПЕРЕВЕДЕНО НА РУССКИЙ]",
+      "zh-CN": "🌐 [自动翻译成简体中文]",
+      "zh-TW": "🌐 [自動翻譯成繁體中文]",
+      ja: "🌐 [日本語に自動翻訳]",
+      ko: "🌐 [한국어로 자동 번역됨]",
+      ar: "🌐 [مترجم تلقائيًا إلى العربية]",
+      tr: "🌐 [OTOMATİK OLARAK TÜRKÇE'YE ÇEVRİLDİ]",
+    };
+
+    const footer = "*Mock translation by SOC-CERT AI*";
+    const header =
+      headers[targetLanguage] ||
+      `🌐 [TRANSLATED TO ${targetLanguage.toUpperCase()}]`;
+
+    return `${header}\n\n${text}\n\n${footer}`;
   }
 
   // 🆕 Determine threat type for webhook API

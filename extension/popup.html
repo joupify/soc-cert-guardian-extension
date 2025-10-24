@@ -120,6 +120,80 @@
       animation: pulse 1.5s infinite;
     }
     
+    /* Translation styles */
+    .translation-box {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      border-left: 3px solid #667eea;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    
+    .translation-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .translation-title {
+      font-weight: 600;
+      font-size: 11px;
+      color: #a5b4fc;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .restore-btn {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .restore-btn:hover {
+      background: rgba(255,255,255,0.2);
+      border-color: rgba(255,255,255,0.4);
+    }
+    
+    .translation-content {
+      line-height: 1.6;
+      color: #e0e7ff;
+      font-size: 12px;
+    }
+    
+    .translate-mini-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .translate-mini-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+    }
+    
+    .translate-mini-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    #translate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+    }
     
 
   </style>
@@ -186,14 +260,14 @@
             <span class="api-status">Ready</span>
           </div>
         </div>
+      </div>
 
     
 
       </div>
 
-      <!-- Time indicator -->
-      <div class="time-indicator" id="time-indicator">
-        ⚡ Analysis time: < 2 seconds
+      <!-- Time indicator - Hidden by default, shown after analysis -->
+      <div class="time-indicator" id="time-indicator" style="display: none;">
       </div>
     </div>
     
@@ -204,6 +278,25 @@
     
     <div id="analysis-content">
       <!-- dashboard -->
+    </div>
+
+    <!-- 🌐 TRANSLATION SECTION -->
+    <div id="translation-section" style="margin-top: 15px; padding: 12px; background: rgba(0,200,255,0.08); border-radius: 8px; border-left: 3px solid #00c8ff; display: none;">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 16px;">🌐</span>
+          <strong style="font-size: 13px;">Translate Analysis</strong>
+        </div>
+        <select id="lang-select" style="padding: 4px 8px; background: rgba(0,0,0,0.3); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px; cursor: pointer;">
+          <!-- Populated by JS -->
+        </select>
+      </div>
+      <button id="translate-btn" style="width: 100%; padding: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+        🌐 Translate Full Analysis
+      </button>
+      <div id="translated-result" style="display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 6px; font-size: 11px; line-height: 1.5; max-height: 200px; overflow-y: auto;">
+        <!-- Translation will appear here -->
+      </div>
     </div>
 
 <!-- ✅ STATISTIQUES VIRTULS CVE-->

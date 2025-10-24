@@ -145,8 +145,9 @@ async function initializePopup() {
     // Analyze current page
     await analyzeCurrentPage();
 
-    // ❌ DISABLED API TEST SECTION - Redundant now that everything works automatically
-    // await addAITestButtons();
+    // ✅ API TEST SECTION RESTORED - Shows Chrome AI APIs status
+    await addAITestButtons();
+    console.debug("✅ API test section restored and rendered");
 
     // ❌ DISABLED CVE POLLING - ai-helper handles it
     // await startCVEPolling();
@@ -677,6 +678,11 @@ function startAPIAnalysisAnimation() {
   apis.forEach((api) => {
     setTimeout(() => {
       const element = document.getElementById(api.id);
+      if (!element) {
+        console.warn(`⚠️ Element ${api.id} not found, skipping animation`);
+        return;
+      }
+
       element.classList.add("active");
 
       const statusElement = element.querySelector(".api-status");
@@ -700,9 +706,8 @@ function startAPIAnalysisAnimation() {
           Math.round(progress) + "%";
 
         if (completed === apis.length) {
-          document.getElementById("time-indicator").innerHTML =
-            "✅ Analysis completed in < 2 seconds";
-          console.log("🎉 All API analyses completed");
+          // Don't show time indicator here - it will be shown after real analysis
+          console.log("🎉 All API animations completed");
         }
       }, api.duration);
     }, api.delay);
@@ -724,19 +729,20 @@ async function addAITestButtons() {
   `;
 
   testSection.innerHTML = `
-  <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">🤖 Chrome AI APIs</h4>
+  <!-- h4 style="margin: 0 0 10px 0; font-size: 14px; color: #fff;">🤖 Chrome AI APIs</h4>
   
-  <!-- Automatic download button -->
-  <button id="download-all-ai" style="width: 100%; padding: 8px; border: none; border-radius: 4px; background: #4285f4; color: white; font-size: 12px; cursor: pointer; margin-bottom: 10px;">
+  <-- Automatic download button -->
+  <!-- button id="download-all-ai" style="width: 100%; padding: 8px; border: none; border-radius: 4px; background: #4285f4; color: white; font-size: 12px; cursor: pointer; margin-bottom: 10px;">
     📥 Download all APIs
-  </button>
+  </button -->
   
-  <!-- API status -->
+  <!-- API status 
   <div id="ai-status" style="margin-bottom: 10px; padding: 6px; background: rgba(0,0,0,0.3); border-radius: 4px; font-size: 10px; color: #ccc;">
     Checking status...
   </div>
+  -->
   
-  <!-- Test buttons -->
+  <!-- Test buttons 
   <div style="display: flex; flex-wrap: wrap; gap: 5px;">
     <button id="test-summarizer" style="flex: 1; padding: 5px; border: none; border-radius: 4px; background: #0066cc; color: white; font-size: 10px; cursor: pointer;">
       📝 Summarizer
@@ -748,6 +754,7 @@ async function addAITestButtons() {
       🌐 Translator
     </button>
   </div>
+  -->
   
   <!-- AI Results with inline translate buttons -->
   <div id="ai-test-results" style="margin-top: 10px; font-size: 11px; max-height: 200px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; display: none;">
@@ -2580,9 +2587,11 @@ async function updateWithDeepResults(deepData) {
   console.log("📄 popup.js loaded - waiting for DOMContentLoaded");
 } // Fin de la dernière accolade manquante
 
-// 🌐 TRADUCTION - Chrome Translator AI (preferred)
-// Populate language selector with common languages (if present)
-(function populateLanguageSelector() {
+// 🌐 TRADUCTION - Chrome Translator API (OBLIGATOIRE pour le challenge)
+// Populate language selector with Chrome Translator supported languages
+(async function populateLanguageSelector() {
+  // Chrome Translator API officially supported languages (as of 2024-2025)
+  // Only include pairs that are widely supported
   const langs = [
     { code: "en", label: "English" },
     { code: "fr", label: "Français" },
@@ -2590,27 +2599,52 @@ async function updateWithDeepResults(deepData) {
     { code: "de", label: "Deutsch" },
     { code: "it", label: "Italiano" },
     { code: "pt", label: "Português" },
-    { code: "nl", label: "Nederlands" },
-    { code: "ru", label: "Русский" },
-    { code: "zh-CN", label: "中文 (简体)" },
-    { code: "zh-TW", label: "中文 (繁體)" },
     { code: "ja", label: "日本語" },
     { code: "ko", label: "한국어" },
-    { code: "ar", label: "العربية" },
+    { code: "zh", label: "中文" },
+    { code: "hi", label: "हिन्दी" },
+    { code: "bn", label: "বাংলা" },
     { code: "tr", label: "Türkçe" },
+    { code: "ru", label: "Русский" },
+    { code: "ar", label: "العربية" },
   ];
 
   const sel = document.getElementById("lang-select");
   if (!sel) return;
   if (sel.dataset.populated === "1") return;
+
   sel.innerHTML = langs
-    .map((l) => `<option value="${l.code}">${l.label} (${l.code})</option>`)
+    .map((l) => `<option value="${l.code}">${l.label}</option>`)
     .join("");
+
+  // Set default to French (translate English content to French - most visible)
+  sel.value = "fr";
   sel.dataset.populated = "1";
+  console.log(
+    "✅ Language selector populated with Chrome Translator supported languages, default: fr (EN→FR)"
+  );
+
+  // Add change listener to log selection
+  sel.addEventListener("change", () => {
+    console.log(`🌐 Language changed to: ${sel.value}`);
+  });
+
+  // Log Chrome Translator API availability
+  if (window.Translator) {
+    console.log("✅ Chrome Translator API detected and ready");
+  } else {
+    console.warn(
+      "⚠️ Chrome Translator API not available - will use LanguageModel fallback"
+    );
+  }
 })();
 
 // Unified translator using Chrome AI (aiHelper.translateText)
 async function translateWithChromeAI(text, targetLang, sourceLang = "auto") {
+  console.log(
+    `🌐 translateWithChromeAI called: target=${targetLang}, source=${sourceLang}, textLength=${text?.length}`
+  );
+
   if (!text || !targetLang) throw new Error("Missing text or target language");
 
   if (
@@ -2618,18 +2652,27 @@ async function translateWithChromeAI(text, targetLang, sourceLang = "auto") {
     typeof aiHelper.translateText === "function"
   ) {
     try {
+      console.log(
+        `✅ Calling aiHelper.translateText(text, "${targetLang}", "${sourceLang}")`
+      );
       const res = await aiHelper.translateText(text, targetLang, sourceLang);
+      console.log(
+        `✅ aiHelper.translateText returned: ${typeof res}, length=${
+          res?.length || 0
+        }`
+      );
       if (typeof res === "string") return res;
       if (res && typeof res.text === "string") return res.text;
       // If aiHelper returns other structure, try JSON stringify fallback
       return String(res);
     } catch (e) {
-      console.warn("aiHelper.translateText failed:", e);
+      console.warn("❌ aiHelper.translateText failed:", e);
       throw e;
     }
   }
 
   // If aiHelper not available, throw so caller can show UI guidance
+  console.error("❌ aiHelper or aiHelper.translateText not available");
   throw new Error("Chrome Translator AI not available");
 }
 
@@ -2640,7 +2683,9 @@ document
     const btn = document.getElementById("translate-btn");
     const result = document.getElementById("translated-result");
     const sel = document.getElementById("lang-select");
-    const lang = sel ? sel.value : "fr";
+    const lang = sel ? sel.value : "en";
+
+    console.log(`🔵 Translate button clicked! Selected language: ${lang}`);
 
     if (btn) {
       btn.disabled = true;
@@ -2649,21 +2694,33 @@ document
     }
 
     try {
-      const text = (
-        document.getElementById("analysis-content")?.innerText || ""
-      ).trim();
+      const contentDiv = document.getElementById("analysis-content");
+      const text = (contentDiv?.innerText || "").trim();
+
+      console.log(
+        `📄 Content to translate: ${text.substring(0, 100)}... (${
+          text.length
+        } chars)`
+      );
+
       if (!text || text.length < 10)
         throw new Error("No analysis text found. Run an analysis first!");
 
       const toTranslate = text.length > 10000 ? text.substring(0, 10000) : text;
 
+      console.log(
+        `🌐 Calling translateWithChromeAI with target language: ${lang}`
+      );
       const translated = await translateWithChromeAI(toTranslate, lang, "auto");
+      console.log(
+        `✅ Received translation: ${translated.substring(0, 100)}...`
+      );
 
       if (result) {
         result.textContent = translated;
         result.style.display = "block";
       }
-      if (btn) btn.textContent = "✅ Translated";
+      if (btn) btn.textContent = `✅ Translated to ${lang.toUpperCase()}`;
       console.log("✅ Translation completed (Chrome AI)", lang);
     } catch (e) {
       console.error("❌ Translation error:", e);
@@ -2700,6 +2757,10 @@ document.addEventListener("click", async (e) => {
   const sel = document.getElementById("lang-select");
   const lang = btn.dataset.lang || (sel ? sel.value : null) || "fr";
 
+  console.log(
+    `🌐 Inline translate clicked -> target: ${targetId}, lang: ${lang}`
+  );
+
   try {
     btn.disabled = true;
     const prev = btn.textContent;
@@ -2711,6 +2772,7 @@ document.addEventListener("click", async (e) => {
       delete btn.dataset.original;
       btn.textContent = "🌐";
       btn.disabled = false;
+      console.log(`✅ Restored original content for ${targetId}`);
       return;
     }
 
@@ -2719,23 +2781,108 @@ document.addEventListener("click", async (e) => {
     if (!text || text.trim().length < 3)
       throw new Error("No content to translate");
 
-    const translated = await translateWithChromeAI(text, lang, "auto");
+    console.log(`📝 Translating ${text.length} chars to ${lang}...`);
 
-    const formattedTranslation = translated
-      .replace(/\n\n/g, "<br><br>")
-      .replace(/\n/g, "<br>");
+    // Clone the target div to manipulate DOM
+    const clone = targetDiv.cloneNode(true);
+
+    // Get all text nodes from the clone
+    const walker = document.createTreeWalker(
+      clone,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
+    const textNodes = [];
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (node.nodeValue && node.nodeValue.trim().length > 0) {
+        textNodes.push(node);
+      }
+    }
+
+    console.log(`🔍 Found ${textNodes.length} text nodes to translate`);
+
+    // Translate each text node separately to preserve structure
+    for (let i = 0; i < textNodes.length; i++) {
+      const node = textNodes[i];
+      const originalText = node.nodeValue.trim();
+
+      if (originalText.length > 2) {
+        console.log(
+          `� Translating node ${i}: "${originalText.substring(0, 50)}..."`
+        );
+        const translatedLine = await translateWithChromeAI(
+          originalText,
+          lang,
+          "auto"
+        );
+
+        // Preserve leading/trailing whitespace
+        const leadingSpace = node.nodeValue.match(/^\s*/)[0];
+        const trailingSpace = node.nodeValue.match(/\s*$/)[0];
+        node.nodeValue = leadingSpace + translatedLine.trim() + trailingSpace;
+
+        console.log(
+          `✅ Translated to: "${translatedLine.substring(0, 50)}..."`
+        );
+      }
+    }
+
+    const translatedHTML = clone.innerHTML;
+    console.log(
+      `✅ Generated translated HTML with ${textNodes.length} translated nodes`
+    );
+
+    const languageNames = {
+      en: "English",
+      fr: "Français",
+      es: "Español",
+      de: "Deutsch",
+      it: "Italiano",
+      pt: "Português",
+      nl: "Nederlands",
+      ru: "Русский",
+      "zh-CN": "简体中文",
+      "zh-TW": "繁體中文",
+      ja: "日本語",
+      ko: "한국어",
+      ar: "العربية",
+      tr: "Türkçe",
+    };
+
+    const langName = languageNames[lang] || lang.toUpperCase();
 
     btn.dataset.original = originalHTML;
+
+    // Show translation with preserved HTML structure ABOVE original
     targetDiv.innerHTML = `
-      <div class="translation-box">
-        <div class="translation-header" style="display:flex; justify-content:space-between; align-items:center;">
-          <span class="translation-title">🌐 Traduction (${lang})</span>
-          <button class="restore-btn" data-target="${targetId}">↺ Original</button>
+      <div class="translation-box" style="background: rgba(99, 102, 241, 0.1); border-left: 3px solid #6366f1; padding: 12px; margin-bottom: 12px; border-radius: 6px;">
+        <div class="translation-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+          <span class="translation-title" style="font-weight: 600; color: #a5b4fc;">🌐 ${langName}</span>
+          <button class="restore-btn" data-restore-target="${targetId}" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #e0e7ff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">↺ Original</button>
         </div>
-        <div class="translation-content" style="margin-top:6px;">${formattedTranslation}</div>
+        <div class="translation-content" style="line-height: 1.7; color: #e0e7ff;">${translatedHTML}</div>
       </div>
-      <div style="opacity:0.85; margin-top:8px;">${originalHTML}</div>
+      <div style="opacity: 0.5; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 6px;">
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">📄 Original (English):</div>
+        ${originalHTML}
+      </div>
     `;
+
+    // Add event listener to restore button (CSP compliant)
+    const restoreBtn = targetDiv.querySelector(".restore-btn");
+    if (restoreBtn) {
+      restoreBtn.addEventListener("click", () => {
+        if (btn.dataset.original) {
+          targetDiv.innerHTML = btn.dataset.original;
+          btn.textContent = "🌐";
+          btn.disabled = false;
+          delete btn.dataset.original;
+          console.log(`✅ Restored original content for ${targetId}`);
+        }
+      });
+    }
 
     btn.textContent = "🔄";
   } catch (err) {

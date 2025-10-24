@@ -1,7 +1,7 @@
 console.log("🚨 SOC-CERT Content Alert Script loaded");
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log("📨 Message reçu:", message);
+  console.log("📨 Message received:", message);
 
   if (message.action === "showThreatAlert") {
     console.log("🚨 THREAT DETECTED - Showing overlay", message.data);

@@ -351,12 +351,27 @@ This extension leverages multiple Chrome built-in AI APIs powered by Gemini Nano
 
 ### 🌐 Translator API
 
-**Location**: `extension/ai-helper.js` - `analyzeCompleteFlow()` function
-**Purpose**: Multi-language security support
+**Location**: `extension/ai-helper.js` - `translateText()` function
+**Purpose**: Multi-language security support with 28 languages
 
-- Translates analysis results for international users
-- Provides localized security recommendations
-- **Status**: 🔄 Attempted with fallback to mock system
+- **Primary**: Uses `window.Translator` Chrome Built-in API for instant translation
+- **Fallback**: Uses `window.LanguageModel` with translation prompts
+- **Supported Languages**: 28 languages including English, French, Spanish, German, Italian, Portuguese, Dutch, Polish, Russian, Ukrainian, Chinese (Simplified & Traditional), Japanese, Korean, Arabic, Hebrew, Turkish, Hindi, Bengali, Vietnamese, Thai, Indonesian, Swedish, Danish, Norwegian, Finnish, Czech, and Greek
+- **Smart Detection**: Automatically detects source language (EN/FR)
+- **Language Pair Validation**: Checks `canTranslate()` before attempting translation
+- **Status**: ✅ **FULLY INTEGRATED** with intelligent 3-tier fallback system
+
+**Translation Features**:
+
+- 🌍 **28 Languages** available via dropdown selector
+- 🎯 **Smart fallback** system (Translator API → LanguageModel → Mock)
+- 🔍 **Automatic language detection** for source text
+- ✅ **Language pair validation** before translation
+- 📊 **Real-time availability** checking
+- 💬 **Preserves technical terms** in all languages
+- 🚀 **Instant translation** for common pairs (EN↔FR, EN↔ES, etc.)
+
+See [TRANSLATION_LANGUAGES.md](TRANSLATION_LANGUAGES.md) for complete language support details.
 
 ### 📝 Proofreader API
 
@@ -621,13 +636,13 @@ GET https://soc-cert-extension.vercel.app/api/extension-result?extensionId=ai-he
 
 ### ✅ Complete API Coverage (5/5 APIs)
 
-| API                         | Status        | Usage in Analysis 1          | Usage in Analysis 2           | Purpose                    |
-| --------------------------- | ------------- | ---------------------------- | ----------------------------- | -------------------------- |
-| 🧠 Prompt API (Gemini Nano) | ✅ Integrated | Primary threat detection     | Analysis enhancement          | Core reasoning engine      |
-| 📝 Summarizer API           | ✅ Integrated | Key threat indicators        | CVE summary generation        | Distill complex findings   |
-| ✍️ Writer API               | ✅ Integrated | Recommendation drafting      | Professional mitigation steps | Generate actionable advice |
-| 🌐 Translator API           | ✅ Integrated | Multilingual threat analysis | CVE translation               | Global accessibility       |
-| 📝 Proofreader API          | ✅ Integrated | Report quality check         | Final output polish           | Professional quality       |
+| API                         | Status        | Usage in Analysis 1      | Usage in Analysis 2           | Purpose                    |
+| --------------------------- | ------------- | ------------------------ | ----------------------------- | -------------------------- |
+| 🧠 Prompt API (Gemini Nano) | ✅ Integrated | Primary threat detection | Analysis enhancement          | Core reasoning engine      |
+| 📝 Summarizer API           | ✅ Integrated | Key threat indicators    | CVE summary generation        | Distill complex findings   |
+| ✍️ Writer API               | ✅ Integrated | Recommendation drafting  | Professional mitigation steps | Generate actionable advice |
+| 🌐 Translator API           | ✅ Integrated | **28 languages** support | CVE translation in 28 langs   | Global accessibility       |
+| 📝 Proofreader API          | ✅ Integrated | Report quality check     | Final output polish           | Professional quality       |
 
 ### 🔧 Technical Implementation
 
@@ -727,6 +742,7 @@ soc-cert-extension/
 │   └── extension-webhook.js   # Webhook handler for n8n
 ├── n8n-workflows/
 │   └── cve-enrichment.json     # 🔥 KEV Catalog integration workflow
+├── TRANSLATION_LANGUAGES.md   # 🌐 Translation languages documentation (28 languages)
 ├── screenshots/               # Demo screenshots (10 images)
 │   ├── 01-gemini-analysis.png
 │   ├── 02-api-dashboard.png
@@ -863,7 +879,7 @@ Popup Sections:
 ──────────────────────────────────
 📝 Summary: Suspicious form detected
 ✍️ Recommendations: Avoid input
-🌐 Translation: Available in 5 langs
+🌐 Translation: Available in 28 languages
 📝 Quality: Grammar-checked ✅
 
 🔬 Deep Analysis Results

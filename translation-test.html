@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Translation Test - SOC-CERT Extension</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .container {
+      background: rgba(0,0,0,0.2);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      text-align: center;
+      opacity: 0.8;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+    select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    select {
+      background: rgba(0,0,0,0.3);
+      color: white;
+      cursor: pointer;
+    }
+    textarea {
+      background: rgba(0,0,0,0.3);
+      color: white;
+      min-height: 120px;
+      font-family: monospace;
+      resize: vertical;
+    }
+    button {
+      background: linear-gradient(135deg, #00c8ff 0%, #0066cc 100%);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .result {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 15px;
+      min-height: 100px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .status {
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+    }
+    .status.success { background: rgba(0,255,0,0.2); }
+    .status.warning { background: rgba(255,165,0,0.2); }
+    .status.error { background: rgba(255,0,0,0.2); }
+    .language-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .lang-badge {
+      background: rgba(255,255,255,0.1);
+      padding: 8px 12px;
+      border-radius: 6px;
+      text-align: center;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 Translation Tester</h1>
+    <p class="subtitle">Test Chrome Translator API with 28 languages</p>
+
+    <div id="api-status" class="status warning">
+      Checking Chrome Translator API...
+    </div>
+
+    <div class="test-section">
+      <label>Select Target Language:</label>
+      <select id="target-lang">
+        <option value="en">🇬🇧 English</option>
+        <option value="fr" selected>🇫🇷 Français</option>
+        <option value="es">🇪🇸 Español</option>
+        <option value="de">🇩🇪 Deutsch</option>
+        <option value="it">🇮🇹 Italiano</option>
+        <option value="pt">🇵🇹 Português</option>
+        <option value="nl">🇳🇱 Nederlands</option>
+        <option value="pl">🇵🇱 Polski</option>
+        <option value="ru">🇷🇺 Русский</option>
+        <option value="uk">🇺🇦 Українська</option>
+        <option value="zh">🇨🇳 中文</option>
+        <option value="zh-Hant">🇹🇼 繁體中文</option>
+        <option value="ja">🇯🇵 日本語</option>
+        <option value="ko">🇰🇷 한국어</option>
+        <option value="ar">🇸🇦 العربية</option>
+        <option value="he">🇮🇱 עברית</option>
+        <option value="tr">🇹🇷 Türkçe</option>
+        <option value="hi">🇮🇳 हिन्दी</option>
+        <option value="bn">🇧🇩 বাংলা</option>
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+        <option value="th">🇹🇭 ไทย</option>
+        <option value="id">🇮🇩 Indonesia</option>
+        <option value="sv">🇸🇪 Svenska</option>
+        <option value="da">🇩🇰 Dansk</option>
+        <option value="no">🇳🇴 Norsk</option>
+        <option value="fi">🇫🇮 Suomi</option>
+        <option value="cs">🇨🇿 Čeština</option>
+        <option value="el">🇬🇷 Ελληνικά</option>
+      </select>
+
+      <label>Text to Translate (English):</label>
+      <textarea id="source-text" placeholder="Enter English text here...">Security Alert: SQL Injection vulnerability detected in login form. Immediate action required to prevent data breach.</textarea>
+
+      <button id="translate-btn">🌐 Translate Now</button>
+
+      <label>Translation Result:</label>
+      <div id="result" class="result">Translation will appear here...</div>
+    </div>
+
+    <div class="test-section">
+      <h3>📊 Supported Languages (28 total)</h3>
+      <div class="language-grid">
+        <div class="lang-badge">🇬🇧 English</div>
+        <div class="lang-badge">🇫🇷 Français</div>
+        <div class="lang-badge">🇪🇸 Español</div>
+        <div class="lang-badge">🇩🇪 Deutsch</div>
+        <div class="lang-badge">🇮🇹 Italiano</div>
+        <div class="lang-badge">🇵🇹 Português</div>
+        <div class="lang-badge">🇳🇱 Nederlands</div>
+        <div class="lang-badge">🇵🇱 Polski</div>
+        <div class="lang-badge">🇷🇺 Русский</div>
+        <div class="lang-badge">🇺🇦 Українська</div>
+        <div class="lang-badge">🇨🇳 中文</div>
+        <div class="lang-badge">🇹🇼 繁體中文</div>
+        <div class="lang-badge">🇯🇵 日本語</div>
+        <div class="lang-badge">🇰🇷 한국어</div>
+        <div class="lang-badge">🇸🇦 العربية</div>
+        <div class="lang-badge">🇮🇱 עברית</div>
+        <div class="lang-badge">🇹🇷 Türkçe</div>
+        <div class="lang-badge">🇮🇳 हिन्दी</div>
+        <div class="lang-badge">🇧🇩 বাংলা</div>
+        <div class="lang-badge">🇻🇳 Tiếng Việt</div>
+        <div class="lang-badge">🇹🇭 ไทย</div>
+        <div class="lang-badge">🇮🇩 Indonesia</div>
+        <div class="lang-badge">🇸🇪 Svenska</div>
+        <div class="lang-badge">🇩🇰 Dansk</div>
+        <div class="lang-badge">🇳🇴 Norsk</div>
+        <div class="lang-badge">🇫🇮 Suomi</div>
+        <div class="lang-badge">🇨🇿 Čeština</div>
+        <div class="lang-badge">🇬🇷 Ελληνικά</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check API availability
+    async function checkAPIs() {
+      const statusDiv = document.getElementById('api-status');
+      
+      if (window.Translator) {
+        statusDiv.textContent = '✅ Chrome Translator API Available';
+        statusDiv.className = 'status success';
+        console.log('✅ window.Translator detected');
+      } else if (window.LanguageModel) {
+        statusDiv.textContent = '⚠️ Using LanguageModel Fallback (Translator API not found)';
+        statusDiv.className = 'status warning';
+        console.log('⚠️ window.Translator not found, using LanguageModel');
+      } else {
+        statusDiv.textContent = '❌ No Chrome AI APIs Available - Please enable in chrome://flags';
+        statusDiv.className = 'status error';
+        console.log('❌ No AI APIs available');
+      }
+    }
+
+    // Translate function
+    async function translateText() {
+      const btn = document.getElementById('translate-btn');
+      const result = document.getElementById('result');
+      const sourceText = document.getElementById('source-text').value;
+      const targetLang = document.getElementById('target-lang').value;
+
+      if (!sourceText.trim()) {
+        result.textContent = '⚠️ Please enter text to translate';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '⏳ Translating...';
+      result.textContent = 'Processing...';
+
+      try {
+        console.log(`🌐 Starting translation to ${targetLang}`);
+        
+        // Try Chrome Translator API first
+        if (window.Translator) {
+          console.log('✅ Using window.Translator');
+          
+          // Check if language pair is supported
+          try {
+            const canTranslate = await window.Translator.canTranslate({
+              sourceLanguage: 'en',
+              targetLanguage: targetLang
+            });
+            console.log(`🔍 Can translate EN→${targetLang}: ${canTranslate}`);
+          } catch (e) {
+            console.log('ℹ️ Cannot check canTranslate:', e.message);
+          }
+
+          const translator = await window.Translator.create({
+            sourceLanguage: 'en',
+            targetLanguage: targetLang
+          });
+
+          const translated = await translator.translate(sourceText);
+          translator.destroy();
+
+          result.textContent = `✅ Translation (Chrome Translator API):\n\n${translated}`;
+          console.log('✅ Translation successful');
+        } 
+        // Fallback to LanguageModel
+        else if (window.LanguageModel) {
+          console.log('⚠️ Using LanguageModel fallback');
+          
+          const langNames = {
+            en: 'English', fr: 'French', es: 'Spanish', de: 'German',
+            it: 'Italian', pt: 'Portuguese', nl: 'Dutch', pl: 'Polish',
+            ru: 'Russian', uk: 'Ukrainian', zh: 'Chinese', 'zh-Hant': 'Traditional Chinese',
+            ja: 'Japanese', ko: 'Korean', ar: 'Arabic', he: 'Hebrew',
+            tr: 'Turkish', hi: 'Hindi', bn: 'Bengali', vi: 'Vietnamese',
+            th: 'Thai', id: 'Indonesian', sv: 'Swedish', da: 'Danish',
+            no: 'Norwegian', fi: 'Finnish', cs: 'Czech', el: 'Greek'
+          };
+
+          const session = await window.LanguageModel.create({
+            systemPrompt: 'You are a professional translator. Translate the text to the target language accurately.'
+          });
+
+          const langName = langNames[targetLang] || targetLang;
+          const translated = await session.prompt(
+            `Translate this to ${langName}:\n\n${sourceText}`
+          );
+          session.destroy();
+
+          result.textContent = `✅ Translation (LanguageModel Fallback):\n\n${translated}`;
+          console.log('✅ Translation successful via LanguageModel');
+        } else {
+          throw new Error('No AI APIs available');
+        }
+
+        btn.textContent = `✅ Translated to ${targetLang.toUpperCase()}`;
+      } catch (error) {
+        console.error('❌ Translation error:', error);
+        result.textContent = `❌ Translation failed:\n\n${error.message}\n\nPlease:\n1. Enable Chrome AI flags\n2. Download Gemini Nano\n3. Restart Chrome`;
+        btn.textContent = '🔄 Retry Translation';
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = '🌐 Translate Now';
+        }, 2000);
+      }
+    }
+
+    // Event listeners
+    document.getElementById('translate-btn').addEventListener('click', translateText);
+    
+    // Check APIs on load
+    checkAPIs();
+
+    // Log when language changes
+    document.getElementById('target-lang').addEventListener('change', (e) => {
+      console.log(`🌐 Language changed to: ${e.target.value}`);
+    });
+  </script>
+</body>
+</html>

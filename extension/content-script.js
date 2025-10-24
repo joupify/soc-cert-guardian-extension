@@ -859,7 +859,7 @@ async function handleContentExtraction(request, sendResponse) {
   }
 }
 
-// 🆕 FONCTIONS CVE POLLING
+// 🆕 FUNCTIONS CVE POLLING
 // =================================================================
 
 async function sendThreatAlertAndPoll(threatData) {
@@ -867,13 +867,13 @@ async function sendThreatAlertAndPoll(threatData) {
   if (!extensionId) {
     extensionId = `ai-helper-${Date.now()}`;
     localStorage.setItem("soc-cert-extension-id", extensionId);
-    console.log(`🔑 Nouvel ID extension généré: ${extensionId}`);
+    console.log(`🔑 New extension ID generated: ${extensionId}`);
   } else {
-    console.log(`🔑 ID extension existant: ${extensionId}`);
+    console.log(`🔑 Existing extension ID: ${extensionId}`);
   }
 
   try {
-    console.log("📤 Envoi alerte de sécurité:", threatData);
+    console.log("📤 Sending security alert:", threatData);
 
     const response = await fetch(
       "https://soc-cert-extension.vercel.app/api/extension-webhook",
@@ -896,14 +896,14 @@ async function sendThreatAlertAndPoll(threatData) {
     );
 
     if (response.ok) {
-      console.log("✅ Alerte envoyée vers n8n, démarrage polling CVE...");
+      console.log("✅ Alert sent to n8n, starting CVE polling...");
       // ✅ FIXED: Don't start polling here to avoid conflict with popup
-      console.log("ℹ️ Polling CVE géré par le popup pour éviter les conflits");
+      console.log("ℹ️ CVE polling managed by popup to avoid conflicts");
     } else {
-      console.error("❌ Erreur envoi alerte:", response.status);
+      console.error("❌ Alert sending error:", response.status);
     }
   } catch (error) {
-    console.error("❌ Erreur réseau:", error);
+    console.error("❌ Network error:", error);
   }
 }
 
@@ -939,7 +939,7 @@ async function checkForThreatsAndAlert() {
   const threats = await detectSecurityThreats(extractPageContent());
 
   if (threats.length > 0) {
-    console.log(`🚨 ${threats.length} menace(s) détectée(s):`, threats);
+    console.log(`🚨 ${threats.length} threat(s) detected:`, threats);
 
     const highestThreat = threats.reduce((prev, current) =>
       prev.severity === "high" || current.severity !== "high" ? prev : current

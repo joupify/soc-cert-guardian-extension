@@ -1120,7 +1120,7 @@ async function testTranslator() {
 
   try {
     const translation = await aiHelper.translateText(
-      "Alerte de sécurité: Activité suspecte détectée",
+      "Security Alert: Suspicious activity detected",
       "en"
     );
     resultsDiv.innerHTML = `✅ <strong>Translator Test:</strong><br>${translation.replace(
@@ -1441,7 +1441,7 @@ ${
     },
   });
   console.log("✅ Analysis saved for translation");
-  const translateSection = document.getElementById("translate-section");
+  const translateSection = document.getElementById("translation-section");
   if (translateSection) {
     translateSection.style.display = "block";
   }
@@ -2029,7 +2029,7 @@ async function updateWithDeepResults(deepData) {
                 <span class="badge-tooltip">${
                   cve.isVirtual ||
                   (cve.cve_id && cve.cve_id.startsWith("CVE-2026"))
-                    ? "🚀 Menace détectée en temps réel par notre IA"
+                    ? "🚀 Real-time threat detected by our AI"
                     : "Verified CVE from official database"
                 }</span>
               </span>
@@ -2371,7 +2371,7 @@ async function updateWithDeepResults(deepData) {
           </div>
         </div>
       `
-          : '<div style="margin-bottom: 15px;">✅ Aucun indicateur suspect détecté</div>'
+          : '<div style="margin-bottom: 15px;">✅ No suspicious indicators detected</div>'
       }
 
   <!-- (SOC-CERT Recommendations removed - redundant with enhanced recommendations) -->
@@ -2497,7 +2497,7 @@ async function updateWithDeepResults(deepData) {
 
   // 🆕 SIMPLIFIED CVE POLLING
   async function startCVEPolling() {
-    console.log("🔄 Démarrage polling CVE...");
+    console.log("🔄 Starting CVE polling...");
 
     // Create container if it doesn't exist
     let container = document.getElementById("alerts-container");
@@ -2526,16 +2526,13 @@ async function updateWithDeepResults(deepData) {
 
       // Old format : {success: true, results: [...]}
       if (data.success && data.results && data.results.length > 0) {
-        console.log(
-          "✅ CVE Alerts trouvées (format ancien):",
-          data.results.length
-        );
+        console.log("✅ CVE Alerts found (old format):", data.results.length);
         cveData = data.results;
         hasData = true;
       }
-      // New format : {result: {...}} ou {result: [...]}
+      // New format : {result: {...}} or {result: [...]}
       else if (data.result && data.result !== null) {
-        console.log("✅ CVE Alerts trouvées (format nouveau):", data.result);
+        console.log("✅ CVE Alerts found (new format):", data.result);
         // new array of results
         if (Array.isArray(data.result)) {
           cveData = data.result;
@@ -2552,7 +2549,7 @@ async function updateWithDeepResults(deepData) {
         console.log("🎉 Affichage des CVE:", cveData.length);
         displayCVEAlerts(cveData);
       } else {
-        console.log("ℹ️ Pas d'alertes CVE disponibles");
+        console.log("ℹ️ No CVE alerts available");
         console.log("🔍 Debug info:", {
           success: data.success,
           resultsExist: !!data.results,
@@ -2591,22 +2588,36 @@ async function updateWithDeepResults(deepData) {
 // Populate language selector with Chrome Translator supported languages
 (async function populateLanguageSelector() {
   // Chrome Translator API officially supported languages (as of 2024-2025)
-  // Only include pairs that are widely supported
+  // Extended list with all commonly supported languages
   const langs = [
-    { code: "en", label: "English" },
-    { code: "fr", label: "Français" },
-    { code: "es", label: "Español" },
-    { code: "de", label: "Deutsch" },
-    { code: "it", label: "Italiano" },
-    { code: "pt", label: "Português" },
-    { code: "ja", label: "日本語" },
-    { code: "ko", label: "한국어" },
-    { code: "zh", label: "中文" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "bn", label: "বাংলা" },
-    { code: "tr", label: "Türkçe" },
-    { code: "ru", label: "Русский" },
-    { code: "ar", label: "العربية" },
+    { code: "en", label: "🇬🇧 English", flag: "🇬🇧" },
+    { code: "fr", label: "🇫🇷 Français", flag: "🇫🇷" },
+    { code: "es", label: "🇪🇸 Español", flag: "🇪🇸" },
+    { code: "de", label: "🇩🇪 Deutsch", flag: "🇩🇪" },
+    { code: "it", label: "🇮🇹 Italiano", flag: "🇮🇹" },
+    { code: "pt", label: "🇵🇹 Português", flag: "🇵🇹" },
+    { code: "nl", label: "🇳🇱 Nederlands", flag: "🇳🇱" },
+    { code: "pl", label: "🇵🇱 Polski", flag: "🇵🇱" },
+    { code: "ru", label: "🇷🇺 Русский", flag: "🇷🇺" },
+    { code: "ja", label: "🇯🇵 日本語", flag: "🇯🇵" },
+    { code: "ko", label: "🇰🇷 한국어", flag: "🇰🇷" },
+    { code: "zh", label: "🇨🇳 中文", flag: "🇨🇳" },
+    { code: "zh-Hant", label: "🇹🇼 繁體中文", flag: "🇹🇼" },
+    { code: "ar", label: "🇸🇦 العربية", flag: "🇸🇦" },
+    { code: "hi", label: "🇮🇳 हिन्दी", flag: "🇮🇳" },
+    { code: "bn", label: "🇧🇩 বাংলা", flag: "🇧🇩" },
+    { code: "tr", label: "🇹🇷 Türkçe", flag: "🇹🇷" },
+    { code: "vi", label: "🇻🇳 Tiếng Việt", flag: "🇻🇳" },
+    { code: "th", label: "🇹🇭 ไทย", flag: "🇹🇭" },
+    { code: "id", label: "🇮🇩 Indonesia", flag: "🇮🇩" },
+    { code: "uk", label: "🇺🇦 Українська", flag: "🇺🇦" },
+    { code: "sv", label: "🇸🇪 Svenska", flag: "🇸🇪" },
+    { code: "da", label: "🇩🇰 Dansk", flag: "🇩🇰" },
+    { code: "no", label: "🇳🇴 Norsk", flag: "🇳🇴" },
+    { code: "fi", label: "🇫🇮 Suomi", flag: "🇫🇮" },
+    { code: "cs", label: "🇨🇿 Čeština", flag: "🇨🇿" },
+    { code: "el", label: "🇬🇷 Ελληνικά", flag: "🇬🇷" },
+    { code: "he", label: "🇮🇱 עברית", flag: "🇮🇱" },
   ];
 
   const sel = document.getElementById("lang-select");
@@ -2621,17 +2632,59 @@ async function updateWithDeepResults(deepData) {
   sel.value = "fr";
   sel.dataset.populated = "1";
   console.log(
-    "✅ Language selector populated with Chrome Translator supported languages, default: fr (EN→FR)"
+    `✅ Language selector populated with ${langs.length} languages, default: fr (EN→FR)`
   );
 
-  // Add change listener to log selection
-  sel.addEventListener("change", () => {
-    console.log(`🌐 Language changed to: ${sel.value}`);
+  // Add change listener to log selection and check availability
+  sel.addEventListener("change", async () => {
+    const selectedLang = sel.value;
+    const selectedLabel =
+      langs.find((l) => l.code === selectedLang)?.label || selectedLang;
+    console.log(`🌐 Language changed to: ${selectedLabel} (${selectedLang})`);
+
+    // Check if this language pair is supported
+    if (
+      window.Translator &&
+      typeof window.Translator.canTranslate === "function"
+    ) {
+      try {
+        const canTranslate = await window.Translator.canTranslate({
+          sourceLanguage: "en",
+          targetLanguage: selectedLang,
+        });
+        console.log(`🔍 Translation EN→${selectedLang}: ${canTranslate}`);
+
+        if (canTranslate === "no") {
+          console.warn(
+            `⚠️ Translation to ${selectedLang} may not be available`
+          );
+        }
+      } catch (e) {
+        console.log(`ℹ️ Cannot check translation availability: ${e.message}`);
+      }
+    }
   });
 
   // Log Chrome Translator API availability
   if (window.Translator) {
     console.log("✅ Chrome Translator API detected and ready");
+
+    // Try to list available language pairs
+    if (typeof window.Translator.canTranslate === "function") {
+      console.log("🔍 Testing some language pairs...");
+      const testLangs = ["fr", "es", "de", "ja", "zh"];
+      for (const lang of testLangs) {
+        try {
+          const result = await window.Translator.canTranslate({
+            sourceLanguage: "en",
+            targetLanguage: lang,
+          });
+          console.log(`  EN→${lang.toUpperCase()}: ${result}`);
+        } catch (e) {
+          console.log(`  EN→${lang.toUpperCase()}: error`);
+        }
+      }
+    }
   } else {
     console.warn(
       "⚠️ Chrome Translator API not available - will use LanguageModel fallback"
@@ -2679,71 +2732,230 @@ async function translateWithChromeAI(text, targetLang, sourceLang = "auto") {
 // Full analysis translation button - uses Chrome AI only
 document
   .getElementById("translate-btn")
-  ?.addEventListener("click", async () => {
+  ?.addEventListener("click", async (e) => {
     const btn = document.getElementById("translate-btn");
     const result = document.getElementById("translated-result");
-    const sel = document.getElementById("lang-select");
-    const lang = sel ? sel.value : "en";
 
-    console.log(`🔵 Translate button clicked! Selected language: ${lang}`);
+    // Show language selector popup if not already translating
+    if (!btn.dataset.translating) {
+      const languages = [
+        { code: "fr", label: "🇫🇷 Français" },
+        { code: "es", label: "🇪🇸 Español" },
+        { code: "de", label: "🇩🇪 Deutsch" },
+        { code: "it", label: "🇮🇹 Italiano" },
+        { code: "pt", label: "🇵🇹 Português" },
+        { code: "nl", label: "🇳🇱 Nederlands" },
+        { code: "ja", label: "🇯🇵 日本語" },
+        { code: "ko", label: "🇰🇷 한국어" },
+        { code: "zh", label: "🇨🇳 中文" },
+        { code: "ru", label: "🇷🇺 Русский" },
+        { code: "ar", label: "🇸🇦 العربية" },
+        { code: "tr", label: "🇹🇷 Türkçe" },
+        { code: "pl", label: "🇵🇱 Polski" },
+        { code: "uk", label: "🇺🇦 Українська" },
+        { code: "hi", label: "🇮🇳 हिन्दी" },
+        { code: "th", label: "🇹🇭 ไทย" },
+        { code: "vi", label: "🇻🇳 Tiếng Việt" },
+        { code: "id", label: "🇮🇩 Indonesia" },
+      ];
 
-    if (btn) {
-      btn.disabled = true;
-      btn.dataset.prevText = btn.textContent;
-      btn.textContent = "Translating...";
-    }
+      // Create language selector popup
+      const langMenu = document.createElement("div");
+      langMenu.id = "lang-menu-full-translate";
+      langMenu.style.cssText = `
+        position: fixed;
+        z-index: 10000;
+        background: rgba(20, 24, 44, 0.98);
+        border: 2px solid rgba(99, 102, 241, 0.6);
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        max-height: 300px;
+        overflow-y: auto;
+        min-width: 180px;
+      `;
 
-    try {
-      const contentDiv = document.getElementById("analysis-content");
-      const text = (contentDiv?.innerText || "").trim();
+      // Position relative to button
+      const rect = btn.getBoundingClientRect();
 
-      console.log(
-        `📄 Content to translate: ${text.substring(0, 100)}... (${
-          text.length
-        } chars)`
-      );
+      let top = rect.bottom + 5;
+      let left = rect.left;
 
-      if (!text || text.length < 10)
-        throw new Error("No analysis text found. Run an analysis first!");
+      const menuHeight = 300;
+      const menuWidth = 180;
 
-      const toTranslate = text.length > 10000 ? text.substring(0, 10000) : text;
-
-      console.log(
-        `🌐 Calling translateWithChromeAI with target language: ${lang}`
-      );
-      const translated = await translateWithChromeAI(toTranslate, lang, "auto");
-      console.log(
-        `✅ Received translation: ${translated.substring(0, 100)}...`
-      );
-
-      if (result) {
-        result.textContent = translated;
-        result.style.display = "block";
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - 5;
       }
-      if (btn) btn.textContent = `✅ Translated to ${lang.toUpperCase()}`;
-      console.log("✅ Translation completed (Chrome AI)", lang);
-    } catch (e) {
-      console.error("❌ Translation error:", e);
-      // If Chrome AI missing, provide actionable UI
-      if (e && /not available/i.test(e.message || "")) {
-        if (result)
-          result.textContent =
-            "⚠️ Chrome Translator AI not available. Please download Gemini Nano or enable Chrome AI in settings.";
-      } else {
-        if (result)
-          result.textContent = "❌ Translation failed: " + (e.message || e);
+
+      if (left + menuWidth > window.innerWidth) {
+        left = window.innerWidth - menuWidth - 10;
       }
-      if (result) result.style.display = "block";
-      if (btn) btn.textContent = "Translate";
-    } finally {
-      if (btn) {
-        setTimeout(() => {
-          btn.disabled = false;
-          btn.textContent = btn.dataset.prevText || "Translate";
-        }, 1500);
-      }
+
+      langMenu.style.top = `${top}px`;
+      langMenu.style.left = `${left}px`;
+
+      const menuHTML = languages
+        .map(
+          (lang) => `
+        <div class="full-translate-lang-option" data-lang="${lang.code}" 
+             style="padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; transition: all 0.2s; font-size: 13px;"
+             onmouseover="this.style.background='rgba(99, 102, 241, 0.3)'" 
+             onmouseout="this.style.background='transparent'">
+          ${lang.label}
+        </div>
+      `
+        )
+        .join("");
+
+      langMenu.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; font-weight: 600; font-size: 11px; color: #a5b4fc; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px;">
+          <span style="white-space: nowrap;">🌐 Translate to...</span>
+          <button class="close-lang-menu" data-menu-id="lang-menu-full-translate" style="background: transparent; border: none; color: #a5b4fc; font-size: 14px; cursor: pointer; padding: 0; margin-left: 8px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;" onmouseover="this.style.color='#ff6b6b'" onmouseout="this.style.color='#a5b4fc'">✕</button>
+        </div>
+        ${menuHTML}
+      `;
+
+      document.body.appendChild(langMenu);
+
+      // Close menu when clicking outside
+      const closeMenu = (ev) => {
+        if (!langMenu.contains(ev.target) && ev.target !== btn) {
+          langMenu.remove();
+          document.removeEventListener("click", closeMenu);
+        }
+      };
+      setTimeout(() => document.addEventListener("click", closeMenu), 100);
+
+      console.log("📋 Language menu shown for full translation");
+      return;
     }
   });
+
+// Handle language selection for full translation
+document.addEventListener("click", async (e) => {
+  if (!e.target.classList.contains("full-translate-lang-option")) return;
+
+  const langCode = e.target.dataset.lang;
+  const lang = langCode;
+
+  // Remove menu
+  const menu = document.getElementById("lang-menu-full-translate");
+  if (menu) menu.remove();
+
+  const btn = document.getElementById("translate-btn");
+  const result = document.getElementById("translated-result");
+
+  console.log(`🔵 Translate button clicked! Selected language: ${lang}`);
+
+  if (btn) {
+    btn.disabled = true;
+    btn.dataset.translating = "true";
+    btn.dataset.prevText = btn.textContent;
+    btn.textContent = "Translating...";
+  }
+
+  try {
+    const contentDiv = document.getElementById("analysis-content");
+    const text = (contentDiv?.innerText || "").trim();
+
+    console.log(
+      `📄 Content to translate: ${text.substring(0, 100)}... (${
+        text.length
+      } chars)`
+    );
+
+    if (!text || text.length < 10)
+      throw new Error("No analysis text found. Run an analysis first!");
+
+    const toTranslate = text.length > 10000 ? text.substring(0, 10000) : text;
+
+    console.log(
+      `🌐 Calling translateWithChromeAI with target language: ${lang}`
+    );
+    const translated = await translateWithChromeAI(toTranslate, lang, "auto");
+    console.log(`✅ Received translation: ${translated.substring(0, 100)}...`);
+
+    if (result) {
+      result.textContent = translated;
+      result.style.display = "block";
+    }
+    if (btn) btn.textContent = `✅ Translated to ${lang.toUpperCase()}`;
+    console.log("✅ Translation completed (Chrome AI)", lang);
+  } catch (e) {
+    console.error("❌ Translation error:", e);
+
+    // Get language name for better error message
+    const langNames = {
+      en: "English",
+      fr: "French",
+      es: "Spanish",
+      de: "German",
+      it: "Italian",
+      pt: "Portuguese",
+      nl: "Dutch",
+      pl: "Polish",
+      ru: "Russian",
+      uk: "Ukrainian",
+      zh: "Chinese",
+      "zh-Hant": "Traditional Chinese",
+      ja: "Japanese",
+      ko: "Korean",
+      ar: "Arabic",
+      he: "Hebrew",
+      tr: "Turkish",
+      hi: "Hindi",
+      bn: "Bengali",
+      vi: "Vietnamese",
+      th: "Thai",
+      id: "Indonesian",
+      sv: "Swedish",
+      da: "Danish",
+      no: "Norwegian",
+      fi: "Finnish",
+      cs: "Czech",
+      el: "Greek",
+    };
+    const langName = langNames[lang] || lang.toUpperCase();
+
+    // If Chrome AI missing, provide actionable UI
+    if (e && /not available/i.test(e.message || "")) {
+      if (result) {
+        result.innerHTML = `⚠️ <strong>Chrome Translator AI not available</strong><br><br>
+            To use translation to ${langName}:<br>
+            1. Enable Chrome AI in chrome://flags<br>
+            2. Download Gemini Nano model<br>
+            3. Restart Chrome<br><br>
+            <em>Using LanguageModel fallback instead...</em>`;
+      }
+    } else if (e && /language.*not.*support/i.test(e.message || "")) {
+      if (result) {
+        result.innerHTML = `⚠️ <strong>Translation to ${langName} may not be fully supported</strong><br><br>
+            Chrome Translator API has limited language pair support.<br>
+            Try selecting: English, French, Spanish, German, Italian, or Japanese<br><br>
+            <em>Using LanguageModel fallback instead...</em>`;
+      }
+    } else {
+      if (result) {
+        result.innerHTML = `❌ <strong>Translation failed</strong><br><br>
+            Target language: ${langName}<br>
+            Error: ${e.message || e}<br><br>
+            <em>Please try a different language or check your connection.</em>`;
+      }
+    }
+    if (result) result.style.display = "block";
+    if (btn) btn.textContent = "🔄 Retry Translation";
+    delete btn.dataset.translating;
+  } finally {
+    if (btn) {
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.prevText || "🌐 Translate Full Analysis";
+        delete btn.dataset.translating;
+      }, 1500);
+    }
+  }
+});
 
 // Inline mini-translate buttons - use Chrome AI only
 document.addEventListener("click", async (e) => {
@@ -2754,8 +2966,136 @@ document.addEventListener("click", async (e) => {
   const targetDiv = document.getElementById(targetId);
   if (!targetDiv) return;
 
-  const sel = document.getElementById("lang-select");
-  const lang = btn.dataset.lang || (sel ? sel.value : null) || "fr";
+  // If button shows a language, show language selector menu
+  if (!btn.dataset.translating) {
+    // Show language selection menu
+    const languages = [
+      { code: "fr", label: "🇫🇷 Français" },
+      { code: "es", label: "🇪🇸 Español" },
+      { code: "de", label: "🇩🇪 Deutsch" },
+      { code: "it", label: "🇮🇹 Italiano" },
+      { code: "pt", label: "🇵🇹 Português" },
+      { code: "nl", label: "🇳🇱 Nederlands" },
+      { code: "ja", label: "🇯🇵 日本語" },
+      { code: "ko", label: "🇰🇷 한국어" },
+      { code: "zh", label: "🇨🇳 中文" },
+      { code: "ru", label: "🇷🇺 Русский" },
+      { code: "ar", label: "🇸🇦 العربية" },
+      { code: "tr", label: "🇹🇷 Türkçe" },
+      { code: "pl", label: "🇵🇱 Polski" },
+      { code: "uk", label: "🇺🇦 Українська" },
+      { code: "hi", label: "🇮🇳 हिन्दी" },
+      { code: "th", label: "🇹🇭 ไทย" },
+      { code: "vi", label: "🇻🇳 Tiếng Việt" },
+      { code: "id", label: "🇮🇩 Indonesia" },
+    ];
+
+    // Create language selector popup
+    const langMenu = document.createElement("div");
+    langMenu.id = `lang-menu-${targetId}`;
+    langMenu.style.cssText = `
+      position: fixed;
+      z-index: 10000;
+      background: rgba(20, 24, 44, 0.98);
+      border: 2px solid rgba(99, 102, 241, 0.6);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      max-height: 300px;
+      overflow-y: auto;
+      min-width: 180px;
+    `;
+
+    // Position relative to button using getBoundingClientRect
+    const rect = btn.getBoundingClientRect();
+    const popupRect = document.body.getBoundingClientRect();
+
+    // Calculate position - show below button
+    let top = rect.bottom + 5;
+    let left = rect.left;
+
+    // Check if menu would go off-screen and adjust
+    const menuHeight = 300; // max-height
+    const menuWidth = 180;
+
+    if (top + menuHeight > window.innerHeight) {
+      top = rect.top - menuHeight - 5; // Show above button instead
+    }
+
+    if (left + menuWidth > window.innerWidth) {
+      left = window.innerWidth - menuWidth - 10;
+    }
+
+    langMenu.style.top = `${top}px`;
+    langMenu.style.left = `${left}px`;
+
+    const menuHTML = languages
+      .map(
+        (lang) => `
+      <div class="lang-option" data-lang="${lang.code}" data-target="${targetId}" 
+           style="padding: 8px 12px; cursor: pointer; border-radius: 4px; margin-bottom: 2px; transition: all 0.2s; font-size: 13px;"
+           onmouseover="this.style.background='rgba(99, 102, 241, 0.3)'" 
+           onmouseout="this.style.background='transparent'">
+        ${lang.label}
+      </div>
+    `
+      )
+      .join("");
+
+    langMenu.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; font-weight: 600; font-size: 11px; color: #a5b4fc; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 6px;">
+        <span style="white-space: nowrap;">🌐 Translate to...</span>
+        <button class="close-lang-menu" data-menu-id="lang-menu-${targetId}" style="background: transparent; border: none; color: #a5b4fc; font-size: 14px; cursor: pointer; padding: 0; margin-left: 8px; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;" onmouseover="this.style.color='#ff6b6b'" onmouseout="this.style.color='#a5b4fc'">✕</button>
+      </div>
+      ${menuHTML}
+    `;
+
+    document.body.appendChild(langMenu);
+
+    // Close menu when clicking outside
+    const closeMenu = (e) => {
+      if (!langMenu.contains(e.target) && e.target !== btn) {
+        langMenu.remove();
+        document.removeEventListener("click", closeMenu);
+      }
+    };
+    setTimeout(() => document.addEventListener("click", closeMenu), 100);
+
+    console.log(`📋 Language menu shown for ${targetId}`);
+    return;
+  }
+});
+
+// Close language menu when clicking X button
+document.addEventListener("click", (e) => {
+  if (!e.target.classList.contains("close-lang-menu")) return;
+
+  const menuId = e.target.dataset.menuId;
+  const menu = document.getElementById(menuId);
+  if (menu) {
+    menu.remove();
+    console.log(`✕ Language menu closed: ${menuId}`);
+  }
+});
+
+// Handle language selection from menu
+document.addEventListener("click", async (e) => {
+  if (!e.target.classList.contains("lang-option")) return;
+
+  const langCode = e.target.dataset.lang;
+  const targetId = e.target.dataset.target;
+  const targetDiv = document.getElementById(targetId);
+  const btn = document.querySelector(
+    `.translate-mini-btn[data-target="${targetId}"]`
+  );
+
+  // Remove menu
+  const menu = document.getElementById(`lang-menu-${targetId}`);
+  if (menu) menu.remove();
+
+  if (!targetDiv || !btn) return;
+
+  const lang = langCode;
 
   console.log(
     `🌐 Inline translate clicked -> target: ${targetId}, lang: ${lang}`
@@ -2763,6 +3103,7 @@ document.addEventListener("click", async (e) => {
 
   try {
     btn.disabled = true;
+    btn.dataset.translating = "true";
     const prev = btn.textContent;
     btn.textContent = "⏳";
 
@@ -2770,6 +3111,7 @@ document.addEventListener("click", async (e) => {
     if (btn.dataset.original) {
       targetDiv.innerHTML = btn.dataset.original;
       delete btn.dataset.original;
+      delete btn.dataset.translating;
       btn.textContent = "🌐";
       btn.disabled = false;
       console.log(`✅ Restored original content for ${targetId}`);
@@ -2885,8 +3227,10 @@ document.addEventListener("click", async (e) => {
     }
 
     btn.textContent = "🔄";
+    delete btn.dataset.translating;
   } catch (err) {
     console.error("Inline translation failed:", err);
+    delete btn.dataset.translating;
     if (/not available/i.test(err.message || "")) {
       alert(
         "Chrome Translator AI not available. Please download Gemini Nano or enable Chrome AI in your browser."

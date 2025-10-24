@@ -73,9 +73,7 @@ class AIHelper {
         await this.testSpecializedAPIs();
       } else if (availability === "downloadable") {
         console.log("📥 Gemini Nano downloadable - user interaction required");
-        console.log(
-          "💡 Cliquez dans l'extension pour démarrer le téléchargement"
-        );
+        console.log("💡 Click in the extension to start the download");
         this.needsDownload = true;
       } else if (availability === "downloading") {
         console.log("⬇️ Gemini Nano downloading...");
@@ -89,19 +87,19 @@ class AIHelper {
 
   // 🔍 Search for specialized APIs directly on window
   async searchSpecializedAPIs() {
-    console.log("🔍 Recherche des APIs spécialisées...");
+    console.log("🔍 Searching for specialized APIs...");
 
     const foundAPIs = [];
 
     // search on window
     if (window.Summarizer) {
       foundAPIs.push("📝 Summarizer (window.Summarizer)");
-      console.log("� window.Summarizer détecté");
+      console.log("📝 window.Summarizer detected");
     }
 
     if (window.Writer) {
       foundAPIs.push("✍️ Writer (window.Writer)");
-      console.log("✍️ window.Writer détecté");
+      console.log("✍️ window.Writer detected");
     }
 
     if (window.Translator) {
@@ -117,7 +115,7 @@ class AIHelper {
     // Search on window.chrome
     if (window.chrome && window.chrome.ai) {
       console.log(
-        "� window.chrome.ai detected:",
+        "🔍 window.chrome.ai detected:",
         Object.keys(window.chrome.ai)
       );
       if (window.chrome.ai.summarizer)
@@ -129,13 +127,11 @@ class AIHelper {
         foundAPIs.push("📝 Proofreader (chrome.ai)");
     }
 
-    console.log("📋 APIs spécialisées trouvées:", foundAPIs);
+    console.log("📋 Specialized APIs found:", foundAPIs);
 
     if (foundAPIs.length === 0) {
-      console.log("ℹ️ Aucune API spécialisée détectée");
-      console.log(
-        "💡 Utilisation des mocks pour les fonctionnalités spécialisées"
-      );
+      console.log("ℹ️ No specialized API detected");
+      console.log("💡 Using mocks for specialized features");
     }
 
     return {
@@ -163,7 +159,7 @@ class AIHelper {
   }
 
   async testSpecializedAPIs() {
-    console.log("🔍 Test des APIs spécialisées...");
+    console.log("🔍 Testing specialized APIs...");
 
     // Use already implemented searchSpecializedAPIs
     return await this.searchSpecializedAPIs();
@@ -171,7 +167,7 @@ class AIHelper {
 
   // 🆕 wait for window.ai
   async waitForWindowAI(maxWait = 10000) {
-    console.log("⏳ Attente de window.ai...");
+    console.log("⏳ Waiting for window.ai...");
     const startTime = Date.now();
 
     while (!window.ai && Date.now() - startTime < maxWait) {
@@ -188,56 +184,56 @@ class AIHelper {
           });
           if (tempSession) {
             if (tempSession.destroy) tempSession.destroy();
-            console.log("🔄 Session temporaire créée pour activer window.ai");
+            console.log("🔄 Temporary session created to activate window.ai");
           }
         } catch (e) {
-          console.log("🔄 Tentative d'activation:", e.message);
+          console.log("🔄 Activation attempt:", e.message);
         }
       }
     }
 
     if (window.ai) {
-      console.log("✅ window.ai disponible !");
+      console.log("✅ window.ai available!");
       // Check available APIs in window.ai
       console.log(
         "🔍 window.ai properties:",
         Object.getOwnPropertyNames(window.ai)
       );
     } else {
-      console.log("⚠️ window.ai toujours indisponible après", maxWait, "ms");
-      // 🆕 Essayons une approche alternative
+      console.log("⚠️ window.ai still unavailable after", maxWait, "ms");
+      // 🆕 Let's try an alternative approach
       await this.tryAlternativeAPIAccess();
     }
   }
 
   // 🆕 Alternative approach to access APIs
   async tryAlternativeAPIAccess() {
-    console.log("🔄 Tentative d'accès alternatif aux APIs...");
+    console.log("🔄 Trying alternative API access...");
 
     // Check if APIs exist directly on window
     const alternativeAPIs = [];
 
     if (window.Summarizer) {
       alternativeAPIs.push("Summarizer (direct)");
-      console.log("📝 window.Summarizer trouvé");
+      console.log("📝 window.Summarizer found");
     }
 
     if (window.Writer) {
       alternativeAPIs.push("Writer (direct)");
-      console.log("✍️ window.Writer trouvé");
+      console.log("✍️ window.Writer found");
     }
 
     if (window.Translator) {
       alternativeAPIs.push("Translator (direct)");
-      console.log("🌐 window.Translator trouvé");
+      console.log("🌐 window.Translator found");
     }
 
-    console.log("🔍 APIs alternatives détectées:", alternativeAPIs);
+    console.log("🔍 Alternative APIs detected:", alternativeAPIs);
 
     // Try window.chrome.ai
     if (window.chrome && window.chrome.ai) {
       console.log(
-        "🔍 window.chrome.ai détecté:",
+        "🔍 window.chrome.ai detected:",
         Object.keys(window.chrome.ai)
       );
     }
@@ -245,17 +241,17 @@ class AIHelper {
 
   async downloadGeminiNano() {
     try {
-      console.log("🚀 Tentative de téléchargement Gemini Nano...");
+      console.log("🚀 Attempting Gemini Nano download...");
 
       // 🛡️ Protection against multiple downloads
       if (this.hasNativeAI) {
-        console.log("✅ Gemini Nano déjà prêt !");
+        console.log("✅ Gemini Nano already ready!");
         return true;
       }
 
       // Check user activation
       if (!navigator.userActivation.isActive) {
-        console.log("❌ Interaction utilisateur requise");
+        console.log("❌ User interaction required");
         return false;
       }
 
@@ -282,9 +278,9 @@ class AIHelper {
       }
     } catch (error) {
       if (error.message.includes("downloading")) {
-        console.log("⬇️ Téléchargement en cours... Veuillez patienter");
+        console.log("⬇️ Download in progress... Please wait");
       } else {
-        console.log("❌ Erreur téléchargement:", error.message);
+        console.log("❌ Download error:", error.message);
       }
       return false;
     }
@@ -292,7 +288,7 @@ class AIHelper {
 
   // 🆕 Automatic download of specialized APIs
   async downloadSpecializedAPIs() {
-    console.log("📥 Téléchargement des APIs spécialisées...");
+    console.log("📥 Downloading specialized APIs...");
 
     // Download Summarizer if available
     if (window.ai && window.ai.summarizer) {
@@ -300,17 +296,17 @@ class AIHelper {
         const summarizerAvailability =
           await window.ai.summarizer.availability();
         if (summarizerAvailability === "downloadable") {
-          console.log("📝 Téléchargement Summarizer...");
+          console.log("📝 Downloading Summarizer...");
           const summarizer = await window.ai.summarizer.create({
             type: "key-points",
             format: "markdown",
             length: "medium",
           });
           summarizer.destroy(); // Clean up after test
-          console.log("✅ Summarizer prêt !");
+          console.log("✅ Summarizer ready!");
         }
       } catch (error) {
-        console.log("❌ Erreur Summarizer:", error.message);
+        console.log("❌ Summarizer error:", error.message);
       }
     }
 
@@ -319,17 +315,17 @@ class AIHelper {
       try {
         const writerAvailability = await window.ai.writer.availability();
         if (writerAvailability === "downloadable") {
-          console.log("✍️ Téléchargement Writer...");
+          console.log("✍️ Downloading Writer...");
           const writer = await window.ai.writer.create({
             tone: "neutral",
             format: "plain-text",
             length: "medium",
           });
           writer.destroy(); // Clean up after test
-          console.log("✅ Writer prêt !");
+          console.log("✅ Writer ready!");
         }
       } catch (error) {
-        console.log("❌ Erreur Writer:", error.message);
+        console.log("❌ Writer error:", error.message);
       }
     }
 
@@ -340,7 +336,7 @@ class AIHelper {
           await window.ai.translator.availability();
         console.log("🌐 Translator status:", translatorAvailability);
       } catch (error) {
-        console.log("❌ Erreur Translator:", error.message);
+        console.log("❌ Translator error:", error.message);
       }
     }
   }
@@ -366,36 +362,36 @@ class AIHelper {
           length: options.length || "medium",
           ...options,
         });
-        console.log("📝 Summarizer créé avec succès");
+        console.log("📝 Summarizer created successfully");
         return summarizer;
       } else {
-        console.log("❌ Summarizer API non disponible");
+        console.log("❌ Summarizer API not available");
         return null;
       }
     } catch (error) {
-      console.error("❌ Erreur création Summarizer:", error);
+      console.error("❌ Summarizer creation error:", error);
       return null;
     }
   }
 
-  // 🆕 SUMMARIZER version simple
+  // 🆕 SUMMARIZER simple version
   async summarizeText(text, options = {}) {
     try {
-      console.log("📝 Résumé en cours...");
+      console.log("📝 Summarizing...");
       return this.mockSummarize(text, options);
     } catch (error) {
-      console.error("❌ Erreur summarization:", error);
+      console.error("❌ Summarization error:", error);
       return this.mockSummarize(text, options);
     }
   }
 
-  // 🆕 WRITER version simple
+  // 🆕 WRITER simple version
   async writeContent(prompt, options = {}) {
     try {
-      console.log("✍️ Rédaction en cours...");
+      console.log("✍️ Writing...");
       return this.mockWrite(prompt, options);
     } catch (error) {
-      console.error("❌ Erreur writing:", error);
+      console.error("❌ Writing error:", error);
       return this.mockWrite(prompt, options);
     }
   }
@@ -449,9 +445,44 @@ class AIHelper {
             return text;
           }
 
-          // Try to create translator session directly (canCreateSession not available yet)
+          // Check if translation is available for this language pair
+          if (typeof window.Translator.canTranslate === "function") {
+            try {
+              const canTranslate = await window.Translator.canTranslate({
+                sourceLanguage: detectedSource,
+                targetLanguage: targetLanguage,
+              });
+
+              console.log(
+                `🔍 Can translate ${detectedSource}→${targetLanguage}: ${canTranslate}`
+              );
+
+              if (canTranslate === "no") {
+                console.warn(
+                  `⚠️ Language pair ${detectedSource}→${targetLanguage} not supported by Translator API`
+                );
+                throw new Error(
+                  `Language pair ${detectedSource}→${targetLanguage} not supported. Will use LanguageModel fallback.`
+                );
+              }
+
+              if (canTranslate === "after-download") {
+                console.log(
+                  `📥 Translation ${detectedSource}→${targetLanguage} available after download`
+                );
+                // Try to proceed anyway, might trigger download
+              }
+            } catch (checkError) {
+              console.log(
+                `ℹ️ Cannot check canTranslate: ${checkError.message}`
+              );
+              // Proceed anyway if we can't check
+            }
+          }
+
+          // Try to create translator session directly
           console.log(
-            `� Creating Translator session: ${detectedSource} → ${targetLanguage}`
+            `🌐 Creating Translator session: ${detectedSource} → ${targetLanguage}`
           );
 
           const translator = await window.Translator.create({
@@ -492,14 +523,27 @@ class AIHelper {
             it: "Italian",
             pt: "Portuguese",
             nl: "Dutch",
+            pl: "Polish",
             ru: "Russian",
-            zh: "Chinese",
+            uk: "Ukrainian",
+            zh: "Chinese (Simplified)",
+            "zh-Hant": "Chinese (Traditional)",
             ja: "Japanese",
             ko: "Korean",
             ar: "Arabic",
+            he: "Hebrew",
             tr: "Turkish",
             hi: "Hindi",
             bn: "Bengali",
+            vi: "Vietnamese",
+            th: "Thai",
+            id: "Indonesian",
+            sv: "Swedish",
+            da: "Danish",
+            no: "Norwegian",
+            fi: "Finnish",
+            cs: "Czech",
+            el: "Greek",
           };
 
           const langName = languageNames[targetLanguage] || targetLanguage;
@@ -602,12 +646,12 @@ BAD EXAMPLES (don't use decoded):
           session.destroy();
         }
 
-        console.log("✅ Analyse IA terminée");
+        console.log("✅ AI Analysis completed");
         const parsedResult = this.parseAIResponse(result);
         console.log("Parsed result riskScore:", parsedResult.riskScore);
 
         // 🎯 STEP 2: USING SPECIALIZED APIs
-        console.log("🚀 ÉTAPE 2: Génération contenu avec APIs spécialisées...");
+        console.log("🚀 STEP 2: Generating content with specialized APIs...");
 
         try {
           // Check API availability
@@ -817,16 +861,16 @@ BAD EXAMPLES (don't use decoded):
             });
 
             console.log(
-              "✅ APIs spécialisées appliquées:",
+              "✅ Specialized APIs applied:",
               enhancements.map((e) => e.type)
             );
           } else {
             console.log(
-              "⚠️ APIs spécialisées non disponibles, utilisation résultat Gemini seul"
+              "⚠️ Specialized APIs not available, using Gemini result only"
             );
           }
         } catch (apiError) {
-          console.log("⚠️ Erreur APIs spécialisées:", apiError.message);
+          console.log("⚠️ Specialized APIs error:", apiError.message);
         }
 
         return parsedResult;
@@ -851,13 +895,13 @@ BAD EXAMPLES (don't use decoded):
     }
   }
 
-  // 🆕 FLOW COMPLET D'ANALYSE PROGRESSIVE
+  // 🆕 COMPLETE PROGRESSIVE ANALYSIS FLOW
   async analyzeCompleteFlow(url, context = "") {
-    console.log("🚨 === DÉMARRAGE ANALYSE COMPLÈTE ===");
+    console.log("🚨 === STARTING COMPLETE ANALYSIS ===");
 
     try {
       // STEP 1: First quick analysis with Gemini Nano
-      console.log("⚡ ÉTAPE 1: Analyse rapide locale...");
+      console.log("⚡ STEP 1: Quick local analysis...");
       const quickAnalysis = await this.analyzeThreat(url, context);
 
       // Return immediately for display
@@ -874,14 +918,14 @@ BAD EXAMPLES (don't use decoded):
       };
 
       // STEP 2: Deep analysis via n8n (in background) - ONLY IF NOT SAFE
-      console.log("🔄 ÉTAPE 2: Vérification sécurité avant deep analysis...");
+      console.log("🔄 STEP 2: Security check before deep analysis...");
 
       // 🛡️ SAFETY CHECK: Skip n8n if URL is considered safe
       const isSafeUrl =
         quickAnalysis.threatType && quickAnalysis.threatType.includes("safe");
       if (isSafeUrl) {
         console.log(
-          `✅ URL considérée SAFE (threatType: ${quickAnalysis.threatType}) - PAS d'envoi à n8n`
+          `✅ URL considered SAFE (threatType: ${quickAnalysis.threatType}) - NO n8n send`
         );
         console.log("🛡️ Skipping deep analysis for safe URL");
 
@@ -894,9 +938,9 @@ BAD EXAMPLES (don't use decoded):
       }
 
       console.log(
-        `⚠️ URL à risque (riskScore: ${quickAnalysis.riskScore}) - Lancement deep analysis n8n...`
+        `⚠️ Risky URL (riskScore: ${quickAnalysis.riskScore}) - Starting n8n deep analysis...`
       );
-      console.log("📡 Démarrage triggerDeepAnalysis avec:", {
+      console.log("📡 Starting triggerDeepAnalysis with:", {
         url,
         quickAnalysis,
       });
@@ -904,17 +948,17 @@ BAD EXAMPLES (don't use decoded):
       // 🎯 DO NOT WAIT - Launch in background
       setTimeout(async () => {
         try {
-          console.log("🚀 Lancement triggerDeepAnalysis en arrière-plan...");
+          console.log("🚀 Launching triggerDeepAnalysis in background...");
           await this.triggerDeepAnalysis(url, context, quickAnalysis);
         } catch (error) {
-          console.error("❌ Erreur triggerDeepAnalysis:", error);
+          console.error("❌ triggerDeepAnalysis error:", error);
         }
       }, 100);
 
-      console.log("✅ Retour immédiat du flow progressif");
+      console.log("✅ Immediate return of progressive flow");
       return progressiveResult;
     } catch (error) {
-      console.error("❌ Erreur flow complet:", error);
+      console.error("❌ Complete flow error:", error);
       return this.analyzeThreat(url, context); // Fallback
     }
   }
@@ -922,9 +966,9 @@ BAD EXAMPLES (don't use decoded):
   // 🆕 DEEP ANALYSIS VIA N8N
   async triggerDeepAnalysis(url, context, quickAnalysis) {
     try {
-      console.log("📡 Envoi vers n8n pour deep analysis...");
-      console.log("📊 URL à analyser:", url);
-      console.log("📊 QuickAnalysis données:", quickAnalysis);
+      console.log("📡 Sending to n8n for deep analysis...");
+      console.log("📊 URL to analyze:", url);
+      console.log("📊 QuickAnalysis data:", quickAnalysis);
 
       console.log(`🔍 Using persistent extensionId: ${this.extensionId}`);
 
@@ -957,12 +1001,12 @@ BAD EXAMPLES (don't use decoded):
       };
 
       // 🚨 ADDITIONAL MANUAL TRIGGER
-      console.log("🚨 Tentative de déclenchement manuel du workflow...");
+      console.log("🚨 Attempting manual workflow trigger...");
 
-      // Essayer aussi l'endpoint direct du workflow n8n
+      // Also try direct n8n workflow endpoint
       setTimeout(async () => {
         try {
-          console.log("🎯 Tentative d'appel direct au workflow n8n...");
+          console.log("🎯 Attempting direct n8n workflow call...");
           const directResponse = await fetch(
             "https://soc-cert-extension.vercel.app/api/extension-queue",
             // "https://FAUSSE-URL-INEXISTANTE.com/webhook",
@@ -975,12 +1019,12 @@ BAD EXAMPLES (don't use decoded):
 
           if (directResponse.ok) {
             const queueData = await directResponse.json();
-            console.log("📊 État de la queue n8n:", queueData);
+            console.log("📊 n8n queue state:", queueData);
           } else {
-            console.log("❌ Erreur queue:", directResponse.status);
+            console.log("❌ Queue error:", directResponse.status);
           }
         } catch (error) {
-          console.log("❌ Erreur appel queue:", error.message);
+          console.log("❌ Queue call error:", error.message);
         }
       }, 1000);
 
@@ -990,10 +1034,10 @@ BAD EXAMPLES (don't use decoded):
       );
 
       console.log(
-        "🌐 Envoi vers:",
+        "🌐 Sending to:",
         "https://soc-cert-extension.vercel.app/api/extension-webhook"
       );
-      console.log("📤 Démarrage fetch...");
+      console.log("📤 Starting fetch...");
 
       const response = await fetch(
         "https://soc-cert-extension.vercel.app/api/extension-webhook",
@@ -1007,7 +1051,7 @@ BAD EXAMPLES (don't use decoded):
       );
 
       console.log(
-        "📥 Réponse fetch reçue:",
+        "📥 Fetch response received:",
         response.status,
         response.statusText
       );
@@ -1015,34 +1059,34 @@ BAD EXAMPLES (don't use decoded):
       if (response.ok) {
         const result = await response.json();
         console.log("✅ Real extension data sent to n8n:", result);
-        console.log("🔄 Démarrage polling avec l'ID réel...");
+        console.log("🔄 Starting polling with real ID...");
         // Start polling with real ID
         this.pollForDeepResults(url, quickAnalysis);
       } else {
         const errorText = await response.text();
-        console.log("❌ Erreur envoi n8n:", response.status, errorText);
+        console.log("❌ n8n send error:", response.status, errorText);
         console.log(
-          "🔍 Headers de réponse:",
+          "🔍 Response headers:",
           Object.fromEntries(response.headers.entries())
         );
-        console.log("🔍 Tentative de parsing JSON de l'erreur...");
+        console.log("🔍 Attempting JSON parsing of error...");
         try {
           const errorJson = JSON.parse(errorText);
-          console.log("📄 Erreur JSON:", errorJson);
+          console.log("📄 JSON error:", errorJson);
         } catch (e) {
-          console.log("📄 Erreur en texte brut:", errorText);
+          console.log("📄 Plain text error:", errorText);
         }
       }
     } catch (error) {
-      console.error("❌ Erreur deep analysis:", error);
+      console.error("❌ Deep analysis error:", error);
       console.error("🔍 Stack trace:", error.stack);
-      console.error("🔍 Message d'erreur:", error.message);
+      console.error("🔍 Error message:", error.message);
     }
   }
 
   // 🧪 SPECIAL POLLING FOR TEST WITH MOCK ID
   async pollForTestResults(url, quickAnalysis, maxAttempts = 20) {
-    console.log("🧪 TEST POLLING avec ID mock...");
+    console.log("🧪 TEST POLLING with mock ID...");
     console.log(`✅ Test Extension ID: test-login-token`);
 
     const API_URL =
@@ -1057,20 +1101,20 @@ BAD EXAMPLES (don't use decoded):
 
         const apiUrl = `${API_URL}?extensionId=test-login-token&format=cve`;
 
-        console.log(`🔍 TEST Tentative ${attempt}/${maxAttempts} - ${apiUrl}`);
+        console.log(`🔍 TEST Attempt ${attempt}/${maxAttempts} - ${apiUrl}`);
 
         const response = await fetch(apiUrl);
 
         if (response.ok) {
           const rawText = await response.text();
-          console.log(`📊 TEST Réponse polling RAW:`, rawText);
+          console.log(`📊 TEST Polling response RAW:`, rawText);
 
           let data;
           try {
             data = JSON.parse(rawText);
-            console.log(`📊 TEST Réponse polling JSON:`, data);
+            console.log(`📊 TEST Polling response JSON:`, data);
           } catch (e) {
-            console.log(`❌ Erreur parsing JSON:`, e);
+            console.log(`❌ JSON parsing error:`, e);
             console.log(`📄 Raw response:`, rawText);
             continue;
           }
@@ -1084,7 +1128,7 @@ BAD EXAMPLES (don't use decoded):
             }`
           );
           console.log(
-            `  - result: ${data.result ? "existe" : "null/undefined"}`
+            `  - result: ${data.result ? "exists" : "null/undefined"}`
           );
           console.log(`  - extensionId: ${data.extensionId}`);
           console.log(`  - timestamp: ${data.timestamp}`);
@@ -1099,30 +1143,26 @@ BAD EXAMPLES (don't use decoded):
             console.log(`  - result content:`, data.result);
           }
 
-          // ✅ Supporte 2 formats d'API
+          // ✅ Supports 2 API formats
           let resultData = null;
           let hasResults = false;
 
-          // OLd Format : {success: true, results: [...]}
+          // Old Format : {success: true, results: [...]}
           if (data.success && data.results && data.results.length > 0) {
-            console.log(
-              "🧪 TEST: Deep analysis résultats trouvés (format ancien)!"
-            );
+            console.log("🧪 TEST: Deep analysis results found (old format)!");
             resultData = data.results[0];
             hasResults = true;
           }
-          // Bew format : {result: {...}}
+          // New format : {result: {...}}
           else if (data.result && data.result !== null) {
-            console.log(
-              "🧪 TEST: Deep analysis résultats trouvés (format nouveau)!"
-            );
+            console.log("🧪 TEST: Deep analysis results found (new format)!");
             resultData = data.result;
             hasResults = true;
           }
 
           if (hasResults && resultData) {
-            console.log("🎉 TEST: Données trouvées:", resultData);
-            console.log("✅ TEST RÉUSSI: Le format mock fonctionne!");
+            console.log("🎉 TEST: Data found:", resultData);
+            console.log("✅ TEST SUCCESSFUL: Mock format works!");
 
             // Emit event to update UI
             window.dispatchEvent(
@@ -1139,31 +1179,28 @@ BAD EXAMPLES (don't use decoded):
             return resultData;
           }
         } else {
-          // 🔍 DEBUG pour erreurs HTTP
-          console.log(`❌ TEST Erreur HTTP ${response.status} sur: ${apiUrl}`);
+          // 🔍 DEBUG for HTTP errors
+          console.log(`❌ TEST HTTP Error ${response.status} on: ${apiUrl}`);
           const errorText = await response.text();
-          console.log(`❌ TEST Détail erreur:`, errorText);
+          console.log(`❌ TEST Error detail:`, errorText);
         }
 
         console.log(
-          `⏳ TEST Tentative ${attempt}/${maxAttempts} - Aucun résultat, attente...`
+          `⏳ TEST Attempt ${attempt}/${maxAttempts} - No result, waiting...`
         );
       } catch (error) {
-        console.log(
-          `❌ TEST Erreur polling tentative ${attempt}:`,
-          error.message
-        );
+        console.log(`❌ TEST Polling error attempt ${attempt}:`, error.message);
       }
     }
 
-    console.log("⏱️ TEST Timeout - Format mock test terminé");
+    console.log("⏱️ TEST Timeout - Mock format test completed");
     return null;
   }
 
   // 🆕 POLLING FOR DEEP ANALYSIS RESULTS
   async pollForDeepResults(url, quickAnalysis, maxAttempts = 5) {
-    console.log("🔄 Polling pour résultats deep analysis...");
-    console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
+    console.log("🔄 Polling for deep analysis results...");
+    console.log(`✅ Extension ID used: ${this.extensionId}`);
     // console.log("🎯 Target URL:", url);
 
     const API_URL =
@@ -1181,20 +1218,20 @@ BAD EXAMPLES (don't use decoded):
           this.extensionId
         )}&format=cve`;
 
-        console.log(`🔍 Tentative ${attempt}/${maxAttempts} - ${apiUrl}`);
+        console.log(`🔍 Attempt ${attempt}/${maxAttempts} - ${apiUrl}`);
 
         const response = await fetch(apiUrl);
 
         if (response.ok) {
           const rawText = await response.text();
-          console.log(`📊 Réponse polling RAW:`, rawText);
+          console.log(`📊 Polling response RAW:`, rawText);
 
           let data;
           try {
             data = JSON.parse(rawText);
-            console.log(`📊 Réponse polling JSON:`, data);
+            console.log(`📊 Polling response JSON:`, data);
           } catch (e) {
-            console.log(`❌ Erreur parsing JSON:`, e);
+            console.log(`❌ JSON parsing error:`, e);
             console.log(`📄 Raw response:`, rawText);
             continue;
           }
@@ -1208,7 +1245,7 @@ BAD EXAMPLES (don't use decoded):
             }`
           );
           console.log(
-            `  - result: ${data.result ? "existe" : "null/undefined"}`
+            `  - result: ${data.result ? "exists" : "null/undefined"}`
           );
           console.log(`  - extensionId: ${data.extensionId}`);
           console.log(`  - timestamp: ${data.timestamp}`);
@@ -1223,7 +1260,7 @@ BAD EXAMPLES (don't use decoded):
             console.log(`  - result content:`, data.result);
           }
 
-          // ✅ Support des deux formats d'API
+          // ✅ Support for both API formats
           let resultData = null;
           let hasResults = false;
 
@@ -1296,19 +1333,19 @@ BAD EXAMPLES (don't use decoded):
 
           // old Format : {success: true, results: [...]}
           if (data.success && selectedResult && urlFilteredResults.length > 0) {
-            console.log("✅ Deep analysis résultats trouvés (format ancien)!");
+            console.log("✅ Deep analysis results found (old format)!");
             resultData = selectedResult;
             hasResults = true;
           }
           // new Format : {result: {...}}
           else if (data.result && data.result !== null) {
-            console.log("✅ Deep analysis résultats trouvés (format nouveau)!");
+            console.log("✅ Deep analysis results found (new format)!");
             resultData = data.result;
             hasResults = true;
           }
 
           if (hasResults && resultData) {
-            console.log("🎉 Données trouvées:", resultData);
+            console.log("🎉 Data found:", resultData);
 
             // Emit event to update UI
             window.dispatchEvent(
@@ -1324,21 +1361,21 @@ BAD EXAMPLES (don't use decoded):
             return resultData;
           }
         } else {
-          // 🔍 DEBUG pour erreurs HTTP
-          console.log(`❌ Erreur HTTP ${response.status} sur: ${apiUrl}`);
+          // 🔍 DEBUG for HTTP errors
+          console.log(`❌ HTTP Error ${response.status} on: ${apiUrl}`);
           const errorText = await response.text();
-          console.log(`❌ Détail erreur:`, errorText);
+          console.log(`❌ Error detail:`, errorText);
         }
 
         console.log(
-          `⏳ Tentative ${attempt}/${maxAttempts} - Aucun résultat, attente...`
+          `⏳ Attempt ${attempt}/${maxAttempts} - No result, waiting...`
         );
       } catch (error) {
-        console.log(`❌ Erreur polling tentative ${attempt}:`, error.message);
+        console.log(`❌ Polling error attempt ${attempt}:`, error.message);
       }
     }
 
-    console.log("⏱️ Timeout deep analysis - Génération fallback cohérent");
+    console.log("⏱️ Deep analysis timeout - Generating consistent fallback");
 
     // 🎯 CONSISTENT FALLBACK with Gemini analysis (now async)
     const coherentFallback = await this.generateCoherentFallback(
@@ -1374,7 +1411,7 @@ BAD EXAMPLES (don't use decoded):
 
   // 🎯 CONSISTENT GENERATION FALLBACK with Gemini analysis
   async generateCoherentFallback(quickAnalysis, url) {
-    console.log("🎯 Génération fallback cohérent pour:", quickAnalysis);
+    console.log("🎯 Generating consistent fallback for:", quickAnalysis);
 
     // 🔍 EXTRACTION OF REAL DATA FROM ANALYSIS
     const riskScore = quickAnalysis.riskScore || 50;
@@ -1999,9 +2036,9 @@ Format: Plain list, no bullets, 2-3 lines only.`;
       );
 
       const parsed = JSON.parse(cleanResponse);
-      console.log("✅ Réponse IA parsée avec succès:", parsed);
+      console.log("✅ AI Response parsed successfully:", parsed);
 
-      // Valider la structure
+      // Validate structure
       return {
         riskScore: parsed.riskScore || 50,
         threatType: parsed.threatType || "unknown",
@@ -2138,17 +2175,17 @@ Format: Plain list, no bullets, 2-3 lines only.`;
       .map((s) => `• ${s.trim()}`)
       .join("\n");
 
-    return `📝 **Résumé automatique (${
+    return `📝 **Automatic Summary (${
       options.type || "key-points"
-    })**\n\n${keyPoints}\n\n*Généré par SOC-CERT AI Mock*`;
+    })**\n\n${keyPoints}\n\n*Generated by SOC-CERT AI Mock*`;
   }
 
   mockWrite(prompt, options = {}) {
     const tone = options.tone || "neutral";
     const templates = {
-      security: `🛡️ **Analyse de sécurité SOC-CERT**\n\nSuite à votre demande: "${prompt}"\n\n• Évaluation des risques en cours\n• Recommandations de sécurité à suivre\n• Surveillance continue activée\n\n*Rapport généré par SOC-CERT AI*`,
-      incident: `🚨 **Rapport d'incident**\n\nIncident détecté: ${prompt}\n\n**Actions recommandées:**\n• Investigation immédiate\n• Isolation des systèmes affectés\n• Documentation complète\n\n*SOC-CERT Response Team*`,
-      default: `📄 **Réponse SOC-CERT**\n\n${prompt}\n\nAnalyse en cours avec les outils de sécurité avancés.\n\n*Généré par SOC-CERT AI Assistant*`,
+      security: `🛡️ **SOC-CERT Security Analysis**\n\nFollowing your request: "${prompt}"\n\n• Risk assessment in progress\n• Security recommendations to follow\n• Continuous monitoring activated\n\n*Report generated by SOC-CERT AI*`,
+      incident: `🚨 **Incident Report**\n\nIncident detected: ${prompt}\n\n**Recommended Actions:**\n• Immediate investigation\n• Isolation of affected systems\n• Complete documentation\n\n*SOC-CERT Response Team*`,
+      default: `📄 **SOC-CERT Response**\n\n${prompt}\n\nAnalysis in progress with advanced security tools.\n\n*Generated by SOC-CERT AI Assistant*`,
     };
 
     return templates[options.format] || templates.default;
@@ -2211,19 +2248,19 @@ Format: Plain list, no bullets, 2-3 lines only.`;
 
     const headers = {
       en: "🌐 [AUTO-TRANSLATED TO ENGLISH]",
-      fr: "🌐 [TRADUIT AUTOMATIQUEMENT EN FRANÇAIS]",
-      es: "🌐 [TRADUCIDO AUTOMÁTICAMENTE AL ESPAÑOL]",
-      de: "🌐 [AUTOMATISCH INS DEUTSCHE ÜBERSETZT]",
-      it: "🌐 [TRADOTTO AUTOMATICAMENTE IN ITALIANO]",
-      pt: "🌐 [TRADUZIDO AUTOMATICAMENTE PARA PORTUGUÊS]",
-      nl: "🌐 [AUTOMATISCH VERTAALD NAAR NEDERLANDS]",
-      ru: "🌐 [АВТОМАТИЧЕСКИ ПЕРЕВЕДЕНО НА РУССКИЙ]",
-      "zh-CN": "🌐 [自动翻译成简体中文]",
-      "zh-TW": "🌐 [自動翻譯成繁體中文]",
-      ja: "🌐 [日本語に自動翻訳]",
-      ko: "🌐 [한국어로 자동 번역됨]",
-      ar: "🌐 [مترجم تلقائيًا إلى العربية]",
-      tr: "🌐 [OTOMATİK OLARAK TÜRKÇE'YE ÇEVRİLDİ]",
+      fr: "🌐 [AUTO-TRANSLATED TO FRENCH]",
+      es: "🌐 [AUTO-TRANSLATED TO SPANISH]",
+      de: "🌐 [AUTO-TRANSLATED TO GERMAN]",
+      it: "🌐 [AUTO-TRANSLATED TO ITALIAN]",
+      pt: "🌐 [AUTO-TRANSLATED TO PORTUGUESE]",
+      nl: "🌐 [AUTO-TRANSLATED TO DUTCH]",
+      ru: "🌐 [AUTO-TRANSLATED TO RUSSIAN]",
+      "zh-CN": "🌐 [AUTO-TRANSLATED TO SIMPLIFIED CHINESE]",
+      "zh-TW": "🌐 [AUTO-TRANSLATED TO TRADITIONAL CHINESE]",
+      ja: "🌐 [AUTO-TRANSLATED TO JAPANESE]",
+      ko: "🌐 [AUTO-TRANSLATED TO KOREAN]",
+      ar: "🌐 [AUTO-TRANSLATED TO ARABIC]",
+      tr: "🌐 [AUTO-TRANSLATED TO TURKISH]",
     };
 
     const footer = "*Mock translation by SOC-CERT AI*";

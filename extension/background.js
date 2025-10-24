@@ -317,7 +317,7 @@ async function performBackgroundAnalysis(tab) {
       timestamp: new Date().toISOString(),
     };
 
-    // Stocke l'analyse récente
+    // Stock recent analysis
     await chrome.storage.local.set({ last_background_analysis: analysis });
 
     console.log("Background analysis completed for:", tab.url);
@@ -331,7 +331,7 @@ async function detectThreatsFromURL(url) {
   const threats = [];
   const domain = new URL(url).hostname.toLowerCase();
 
-  // Détection de patterns suspects
+  // Detection  suspects urls
   if (domain.includes("paypa1") || domain.includes("faceb00k")) {
     threats.push({
       type: "typosquatting",
@@ -351,7 +351,7 @@ async function detectThreatsFromURL(url) {
   return threats;
 }
 
-// Calcul du niveau de risque
+// Calculate risk nivel
 function calculateRiskLevel(url) {
   let risk = "low";
 
@@ -362,12 +362,11 @@ function calculateRiskLevel(url) {
   return risk;
 }
 
-// Gestion des événements de sécurité
+// Handle events security
 function handleSecurityEvent(event) {
   console.log("Security event:", event);
 
-  // Ici plus tard: envoyer à notre backend n8n
-  // Pour l'instant, juste log
+  
 }
 
 // ========== 🆕 AUTO-ALERT SYSTEM ==========
@@ -424,7 +423,7 @@ async function checkPageForThreats(tabId, url) {
 // Function to get analysis from Vercel API
 async function getAnalysisFromAPI(url) {
   try {
-    // Récupère l'extensionId
+    // Get extensionId
     const data = await chrome.storage.local.get(["extensionId"]);
     const extensionId = data.extensionId;
 
@@ -435,7 +434,7 @@ async function getAnalysisFromAPI(url) {
       return null;
     }
 
-    // Appelle l'API Vercel avec format=cve
+    // Call Vercel api with format=cve
     const API_URL = "https://soc-cert-extension.vercel.app";
     const response = await fetch(
       `${API_URL}/api/extension-result?extensionId=${extensionId}&format=cve`
@@ -449,7 +448,7 @@ async function getAnalysisFromAPI(url) {
     const apiData = await response.json();
 
     if (apiData.success && apiData.results && apiData.results.length > 0) {
-      // Trouve le CVE pour cette URL
+      // Find the CVE for this URL
       const match = apiData.results.find(
         (r) => r.link && r.link.startsWith(url)
       );

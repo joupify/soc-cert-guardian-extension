@@ -62,7 +62,6 @@ async function loadVirtualCVEStats() {
   }
 }
 
-
 // ✅ Load immediately at startup
 loadVirtualCVEStats();
 
@@ -2581,72 +2580,132 @@ async function updateWithDeepResults(deepData) {
   console.log("📄 popup.js loaded - waiting for DOMContentLoaded");
 } // Fin de la dernière accolade manquante
 
-// 🌐 TRADUCTION - API GOOGLE GRATUITE
+// 🌐 TRADUCTION - Chrome Translator AI (preferred)
+// Populate language selector with common languages (if present)
+(function populateLanguageSelector() {
+  const langs = [
+    { code: "en", label: "English" },
+    { code: "fr", label: "Français" },
+    { code: "es", label: "Español" },
+    { code: "de", label: "Deutsch" },
+    { code: "it", label: "Italiano" },
+    { code: "pt", label: "Português" },
+    { code: "nl", label: "Nederlands" },
+    { code: "ru", label: "Русский" },
+    { code: "zh-CN", label: "中文 (简体)" },
+    { code: "zh-TW", label: "中文 (繁體)" },
+    { code: "ja", label: "日本語" },
+    { code: "ko", label: "한국어" },
+    { code: "ar", label: "العربية" },
+    { code: "tr", label: "Türkçe" },
+  ];
+
+  const sel = document.getElementById("lang-select");
+  if (!sel) return;
+  if (sel.dataset.populated === "1") return;
+  sel.innerHTML = langs
+    .map((l) => `<option value="${l.code}">${l.label} (${l.code})</option>`)
+    .join("");
+  sel.dataset.populated = "1";
+})();
+
+// Unified translator using Chrome AI (aiHelper.translateText)
+async function translateWithChromeAI(text, targetLang, sourceLang = "auto") {
+  if (!text || !targetLang) throw new Error("Missing text or target language");
+
+  if (
+    typeof aiHelper !== "undefined" &&
+    typeof aiHelper.translateText === "function"
+  ) {
+    try {
+      const res = await aiHelper.translateText(text, targetLang, sourceLang);
+      if (typeof res === "string") return res;
+      if (res && typeof res.text === "string") return res.text;
+      // If aiHelper returns other structure, try JSON stringify fallback
+      return String(res);
+    } catch (e) {
+      console.warn("aiHelper.translateText failed:", e);
+      throw e;
+    }
+  }
+
+  // If aiHelper not available, throw so caller can show UI guidance
+  throw new Error("Chrome Translator AI not available");
+}
+
+// Full analysis translation button - uses Chrome AI only
 document
   .getElementById("translate-btn")
   ?.addEventListener("click", async () => {
     const btn = document.getElementById("translate-btn");
     const result = document.getElementById("translated-result");
-    const lang = document.getElementById("lang-select").value;
+    const sel = document.getElementById("lang-select");
+    const lang = sel ? sel.value : "fr";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.dataset.prevText = btn.textContent;
+      btn.textContent = "Translating...";
+    }
 
     try {
-      btn.disabled = true;
-      btn.textContent = "Translating...";
-
-      // Récupère le texte de l'analyse
-      const text = document.getElementById("analysis-content")?.innerText || "";
-      if (!text || text.length < 10) {
+      const text = (
+        document.getElementById("analysis-content")?.innerText || ""
+      ).trim();
+      if (!text || text.length < 10)
         throw new Error("No analysis text found. Run an analysis first!");
+
+      const toTranslate = text.length > 10000 ? text.substring(0, 10000) : text;
+
+      const translated = await translateWithChromeAI(toTranslate, lang, "auto");
+
+      if (result) {
+        result.textContent = translated;
+        result.style.display = "block";
       }
-
-      console.log("🌐 Translating to", lang, "- Text length:", text.length);
-
-      // API de traduction Google (gratuite, sans clé)
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${lang}&dt=t&q=${encodeURIComponent(
-        text.substring(0, 5000)
-      )}`;
-      const response = await fetch(url);
-
-      if (!response.ok) throw new Error("Translation API failed");
-
-      const data = await response.json();
-      const translated = data[0].map((x) => x[0]).join("");
-
-      result.textContent = translated;
-      result.style.display = "block";
-      btn.textContent = "✅ Translated";
-
-      console.log("✅ Translation completed");
-
-      setTimeout(() => {
-        btn.textContent = "Translate";
-      }, 2000);
+      if (btn) btn.textContent = "✅ Translated";
+      console.log("✅ Translation completed (Chrome AI)", lang);
     } catch (e) {
       console.error("❌ Translation error:", e);
-      result.textContent = "❌ Translation failed: " + e.message;
-      result.style.display = "block";
-      btn.textContent = "Translate";
+      // If Chrome AI missing, provide actionable UI
+      if (e && /not available/i.test(e.message || "")) {
+        if (result)
+          result.textContent =
+            "⚠️ Chrome Translator AI not available. Please download Gemini Nano or enable Chrome AI in settings.";
+      } else {
+        if (result)
+          result.textContent = "❌ Translation failed: " + (e.message || e);
+      }
+      if (result) result.style.display = "block";
+      if (btn) btn.textContent = "Translate";
     } finally {
-      btn.disabled = false;
+      if (btn) {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.textContent = btn.dataset.prevText || "Translate";
+        }, 1500);
+      }
     }
   });
 
-// ✅ CODE DE TRADUCTION INLINE
-// 🌐 TRADUCTION INLINE - VERSION FINALE
-// 🌐 TRADUCTION - VERSION FINALE AVEC CLASSES CSS
+// Inline mini-translate buttons - use Chrome AI only
 document.addEventListener("click", async (e) => {
   if (!e.target.classList.contains("translate-mini-btn")) return;
 
   const btn = e.target;
   const targetId = btn.dataset.target;
   const targetDiv = document.getElementById(targetId);
-
   if (!targetDiv) return;
 
-  try {
-    btn.textContent = "⏳";
-    btn.disabled = true;
+  const sel = document.getElementById("lang-select");
+  const lang = btn.dataset.lang || (sel ? sel.value : null) || "fr";
 
+  try {
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = "⏳";
+
+    // Toggle restore
     if (btn.dataset.original) {
       targetDiv.innerHTML = btn.dataset.original;
       delete btn.dataset.original;
@@ -2656,60 +2715,50 @@ document.addEventListener("click", async (e) => {
     }
 
     const originalHTML = targetDiv.innerHTML;
-    const text = targetDiv.innerText;
+    const text = targetDiv.innerText || "";
+    if (!text || text.trim().length < 3)
+      throw new Error("No content to translate");
 
-    if (!text || text.length < 10) throw new Error("No content");
-
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=fr&dt=t&q=${encodeURIComponent(
-      text.substring(0, 3000)
-    )}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    const translated = data[0].map((x) => x[0]).join("");
+    const translated = await translateWithChromeAI(text, lang, "auto");
 
     const formattedTranslation = translated
       .replace(/\n\n/g, "<br><br>")
-      .replace(/\n/g, "<br>")
-      .split(/(?<=[.!?])\s+/)
-      .filter((s) => s.trim().length > 0)
-      .map((sentence) => {
-        const trimmed = sentence.trim();
-        if (/^[🔒🛡️📋🌐⚠️💡🔍✍️📝🔥]/.test(trimmed)) {
-          return `<div style="margin: 8px 0; padding-left: 4px;">${trimmed}</div>`;
-        }
-        return trimmed;
-      })
-      .join(" ");
+      .replace(/\n/g, "<br>");
 
     btn.dataset.original = originalHTML;
     targetDiv.innerHTML = `
       <div class="translation-box">
-        <div class="translation-header">
-          <span class="translation-title">🌐 Traduction (Français)</span>
+        <div class="translation-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <span class="translation-title">🌐 Traduction (${lang})</span>
           <button class="restore-btn" data-target="${targetId}">↺ Original</button>
         </div>
-        <div class="translation-content">${formattedTranslation}</div>
+        <div class="translation-content" style="margin-top:6px;">${formattedTranslation}</div>
       </div>
-      <div style="opacity: 0.85;">${originalHTML}</div>
+      <div style="opacity:0.85; margin-top:8px;">${originalHTML}</div>
     `;
 
     btn.textContent = "🔄";
-  } catch (e) {
-    console.error("❌ Translation error:", e);
-    alert("❌ Translation failed");
+  } catch (err) {
+    console.error("Inline translation failed:", err);
+    if (/not available/i.test(err.message || "")) {
+      alert(
+        "Chrome Translator AI not available. Please download Gemini Nano or enable Chrome AI in your browser."
+      );
+    } else {
+      alert("Translation failed: " + (err.message || err));
+    }
     btn.textContent = "🌐";
   } finally {
     btn.disabled = false;
   }
 });
 
-// Bouton "Original"
+// Restore original content when user clicks 'Original'
 document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("restore-btn")) {
-    const targetId = e.target.dataset.target;
-    const btn = document.querySelector(
-      `.translate-mini-btn[data-target="${targetId}"]`
-    );
-    if (btn) btn.click();
-  }
+  if (!e.target.classList.contains("restore-btn")) return;
+  const targetId = e.target.dataset.target;
+  const btn = document.querySelector(
+    `.translate-mini-btn[data-target="${targetId}"]`
+  );
+  if (btn) btn.click();
 });

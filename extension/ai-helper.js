@@ -572,28 +572,82 @@ BAD EXAMPLES (don't use decoded):
               enhancementPromises.push(writerPromise);
             }
 
-            // 🌐 TRANSLATOR: Support multilingue (optionnel)
-            if (window.Translator && url.includes("international")) {
-              const translatorPromise = window.Translator.create({
-                sourceLanguage: "en",
-                targetLanguage: "fr",
-              })
-                .then(async (translator) => {
-                  const translatedSummary = await translator.translate({
-                    input: parsedResult.analysis.substring(0, 200),
-                  });
-                  translator.destroy();
-                  return {
-                    type: "translated_analysis",
-                    content: translatedSummary,
-                  };
-                })
-                .catch((error) => {
-                  console.log("🌐 Translator fallback:", error.message);
-                  return { type: "translated_analysis", content: null };
-                });
+            // 🌐 TRANSLATOR API: Complete multilingual support
+            if (window.translation) {
+              // Detect browser language
+              const userLanguage = navigator.language.split("-")[0]; // 'fr', 'es', 'ja', 'zh', 'en'
 
-              enhancementPromises.push(translatorPromise);
+              // List of supported languages
+              const supportedLanguages = {
+                en: "English",
+                fr: "Français",
+                es: "Español",
+                ja: "日本語",
+                zh: "中文",
+              };
+
+              // Translate if language is not English
+              if (userLanguage !== "en" && supportedLanguages[userLanguage]) {
+                const translatorPromise = window.translation
+                  .createTranslator({
+                    sourceLanguage: "en",
+                    targetLanguage: userLanguage,
+                  })
+                  .then(async (translator) => {
+                    try {
+                      // Translate analysis summary
+                      const translatedSummary = await translator.translate(
+                        parsedResult.summary ||
+                          parsedResult.analysis.substring(0, 300)
+                      );
+
+                      // Translate recommendations as well
+                      let translatedRecommendations = null;
+                      if (
+                        parsedResult.recommendations &&
+                        Array.isArray(parsedResult.recommendations)
+                      ) {
+                        translatedRecommendations = await Promise.all(
+                          parsedResult.recommendations
+                            .slice(0, 3)
+                            .map((rec) => translator.translate(rec))
+                        );
+                      }
+
+                      translator.destroy();
+
+                      return {
+                        type: "translated_analysis",
+                        language: supportedLanguages[userLanguage],
+                        summary: translatedSummary,
+                        recommendations: translatedRecommendations,
+                      };
+                    } catch (error) {
+                      console.log("🌐 Translation error:", error.message);
+                      translator.destroy();
+                      return {
+                        type: "translated_analysis",
+                        content: null,
+                        error: error.message,
+                      };
+                    }
+                  })
+                  .catch((error) => {
+                    console.log(
+                      "🌐 Translator creation failed:",
+                      error.message
+                    );
+                    return {
+                      type: "translated_analysis",
+                      content: null,
+                      error: "Translation API not available",
+                    };
+                  });
+
+                enhancementPromises.push(translatorPromise);
+              } else {
+                console.log("🌐 Using default language (English)");
+              }
             }
 
             // 📝 PROOFREADER: Improve analysis text quality
@@ -781,7 +835,6 @@ BAD EXAMPLES (don't use decoded):
         threatType: quickAnalysis.threatType || "suspicious",
         summary: quickAnalysis.analysis || "Threat detected by AI",
 
-        // ✅ AJOUTER CES CHAMPS
         indicators: quickAnalysis.indicators || [],
         riskScore: quickAnalysis.riskScore || 65,
         confidence: quickAnalysis.confidence || 0.7,
@@ -994,14 +1047,10 @@ BAD EXAMPLES (don't use decoded):
   }
 
   // 🆕 POLLING FOR DEEP ANALYSIS RESULTS
-  async pollForDeepResults(url, quickAnalysis, maxAttempts = 30) {
+  async pollForDeepResults(url, quickAnalysis, maxAttempts = 5) {
     console.log("🔄 Polling pour résultats deep analysis...");
     console.log(`✅ Extension ID utilisé: ${this.extensionId}`);
     // console.log("🎯 Target URL:", url);
-
-    // // ✅ Waiting 3 secondes avant le premier polling
-    // console.log("⏳ Waiting 3 seconds for n8n processing...");
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
 
     const API_URL =
       "https://soc-cert-extension.vercel.app/api/extension-result";
@@ -1033,7 +1082,7 @@ BAD EXAMPLES (don't use decoded):
           } catch (e) {
             console.log(`❌ Erreur parsing JSON:`, e);
             console.log(`📄 Raw response:`, rawText);
-            continue; // Essayer la tentative suivante
+            continue;
           }
 
           // 🔍 DETAILED DEBUG of n8n response

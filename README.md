@@ -899,18 +899,20 @@ Popup Sections:
 
 ### 📸 Screenshot Gallery
 
-| Screenshot                                                  | Description                         |
-| ----------------------------------------------------------- | ----------------------------------- |
-| ![Gemini Nano Analysis](screenshots/01-gemini-analysis.png) | Initial threat detection results    |
-| ![API Dashboard](screenshots/02-api-dashboard.png)          | All 5 Chrome AI APIs status         |
-| ![n8n Workflow](screenshots/03-n8n-webhook-reception.png)   | CVE enrichment pipeline             |
-| ![n8n Workflow](screenshots/04-n8n-cve-correlation.png)     | CVE enrichment pipeline             |
-| ![n8n Workflow](screenshots/05-n8n-api-response.png)        | CVE enrichment pipeline             |
-| ![CVE Enrichment](screenshots/06-cve-enrichment.png)        | Real vulnerability data integration |
-| ![Code Flow](screenshots/07-code-flow.png)                  | Technical implementation diagram    |
-| ![Threat Alert](screenshots/08-threat-alert.png)            | Automatic security overlay          |
-| ![Popup Interface](screenshots/09-popup-interface.png)      | Detailed analysis view              |
-| ![Architecture](screenshots/10-architecture-diagram.png)    | Complete system design              |
+| Screenshot                                                             | Description                                      |
+| ---------------------------------------------------------------------- | ------------------------------------------------ |
+| ![Gemini Nano Analysis](screenshots/01-gemini-analysis.png)            | Initial threat detection results                 |
+| ![API Dashboard](screenshots/02-api-dashboard.png)                     | All 5 Chrome AI APIs status                      |
+| ![n8n Workflow](screenshots/03-n8n-webhook-reception.png)              | CVE enrichment pipeline                          |
+| ![n8n Workflow](screenshots/04-n8n-cve-correlation.png)                | CVE enrichment pipeline                          |
+| ![n8n Workflow](screenshots/05-n8n-api-response.png)                   | CVE enrichment pipeline                          |
+| ![CVE Enrichment](screenshots/06-cve-enrichment.png)                   | Real vulnerability data integration              |
+| ![Code Flow](screenshots/07-code-flow.png)                             | Technical implementation diagram                 |
+| ![Threat Alert](screenshots/08-threat-alert.png)                       | Automatic security overlay                       |
+| ![Popup Interface](screenshots/09-popup-interface.png)                 | Detailed analysis view                           |
+| ![Per-Section Translation](screenshots/11-per-section-translation.png) | Industry-first per-section translation in action |
+| ![28 Languages Dropdown](screenshots/12-dropdown-lang.png)             | 28 languages available across 5 continents       |
+| ![Architecture](screenshots/10-architecture-diagram.png)               | Complete system design                           |
 
 ## 🎯 Challenge Compliance
 

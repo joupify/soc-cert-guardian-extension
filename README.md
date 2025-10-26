@@ -1532,3 +1532,15 @@ _Tests our breakthrough innovation - CVE correlation_
 ### 💡 Key Innovation to Observe
 
 **Watch for this progression:**
+
+---
+
+### 📄 Submission Info
+
+**Google Chrome Built-in AI Challenge 2025**  
+Project: SOC-CERT Guardian — Submission #831789  
+Submitted on Oct 24, 2025 (Devpost: @joupify)  
+Account currently under review.  
+Full project and commit history available in this repository.
+
+---

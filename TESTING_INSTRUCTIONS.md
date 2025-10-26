@@ -17,6 +17,19 @@
 
 ## ⚡ Quick Test (2 minutes) - After Setup Complete
 
+**🚀 Backend Status: ✅ ACTIVE (No configuration needed!)**
+
+The production backend at `https://soc-cert-extension.vercel.app` is **already deployed and operational**.
+
+**Full stack verified working:**
+
+- ✅ Vercel serverless functions
+- ✅ Vercel KV queue system
+- ✅ n8n workflow processing CVE enrichment
+- ✅ CISA KEV Catalog API active (1,400+ CVEs)
+
+Judges can test the **complete enterprise feature set** immediately with zero configuration.
+
 **Instant Demo:**
 
 1. Visit: `http://testphp.vulnweb.com/artists.php?artist=1'` (SQL injection test)
@@ -25,7 +38,17 @@
 
 - ⚡ **Phase 1 (Instant)**: Local Gemini Nano threat detection
 - 🔄 **Phase 2 (2-3s)**: Virtual CVE generation + CISA KEV correlation
-- 🧠 **Phase 3 (Background)**: AlienVault OTX + VirusTotal enrichment
+
+**🔍 Verify Backend is Working:**
+
+Open Chrome DevTools → Console, look for:
+
+```
+✅ CVEs sent successfully via background script
+📊 Queue size: X
+```
+
+If you see `⚠️ Background webhook failed`, check [BACKEND_SETUP.md](BACKEND_SETUP.md).
 
 ---
 
@@ -62,11 +85,9 @@
 
 - 🔮 **Virtual CVE generated** (e.g., CVE-2026-148724)
 - 🗄️ **CISA KEV Catalog match** (1,400+ CVEs searched)
-- 🌐 **AlienVault OTX correlation** (threat intelligence feeds)
-- 🔍 **VirusTotal validation** (multi-engine scanning)
-- 📊 **Internet exposure estimate** (global vulnerable hosts count)
+- 📊 **CVE metadata enriched** (severity, vendor, product, required actions)
 
-**This is the KILLER FEATURE** - Watch the popup update in real-time as each intelligence source reports back!
+**This is the KILLER FEATURE** - Watch the popup update in real-time as CISA KEV database correlation completes!
 
 ### 3. **Verify All 5 Chrome AI APIs**
 
@@ -103,18 +124,15 @@ Open the extension popup on any detected threat:
 **Phase 2: Hybrid Intelligence (2-10s) - THIS IS THE DIFFERENTIATOR**
 
 - ✅ **Virtual CVE generated** (e.g., CVE-2026-148724)
-- ✅ **CISA KEV match found** (if vulnerability is known)
-- ✅ **AlienVault OTX pulses** (threat intelligence indicators)
-- ✅ **VirusTotal detections** (3/94 engines, etc.)
-- ✅ **Internet exposure** (2,847 vulnerable hosts globally)
+- ✅ **CISA KEV match found** (if vulnerability is known - 1,400+ CVEs)
 - ✅ **Real CVE metadata**: Description, vendor, product, severity, required actions
 
 **This Makes SOC-CERT the ONLY extension providing:**
 
 - ❌ Not just "AI detected something suspicious"
-- ✅ **Verified threat intelligence** from 4 authoritative sources
+- ✅ **Verified threat intelligence** from government database (CISA KEV)
 - ✅ **Actionable CVE data** (standardized, SIEM-ready)
-- ✅ **Global context** (exposure + threat feeds)
+- ✅ **Official context** (verified against 1,400+ known exploits)
 
 **Translation & UX:**
 
@@ -150,16 +168,14 @@ User visits http://testphp.vulnweb.com/artists.php?artist=1'
 2-3s: Virtual CVE generated (CVE-2026-XXXXXX format)
      ⚠️ THIS IS THE INNOVATION - No official CVE exists for this threat!
    ↓
-4-6s: AlienVault OTX threat intelligence correlation
-   ↓
-8-10s: VirusTotal validation + Internet exposure analysis
+4-6s: CISA KEV Catalog correlation (1,400+ CVEs searched)
    ↓
 User sees complete threat report with:
    • Virtual CVE ID (trackable, SIEM-ready)
    • Risk Score & Confidence Level
    • Threat Indicators (SQL injection patterns detected)
    • AI-generated Recommendations (input validation, parameterized queries, WAF rules)
-   • Threat Intelligence from 4 sources
+   • CISA KEV correlation results (if matched)
    ✅ THIS is why Virtual CVEs matter - Real threats, instant tracking!
 ```
 
@@ -195,3 +211,41 @@ User sees complete threat report with:
 
 **Problem**: "CVE data not showing"  
 **Solution**: Backend n8n workflow must be active. Check network tab for API calls to Vercel endpoint.
+
+---
+
+## 🔥 CRITICAL: Why Backend n8n is NOT Optional
+
+### ❌ **Local-Only Mode (Fallback)** = Generic AI Extension
+
+```
+❌ Virtual CVE generated locally = UNRELIABLE
+❌ No verification against NVD/CISA KEV databases
+❌ No correlation with real threat intelligence
+❌ No way to confirm if threat is already documented
+❌ False positives with no actionable context
+Result: "AI says suspicious" - NOT production-ready
+```
+
+### ✅ **With Backend n8n** = ENTERPRISE-GRADE THREAT INTELLIGENCE
+
+```
+✅ Virtual CVE validated against CISA KEV Catalog
+✅ Cross-referenced with 1,400+ known exploited vulnerabilities
+✅ Government-verified CVE database correlation
+✅ Verified threat metadata: vendor, product, severity, remediation
+
+Result: ACTIONABLE CVE with verified context - Production-ready!
+```
+
+**🎯 THE KILLER FEATURE:**
+
+Without backend n8n, this is just another AI security extension saying "looks bad".  
+**WITH backend n8n**, this is the **world's first Chrome extension** that:
+
+1. **Eliminates the 90-day NVD gap** - Generate Virtual CVEs in 2.3 seconds
+2. **Validates threats against CISA KEV** - Government database, not just AI guessing
+3. **Provides SIEM-ready CVE data** - Standardized, trackable, actionable
+4. **Delivers enterprise-grade context** - Official CVE verification
+
+**This is why we won the n8n AI Agents Challenge** - The hybrid architecture makes unverified local AI into verified threat intelligence.

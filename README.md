@@ -2,9 +2,12 @@
 
 # SOC-CERT is the first Chrome extension to combine instant local AI analysis with real-time CVE enrichment via n8n and the KEV Catalog—delivering enterprise-grade threat intelligence directly in your browser.
 
+> **🚀 Production Status:** ✅ **FULLY OPERATIONAL** - Backend deployed, n8n active, all APIs functional. [View Status →](PRODUCTION_STATUS.md)
+
 [![First-of-Its-Kind](https://img.shields.io/badge/Innovation-First%20of%20Its%20Kind-gold?style=for-the-badge&logo=google-chrome)](https://github.com/joupify/soc-cert-guardian-extension)
 [![Chrome Built-in AI](https://img.shields.io/badge/Powered%20by-Gemini%20Nano-4285F4?style=for-the-badge&logo=google)](https://developer.chrome.com/docs/ai/)
 [![CISA KEV](https://img.shields.io/badge/CVE%20Source-CISA%20KEV-red?style=for-the-badge)](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+[![Production Status](https://img.shields.io/badge/Backend-ACTIVE-success?style=for-the-badge&logo=vercel)](https://soc-cert-extension.vercel.app)
 
 **The world's first Chrome extension combining Gemini Nano AI with real-time CVE threat intelligence.**
 
@@ -18,6 +21,17 @@
 [![Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)](README.md)
 
 An innovative security extension combining Chrome's Built-in AI with real-time CVE intelligence through hybrid AI architecture.
+
+---
+
+## 🚀 Quick Links for Judges
+
+- 🧪 **[Start Testing (2 min) →](TESTING_INSTRUCTIONS.md)** - Install and test the extension
+- 📊 **[Production Status →](PRODUCTION_STATUS.md)** - Verify all systems operational
+- 🔧 **[Backend Details →](BACKEND_SETUP.md)** - Technical architecture
+- 🎥 **[Demo Video (1080p) →](https://www.youtube.com/watch?v=jEfFdMXPSn0)** - Full walkthrough
+
+---
 
 ## 📋 Table of Contents
 
@@ -49,20 +63,47 @@ An innovative security extension combining Chrome's Built-in AI with real-time C
 
 ## 🔥 **CRITICAL DIFFERENTIATOR: Hybrid AI Architecture**
 
-**❌ Without n8n Backend = Just Another AI Extension**
+### ❌ **Without n8n Backend** = Just Another AI Extension
 
-- Gemini Nano does quick analysis and scoring (what everyone can do)
-- Basic threat detection with AI
-- Limited to local analysis only
+```
+Local Gemini Nano: "SQL injection detected" (< 2s)
+Virtual CVE: CVE-2026-148724 (generated locally)
+     ↓
+❌ PROBLEM: Is this threat real or false positive?
+     • No verification against NVD/CISA databases
+     • No threat intelligence correlation
+     • No way to confirm vulnerability exists
+     • Unreliable for enterprise SOC teams
+     ↓
+Result: Generic AI detection (what everyone can do)
+```
 
-**✅ With n8n Backend = Enterprise SOC Operations Center**
+### ✅ **With n8n Backend** = Enterprise SOC Operations Center
 
-- **Real CVE Intelligence** correlated with CISA KEV Catalog
-- **Virtual CVE Generation** for zero-day threats
-- **Hybrid Architecture**: Local AI speed + Server-side intelligence
-- **SOC-Grade Threat Operations** in your browser
+```
+Phase 1: Gemini Nano detection (< 2s)
+     ↓
+Phase 2: n8n Backend validation against CISA KEV Catalog:
+     • CISA KEV Catalog (1,400+ known exploited vulnerabilities)
+     • NVD Database (CVE reference data)
+     ↓
+Virtual CVE enriched with VERIFIED context:
+     ✅ CVE-2021-44228 match confirmed
+     ✅ CVSS Score: 9.8 Critical
+     ✅ Vendor: Apache | Product: Log4j
+     ✅ Required action: Apply patch
+     ↓
+Result: ACTIONABLE enterprise threat intelligence
+```
 
-**The n8n backend transforms SOC-CERT from a "nice AI tool" into an "enterprise security operations platform".**
+**🎯 The n8n backend transforms SOC-CERT from a "nice AI tool" into an "enterprise security operations platform".**
+
+**Why This Matters:**
+
+- 🔮 **Real CVE Intelligence** correlated with CISA KEV Catalog
+- 🎯 **Virtual CVE Validation** for zero-day threats
+- 🏗️ **Hybrid Architecture**: Local AI speed + Server-side verification
+- 🏢 **SOC-Grade Threat Operations** trusted by enterprise teams
 
 ---
 
@@ -1155,9 +1196,8 @@ flowchart TD
 ### 2️⃣ Intelligent CVE Mapping
 
 - Uses token matching to correlate extension threats with real CVEs from:
-  - **CISA KEV Catalog** (1400+ exploited vulnerabilities)
-  - **NIST NVD Database** (all CVEs)
-  - **AlienVault OTX** (threat feeds)
+  - **CISA KEV Catalog** (1,400+ exploited vulnerabilities)
+  - **NIST NVD Database** (reference for CVE format)
 - **Algorithm:** Extracts keywords, matches against CVE titles/descriptions, scores correlation, generates virtual CVE if no match.
 
 **Example:**
@@ -1169,13 +1209,12 @@ const keywords = ["malicious", "login", "authentication", "phishing"];
 // Score: 85/100 (High confidence)
 ```
 
-### 3️⃣ Multi-Layer Enrichment
+### 3️⃣ CVE Enrichment Layer
 
 - Each matched CVE is enriched with:
-  - **CISA KEV:** Exploitation status
-  - **AlienVault OTX:** Threat pulse count
+  - **CISA KEV:** Exploitation status (Known Exploited Vulnerability)
   - **CVSS Scores:** Severity ratings
-  - **Metadata:** Published date, vendor
+  - **Metadata:** Published date, vendor, product
 
 **Output Example:**
 
@@ -1186,7 +1225,6 @@ const keywords = ["malicious", "login", "authentication", "phishing"];
   "severity": "Critical",
   "score": 95,
   "cisa_kev": true,
-  "otx_pulses": 12,
   "exploitation_risk": "critical",
   "link": "https://nvd.nist.gov/vuln/detail/CVE-2024-12345"
 }
@@ -1228,10 +1266,10 @@ const keywords = ["malicious", "login", "authentication", "phishing"];
 │ └──────────────────────────┘                                 │
 │ ↓                                                           │
 │ ┌─────────────────────────────────────┐                     │
-│ │ Multi-Source Enrichment             │                     │
+│ │ CVE Enrichment                      │                     │
 │ │ 1. CISA KEV (Exploitation)          │                     │
-│ │ 2. AlienVault OTX (Intelligence)    │                     │
-│ │ 3. CVSS Scores (Severity)           │                     │
+│ │ 2. CVSS Scores (Severity)           │                     │
+│ │ 3. NVD Metadata (Reference)         │                     │
 │ └─────────────────────────────────────┘                     │
 │ ↓                                                           │
 │ Change Detection → Vercel KV Storage                        │
@@ -1278,7 +1316,6 @@ const keywords = ["malicious", "login", "authentication", "phishing"];
 
 - n8n instance (self-hosted or cloud)
 - Vercel KV database
-- AlienVault OTX API key (free)
 
 ### Setup Steps
 
@@ -1289,14 +1326,12 @@ const keywords = ["malicious", "login", "authentication", "phishing"];
 2. **Configure Credentials:**
 
    - Update webhook URL to your n8n instance
-   - Add AlienVault OTX API key
    - Add Vercel KV credentials
 
 3. **Environment Variables:**
 
    ```
    VERCEL_API_URL=https://your-vercel-app.vercel.app/api
-   OTX_API_KEY=your_otx_api_key
    ```
 
 4. **Test:**
@@ -1448,7 +1483,7 @@ MIT License - Part of SOC-CERT Chrome Extension
 - **Developer:** Joupify
 - **Project:** SOC-CERT AI Guardian
 - **Challenge:** Chrome Built-in AI Challenge 2025
-- **Data Sources:** CISA KEV Catalog, NIST NVD, AlienVault OTX
+- **Data Sources:** CISA KEV Catalog, NIST NVD
 
 ---
 

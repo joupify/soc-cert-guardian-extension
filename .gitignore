@@ -26,3 +26,8 @@ secrets/
 
 # Session notes (local only)
 SESSION_SUMMARY_*.md
+
+
+
+CHROME_AI_FEEDBACK_*.md
+FEEDBACK_FORM_RESPONSES_*.md

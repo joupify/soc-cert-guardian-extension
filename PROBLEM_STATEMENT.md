@@ -39,7 +39,7 @@ During this window, organizations remain **blind to zero-day exploits**, leaving
 - ⏱️ **Detection Speed**: Reduced from **90 days → 2.3 seconds** (**3,456,000% faster** than industry standard)
 - 🔒 **Privacy**: **100% on-device** AI processing (no data sent to external servers)
 - 🎯 **Accuracy**: **87% confidence** in threat classification (production-tested)
-- 🧩 **Virtual CVEs**: Generated **322 unique identifiers** for emerging zero-day threats ahead of official NVD publication
+- 🧩 **Virtual CVEs**: Generated **325 unique identifiers** for emerging zero-day threats ahead of official NVD publication
 - 🚨 **Active Monitoring**: Tracking **59 live threats** in the last 24 hours (real-time dashboard)
 - 🔗 **CVE Correlation**: Integrated with **1,400+ official CVEs** from CISA KEV Catalog
 - 🌎 **Global Reach**: **28 languages** supported, covering **80%+ of global population** for worldwide SOC teams

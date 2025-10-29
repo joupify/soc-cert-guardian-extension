@@ -2,6 +2,10 @@
 
 # SOC-CERT is the first Chrome extension to combine instant local AI analysis with real-time CVE enrichment via n8n and the KEV Catalog—delivering enterprise-grade threat intelligence directly in your browser.
 
+**Last Updated**: October 29, 2025
+**Version**: 1.1.0  
+**Status**: ✅ Production Ready
+
 > **🚀 Production Status:** ✅ **FULLY OPERATIONAL** - Backend deployed, n8n active, all APIs functional. [View Status →](PRODUCTION_STATUS.md)
 
 [![First-of-Its-Kind](https://img.shields.io/badge/Innovation-First%20of%20Its%20Kind-gold?style=for-the-badge&logo=google-chrome)](https://github.com/joupify/soc-cert-guardian-extension)
@@ -107,7 +111,7 @@ Result: ACTIONABLE enterprise threat intelligence
 
 ---
 
-## �🚀 **First-of-Its-Kind Innovation**
+## 🚀 **First-of-Its-Kind Innovation**
 
 **SOC-CERT is the world's first Chrome extension combining:**
 
@@ -275,20 +279,26 @@ Virtual CVEs don't replace official CVEs—they complement them:
 
 ### Example Workflow
 
-Extension detects SQL injection on vulnerable-site.com
-→ Virtual CVE-2026-148724 created
+**1. Threat Detection**  
+Extension detects SQL injection on vulnerable-site.com  
+→ Virtual CVE-2026-148724 created (no official CVE exists yet)
 
-50 users encounter similar threat pattern
+**2. Community Validation**  
+50+ users encounter similar threat pattern  
 → Pattern recognized across multiple sites
 
-Security researcher investigates pattern
-→ Submits vulnerability to vendor
+**3. Researcher Investigation**  
+Security researcher investigates pattern  
+→ Submits vulnerability disclosure to vendor
 
-Vendor releases patch
-→ CVE-2025-12345 officially published
+**4. Official Publication**  
+Vendor releases patch  
+→ NVD publishes official CVE-2026-12345
 
-System updates mapping
-→ CVE-2026-148724 → CVE-2025-12345 (now official)
+**5. Intelligent Mapping**  
+System links virtual and official CVEs:  
+→ CVE-2026-148724 (Virtual) ⟷ CVE-2026-12345 (Official)  
+→ Both CVEs remain in database, now cross-referenced
 
 ### Benefits for SOC Teams
 
@@ -341,7 +351,7 @@ System updates mapping
 **Virtual CVE Structure**:
 
 ```
-CVE-2025-{timestamp}-{unique_id}
+CVE-2026-{timestamp}-{unique_id}
 ├── Threat Analysis (Gemini Nano)
 ├── Risk Scoring (0-100)
 ├── Attack Vectors Identified
@@ -537,7 +547,7 @@ Response:
 
 ### Visual Intelligence
 
-![Virtual CVE Dashboard](./assets/virtual-cve-dashboard.png)
+![Virtual CVE Dashboard](./assets/13-virtual-cve-dashboard.png)
 
 Track emerging threat patterns, confidence scores, and detection trends in real-time.
 
@@ -633,7 +643,7 @@ The Magic Workflow:
 // Step 1: Extension sends to n8n
 POST https://soc-cert-extension.vercel.app/api/extension-webhook
 {
-  "extensionId": "ai-helper-1759695907502",
+  "extensionId": "ai-helper-1759695XXXXXX",
   "url": "https://malicious-site.com",
   "threatType": "malware",
   "riskScore": 85,
@@ -650,7 +660,7 @@ POST https://soc-cert-extension.vercel.app/api/extension-webhook
 
 
 // Step 3: Extension polls for results
-GET https://soc-cert-extension.vercel.app/api/extension-result?extensionId=ai-helper-1759695907502&format=cve
+GET https://soc-cert-extension.vercel.app/api/extension-result?extensionId=ai-helper-1759695XXXXXX&format=cve
 
 // Step 4: Receive enriched data
 {
@@ -784,7 +794,7 @@ soc-cert-extension/
 ├── n8n-workflows/
 │   └── cve-enrichment.json     # 🔥 KEV Catalog integration workflow
 ├── TRANSLATION_LANGUAGES.md   # 🌐 Translation languages documentation (28 languages)
-├── screenshots/               # Demo screenshots (10 images)
+├── screenshots/               # Demo screenshots
 │   ├── 01-gemini-analysis.png
 │   ├── 02-api-dashboard.png
 │   ├── 03-n8n-webhook-reception.png
@@ -794,7 +804,10 @@ soc-cert-extension/
 │   ├── 07-code-flow.png
 │   ├── 08-threat-alert.png
 │   ├── 09-popup-interface.png
-│   └── 10-architecture-diagram.png
+│   ├── 10-architecture-diagram.png
+│   ├── 11-per-section-translation.png
+│   ├── 12-dropdown-lang.png
+│   └── 13-virtual-cve-dashboard.png
 └── README.md                   # This file
 ```
 
@@ -954,6 +967,7 @@ Popup Sections:
 | ![Per-Section Translation](screenshots/11-per-section-translation.png) | Industry-first per-section translation in action |
 | ![28 Languages Dropdown](screenshots/12-dropdown-lang.png)             | 28 languages available across 5 continents       |
 | ![Architecture](screenshots/10-architecture-diagram.png)               | Complete system design                           |
+| ![Virtual CVE Dashboard](screenshots/virtual-cve-dashboard.png)        | Virtual CVE dashboard: threat statistics (13)    |
 
 ## 🎯 Challenge Compliance
 
@@ -1065,7 +1079,7 @@ const session = await window.ai.languageModel.create({
 
 ### 📊 Validation Evidence
 
-- Extension ID: `ai-helper-1759695907502`
+- Extension ID: `ai-helper-1759695XXXXXX`
 - API Endpoint: `https://soc-cert-extension.vercel.app/api/extension-webhook`
 - KEV Catalog: `https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json`
 
@@ -1148,10 +1162,6 @@ SOC-CERT successfully demonstrates the full potential of Chrome Built-in AI APIs
 
 Ready for Chrome Built-in AI Challenge 2025 submission! 🚀
 
-Last Updated: October 7, 2025  
-Version: 1.1.0  
-Status: ✅ Production Ready
-
 ```
 
 ```
@@ -1160,12 +1170,12 @@ Status: ✅ Production Ready
 
 ## 🎯 Overview
 
-This n8n workflow is the server-side intelligence layer for the SOC-CERT Chrome Extension, winner of the n8n AI Innovators Challenge 2024.  
+This n8n workflow is the server-side intelligence layer for the SOC-CERT Chrome Extension, winner of the n8n AI Innovators Challenge 2025.  
 It enriches threat detections from Gemini Nano with real-time CVE data from multiple sources.
 
 **Purpose:** Transform Chrome extension alerts into actionable security intelligence by correlating threats with known vulnerabilities (CVE) and exploitation status (CISA KEV).
 
-🏆 **Award:** This workflow won the n8n AI Innovators Challenge 2024 for its innovative approach to automated threat intelligence and CVE correlation.
+🏆 **Award:** This workflow won the n8n AI Innovators Challenge 2025 for its innovative approach to automated threat intelligence and CVE correlation.
 
 📖 **Read More:** [SOC-CERT: Automated Threat Intelligence System with n8n & AI](https://dev.to/joupify/soc-cert-automated-threat-intelligence-system-with-n8n-ai-5722)
 
@@ -1472,7 +1482,7 @@ MIT License - Part of SOC-CERT Chrome Extension
 ## 🔗 Related Links
 
 - **Chrome Extension Repository:** [GitHub](https://github.com/joupify/soc-cert-guardian-extension)
-- **Challenge Submission:** [Devpost](https://devpost.com/software/soc-cert)
+- **Challenge Submission:** [Devpost](https://devpost.com/software/soc-cert-guardian)
 - **Demo Video:** [Watch in 1080p HD on YouTube](https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080)
   https://www.youtube.com/watch?v=jEfFdMXPSn0&vq=hd1080
 
@@ -1486,10 +1496,6 @@ MIT License - Part of SOC-CERT Chrome Extension
 - **Data Sources:** CISA KEV Catalog, NIST NVD
 
 ---
-
-**Last Updated:** October 22, 2025  
-**Version:** 1.0.0  
-**Status:** ✅ Production Ready
 
 **Built with:** Chrome Built-in AI (Gemini Nano, 5 APIs) • n8n • Vercel • JavaScript • CISA KEV • Hybrid AI Architecture
 
@@ -1539,8 +1545,10 @@ _Tests our breakthrough innovation - CVE correlation_
 
 **Google Chrome Built-in AI Challenge 2025**  
 Project: SOC-CERT Guardian — Submission #831789  
-Submitted on Oct 24, 2025 (Devpost: @joupify)  
-Account currently under review.  
-Full project and commit history available in this repository.
+Submitted on Oct 24, 2025 (Devpost: @joupify)
+
+- **Challenge Submission:** [Devpost](https://devpost.com/software/soc-cert-guardian)
+
+Made with 💙 for the Chrome Built-in AI Challenge 2025
 
 ---

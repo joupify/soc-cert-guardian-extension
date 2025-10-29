@@ -547,7 +547,7 @@ Response:
 
 ### Visual Intelligence
 
-![Virtual CVE Dashboard](screenshots/13-virtual-cve-dashboard.png)
+[Virtual CVE Dashboard](#-screenshot-gallery)
 
 Track emerging threat patterns, confidence scores, and detection trends in real-time.
 
@@ -967,7 +967,7 @@ Popup Sections:
 | ![Per-Section Translation](screenshots/11-per-section-translation.png) | Industry-first per-section translation in action |
 | ![28 Languages Dropdown](screenshots/12-dropdown-lang.png)             | 28 languages available across 5 continents       |
 | ![Architecture](screenshots/10-architecture-diagram.png)               | Complete system design                           |
-| ![Virtual CVE Dashboard](screenshots/virtual-cve-dashboard.png)        | Virtual CVE dashboard: threat statistics (13)    |
+| ![Virtual CVE Dashboard](screenshots/13-virtual-cve-dashboard.png)     | Virtual CVE dashboard: threat statistics (13)    |
 
 ## 🎯 Challenge Compliance
 

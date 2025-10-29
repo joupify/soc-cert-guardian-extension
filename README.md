@@ -547,7 +547,7 @@ Response:
 
 ### Visual Intelligence
 
-![Virtual CVE Dashboard](./assets/13-virtual-cve-dashboard.png)
+![Virtual CVE Dashboard](screenshots/13-virtual-cve-dashboard.png)
 
 Track emerging threat patterns, confidence scores, and detection trends in real-time.
 
